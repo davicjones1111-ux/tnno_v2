@@ -39,7 +39,6 @@ project/
 │   │   ├── api.py
 │   │   └── game.py
 │   ├── services/            # Business logic
-│   │   ├── blockchain_service.py
 │   │   ├── mission_service.py
 │   │   ├── deposit_service.py
 │   │   └── user_service.py
@@ -113,15 +112,12 @@ Visit `http://localhost:5000` in your browser.
 This repo now includes [render.yaml](/Users/davicjones1111/Downloads/A%200/render.yaml) for a production-style Render setup:
 
 - `retroquest-web` runs Gunicorn
-- `retroquest-worker` runs `python worker.py`
 - `retroquest-db` provisions PostgreSQL
 
 Recommended Render settings:
 
 - Keep `FLASK_ENV=production`
 - Keep `AUTO_CREATE_SCHEMA_ON_START=0`
-- Keep `START_BLOCKCHAIN_CHECKER=0` on the web service
-- Keep `START_BLOCKCHAIN_CHECKER=1` on the worker service
 - Set `TRUST_PROXY_HEADERS=1`
 - Set Cloudinary and NowPayments env vars if you use uploads/deposits
 
@@ -137,14 +133,12 @@ Use:
 - PostgreSQL (not SQLite)
 - Redis (cache + sessions + shared game state)
 - Gunicorn web workers
-- Dedicated background worker
 - Nginx reverse proxy
 
 This repo includes:
 - `Dockerfile`
 - `docker-compose.prod.yml`
 - `deploy/nginx.conf`
-- `worker.py`
 
 Start the stack:
 
@@ -168,17 +162,16 @@ Run database migrations once:
 docker compose -f docker-compose.prod.yml run --rm web flask --app run.py db upgrade -d migrations
 ```
 
-Start the worker and proxy:
+Start the web app and proxy:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d web worker nginx
+docker compose -f docker-compose.prod.yml up -d web nginx
 ```
 
 Important:
 - Set strong secrets (`SECRET_KEY`, DB password).
 - Run with `FLASK_ENV=production`.
 - Set `DATABASE_URL`, `REDIS_URL`, `SESSION_REDIS_URL`, and `CACHE_REDIS_URL` to non-default production values.
-- Keep `START_BLOCKCHAIN_CHECKER=0` for web containers and `1` only on worker.
 - Keep `AUTO_CREATE_SCHEMA_ON_START=0` in production.
 - Enable trusted proxy handling behind Render or Nginx with `TRUST_PROXY_HEADERS=1`.
 - Tune `WEB_CONCURRENCY` and `GUNICORN_WORKER_CONNECTIONS` for your VPS size.
@@ -201,13 +194,9 @@ gunicorn --config gunicorn.conf.py run:app
 | ENABLE_SERVER_SIDE_SESSIONS | Use Redis-backed Flask sessions | 0 |
 | SESSION_REDIS_URL | Redis session DB | redis://localhost:6379/1 |
 | GAME_STATE_BACKEND | Emperor's Circle state backend (`memory`/`redis`) | memory |
-| START_BLOCKCHAIN_CHECKER | Start deposit checker thread in this process | 1 |
 | AUTO_CREATE_SCHEMA_ON_START | Run `db.create_all()` on app boot | 1 |
 | ADMIN_USER | Admin username | admin |
 | ADMIN_PASS | Admin password | (change in production) |
-| BSC_RPC | BNB Chain RPC URL | https://bsc-dataseed.binance.org/ |
-| WALLET_ADDRESS | Deposit wallet address | (your wallet) |
-| USDT_CONTRACT | USDT token contract | (BEP-20 USDT) |
 | USDT_TO_POINTS | Conversion rate | 4000 |
 
 ## API Endpoints

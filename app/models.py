@@ -334,7 +334,7 @@ class PostInteraction(db.Model):
 
 
 class Deposit(db.Model):
-    """Cryptocurrency deposit model"""
+    """Provider-backed deposit model."""
     __tablename__ = 'deposits'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -346,20 +346,20 @@ class Deposit(db.Model):
     usdt_amount = db.Column(db.Float, nullable=True)  # Legacy field for older deposit records
     expected_amount = db.Column(db.Numeric(24, 6), nullable=True, index=True)  # Legacy unique amount to pay
     points_amount = db.Column(db.Integer, nullable=True)  # Legacy coins to credit
-    tx_hash = db.Column(db.String(100), nullable=True)
+    tx_hash = db.Column(db.String(100), nullable=True)  # Legacy compatibility field
     status = db.Column(db.String(20), default='pending', index=True)  # pending, completed, expired
     is_archived = db.Column(db.Boolean, default=False, index=True)
-    blockchain_status = db.Column(db.String(20), default='unverified')  # Legacy blockchain status
+    blockchain_status = db.Column(db.String(20), default='unverified')  # Legacy compatibility field
     created_at = db.Column(db.DateTime, default=utc_now, index=True)
     expires_at = db.Column(db.DateTime, nullable=True, index=True)
     verified_at = db.Column(db.DateTime, nullable=True)
     paid_at = db.Column(db.DateTime, nullable=True)
     credited_at = db.Column(db.DateTime, nullable=True)
     coins_added = db.Column(db.Integer, nullable=True)
-    confirmations = db.Column(db.Integer, nullable=True, default=0)
-    tx_block_number = db.Column(db.BigInteger, nullable=True)
-    scan_from_block = db.Column(db.BigInteger, nullable=True)
-    last_scanned_block = db.Column(db.BigInteger, nullable=True)
+    confirmations = db.Column(db.Integer, nullable=True, default=0)  # Legacy compatibility field
+    tx_block_number = db.Column(db.BigInteger, nullable=True)  # Legacy compatibility field
+    scan_from_block = db.Column(db.BigInteger, nullable=True)  # Legacy compatibility field
+    last_scanned_block = db.Column(db.BigInteger, nullable=True)  # Legacy compatibility field
     last_check = db.Column(db.DateTime, nullable=True)
     
     def to_dict(self):
@@ -378,13 +378,10 @@ class Deposit(db.Model):
             'usdt_amount': self.usdt_amount,
             'expected_amount': expected_amount,
             'points_amount': self.points_amount,
-            'tx_hash': self.tx_hash,
             'status': self.status,
             'is_archived': bool(self.is_archived),
-            'blockchain_status': self.blockchain_status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'expires_at': self.expires_at.isoformat() if self.expires_at else None,
-            'confirmations': self.confirmations,
             'coins_added': self.coins_added
         }
     
@@ -393,7 +390,7 @@ class Deposit(db.Model):
 
 
 class BlockchainState(db.Model):
-    """Track last scanned block per coin type for efficient scanning"""
+    """Legacy scan state retained only for database compatibility."""
     __tablename__ = 'blockchain_state'
 
     coin_type = db.Column(db.String(20), primary_key=True)

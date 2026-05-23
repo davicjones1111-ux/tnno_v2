@@ -1,23 +1,29 @@
 """
-Services Package
-Business logic layer for the RetroQuest Platform
+Services package exports.
+
+Keep imports lazy so routine web boot stays lightweight.
 """
-from app.services.mission_service import MissionService
-from app.services.deposit_service import DepositService
-from app.services.user_service import UserService
-from app.services.history_service import HistoryService
+from __future__ import annotations
 
-try:
-    from app.services.blockchain_service import BlockchainService, BlockchainChecker
-except Exception:  # pragma: no cover - optional dependency during local dev
-    BlockchainService = None
-    BlockchainChecker = None
+from importlib import import_module
 
-__all__ = [
-    'BlockchainService',
-    'BlockchainChecker',
-    'MissionService',
-    'DepositService',
-    'UserService',
-    'HistoryService'
-]
+
+_SERVICE_EXPORTS = {
+    'MissionService': ('app.services.mission_service', 'MissionService'),
+    'DepositService': ('app.services.deposit_service', 'DepositService'),
+    'UserService': ('app.services.user_service', 'UserService'),
+    'HistoryService': ('app.services.history_service', 'HistoryService'),
+}
+
+__all__ = sorted(_SERVICE_EXPORTS.keys())
+
+
+def __getattr__(name: str):
+    if name not in _SERVICE_EXPORTS:
+        raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
+
+    module_name, attr_name = _SERVICE_EXPORTS[name]
+    module = import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value

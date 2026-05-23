@@ -2,7 +2,7 @@
 API Routes
 REST API endpoints for AJAX and mobile access
 """
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import User, Post, PostInteraction, GameScore
@@ -223,19 +223,25 @@ def get_deposits():
 
 @login_required
 def create_deposit():
-    """Create deposit request"""
+    """Create a NowPayments deposit request."""
     data = request.get_json() or {}
-    raw_amount = data.get('usdt_amount', '')
+    raw_amount = data.get('amount', data.get('usdt_amount', ''))
+    network = (data.get('network') or '').strip().upper()
+
+    if not network:
+        return error('Network is required', 400)
 
     try:
-        deposit = DepositService.create_deposit(current_user.id, raw_amount)
+        deposit, payment_url = DepositService.create_nowpayments_deposit(current_user.id, raw_amount, network)
     except ValueError as exc:
         return error(str(exc), 400)
+    except RuntimeError as exc:
+        return error(str(exc), 502)
 
     return jsonify({
         'success': True,
         'deposit': deposit.to_dict(),
-        'payment_url': url_for('deposit.view', deposit_id=deposit.id),
+        'payment_url': payment_url,
     }), 201
 
 

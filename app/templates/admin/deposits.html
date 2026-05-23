@@ -18,7 +18,7 @@
                 <th>Amount</th>
                 <th>Expected Amount</th>
                 <th>Status</th>
-                <th>TX Hash</th>
+                <th>Payment ID</th>
                 <th>Created Time</th>
             </tr>
         </thead>
@@ -41,8 +41,8 @@
                     <span class="px-badge px-badge-{{ badge }}">{{ deposit.status|title }}</span>
                 </td>
                 <td>
-                    {% if deposit.tx_hash %}
-                        <code class="px-code-inline">{{ deposit.tx_hash[:20] }}{% if deposit.tx_hash|length > 20 %}...{% endif %}</code>
+                    {% if deposit.payment_id %}
+                        <code class="px-code-inline">{{ deposit.payment_id[:20] }}{% if deposit.payment_id|length > 20 %}...{% endif %}</code>
                     {% else %}
                         <span class="px-text-muted">-</span>
                     {% endif %}

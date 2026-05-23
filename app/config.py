@@ -197,11 +197,6 @@ class Config:
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = os.environ.get('SESSION_KEY_PREFIX') or 'retroquest:session:'
 
-    # Blockchain Configuration (disabled - using NowPayments)
-    START_BLOCKCHAIN_CHECKER = False  # Disabled for NowPayments integration
-    BSC_RPC = os.environ.get('BSC_RPC') or ''
-    BSC_RPC_FALLBACK = os.environ.get('BSC_RPC_FALLBACK') or 'https://bsc-dataseed.binance.org/'
-
     # NowPayments payment gateway configuration
     NOWPAYMENTS_API_KEY = _env('NOWPAYMENTS_API_KEY')
     NOWPAYMENTS_API_URL = _env('NOWPAYMENTS_API_URL') or 'https://api.nowpayments.io/v1/invoice'
@@ -215,42 +210,12 @@ class Config:
         if host.strip()
     )
     
-    # Wallet Configuration
-    WALLET_ADDRESS = os.environ.get('WALLET_ADDRESS') or ''
-    
-    # Coin Contract Addresses (BEP20 on BSC)
-    COIN_CONTRACTS = {
-        'USDT': {
-            'address': os.environ.get('USDT_CONTRACT') or '0x55d398326f99059fF775485246999027B3197955',
-            'decimals': int(os.environ.get('USDT_DECIMALS') or '18'),
-            'to_points': int(os.environ.get('USDT_TO_POINTS') or '4000'),
-            'min_deposit': float(os.environ.get('MIN_DEPOSIT_USDT') or '5'),
-        },
-        'USDC': {
-            'address': os.environ.get('USDC_CONTRACT') or '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d',
-            'decimals': 6,
-            'to_points': int(os.environ.get('USDC_TO_POINTS') or '4000'),
-            'min_deposit': float(os.environ.get('MIN_DEPOSIT_USDC') or '5'),
-        },
-    }
-
-    # Allowed deposit coins in UI and validation
-    ALLOWED_DEPOSIT_COINS = ('USDT', 'USDC')
-    
-    # Legacy config for backward compatibility
-    USDT_CONTRACT = COIN_CONTRACTS['USDT']['address']
-    USDT_DECIMALS = COIN_CONTRACTS['USDT']['decimals']
-    USDT_TO_POINTS = COIN_CONTRACTS['USDT']['to_points']
-    MIN_DEPOSIT_USDT = COIN_CONTRACTS['USDT']['min_deposit']
+    # Deposit conversion settings used by the NowPayments flow.
+    USDT_TO_POINTS = int(os.environ.get('USDT_TO_POINTS') or '4000')
+    MIN_DEPOSIT_USDT = float(os.environ.get('MIN_DEPOSIT_USDT') or '5')
     
     # Deposit Configuration
     DEPOSIT_TIMEOUT = int(os.environ.get('DEPOSIT_TIMEOUT') or '1200')  # 20 minutes
-    DEPOSIT_CONFIRMATIONS = int(os.environ.get('DEPOSIT_CONFIRMATIONS') or '3')
-    DEPOSIT_SCAN_INTERVAL = int(os.environ.get('DEPOSIT_SCAN_INTERVAL') or '5')
-    DEPOSIT_LOG_CHUNK_SIZE = int(os.environ.get('DEPOSIT_LOG_CHUNK_SIZE') or '1200')
-    DEPOSIT_LOG_MIN_CHUNK_SIZE = int(os.environ.get('DEPOSIT_LOG_MIN_CHUNK_SIZE') or '25')
-    DEPOSIT_LOOKBACK_BLOCKS = int(os.environ.get('DEPOSIT_LOOKBACK_BLOCKS') or '600')
-
     # Admin Configuration
     ADMIN_USER = os.environ.get('ADMIN_USER') or 'admin'
     ADMIN_PASS = os.environ.get('ADMIN_PASS') or ''

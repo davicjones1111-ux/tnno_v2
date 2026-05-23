@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Deposit Payment - RetroQuest{% endblock %}
+{% block title %}Deposit Status - RetroQuest{% endblock %}
 
 {% block content %}
-<h1 class="px-mb-lg">{{ coin_type }} Deposit Payment #{{ deposit.id }}</h1>
+<h1 class="px-mb-lg">{{ coin_type }} Deposit Request #{{ deposit.id }}</h1>
 
 <div class="px-grid payment-layout" style="grid-template-columns: 1.3fr 1fr; gap: 16px;">
     <div class="px-panel payment-card">
@@ -12,7 +12,7 @@
         </div>
 
         <div class="px-form-group">
-            <label class="px-label">Coin Selected</label>
+            <label class="px-label">Asset</label>
             <div class="px-input payment-input-box" style="display: flex; align-items: center;">
                 {{ coin_type }}
             </div>
@@ -20,14 +20,13 @@
 
         <div class="px-form-group">
             <label class="px-label">Network</label>
-            <div class="px-input" style="display: flex; align-items: center;">BNB Smart Chain (BEP20)</div>
+            <div class="px-input" style="display: flex; align-items: center;">{{ deposit.network or 'N/A' }}</div>
         </div>
 
         <div class="px-form-group">
-            <label class="px-label">Receiving Wallet</label>
+            <label class="px-label">Payment Provider</label>
             <div class="wallet-row">
-                <code id="walletAddress" class="wallet-code">{{ wallet_address }}</code>
-                <button id="copyWalletBtn" type="button" class="px-btn px-btn-secondary px-btn-sm">Copy</button>
+                <code class="wallet-code">NowPayments</code>
             </div>
         </div>
 
@@ -37,8 +36,16 @@
         </div>
 
         <div class="px-form-group">
-            <label class="px-label">Exact Amount To Send <span style="color: var(--px-green-light);">*Important</span></label>
+            <label class="px-label">Provider Quote <span style="color: var(--px-green-light);">*Important</span></label>
             <div class="exact-amount-box">{{ expected_amount_display }} {{ coin_type }}</div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Payment Reference</label>
+            <div class="wallet-row">
+                <code id="paymentReference" class="wallet-code">{{ payment_reference }}</code>
+                <button id="copyReferenceBtn" type="button" class="px-btn px-btn-secondary px-btn-sm">Copy</button>
+            </div>
         </div>
 
         <div class="px-form-group">
@@ -52,7 +59,7 @@
         </div>
 
         <div id="statusBox" class="px-alert px-alert-info" style="margin-top: 16px;">
-            ⏳ Waiting for payment on-chain...
+            ⏳ Waiting for payment provider confirmation...
         </div>
 
         <a href="{{ url_for('deposit.index') }}" class="px-btn px-btn-secondary" style="margin-top: 10px;">← Back to Deposits</a>
@@ -60,17 +67,19 @@
 
     <div class="px-panel payment-card">
         <div class="px-panel-header">
-            <h2 class="px-panel-title">Scan QR Code</h2>
+            <h2 class="px-panel-title">What Happens Next</h2>
         </div>
         <div class="qr-container">
-            <img src="{{ qr_code }}" alt="Deposit QR" class="qr-image">
+            <div class="wallet-code" style="text-align: center; width: 100%;">
+                Complete the payment on the NowPayments checkout page, then return here if you want to watch the status update.
+            </div>
         </div>
         <div class="payment-note-box" style="margin-top: 16px; padding: 12px;">
             <p class="px-text-sm payment-note-title" style="margin: 0;">Instructions:</p>
             <ul class="px-text-sm" style="margin: 8px 0 0 0; color: var(--px-text-muted); padding-left: 16px;">
-                <li>Send exactly <strong>{{ expected_amount_display }} {{ coin_type }}</strong></li>
-                <li>Use BNB Smart Chain network</li>
-                <li>Payment must arrive within the timer</li>
+                <li>Use the selected network shown by NowPayments.</li>
+                <li>Pay the exact amount shown by the provider.</li>
+                <li>Payment must complete before the timer ends.</li>
             </ul>
         </div>
     </div>
@@ -223,8 +232,8 @@
     const statusUrl = "{{ url_for('deposit.status', deposit_id=deposit.id) }}";
     const countdownEl = document.getElementById('countdown');
     const statusBox = document.getElementById('statusBox');
-    const copyWalletBtn = document.getElementById('copyWalletBtn');
-    const walletAddress = document.getElementById('walletAddress').textContent.trim();
+    const copyReferenceBtn = document.getElementById('copyReferenceBtn');
+    const paymentReference = document.getElementById('paymentReference').textContent.trim();
 
     let secondsLeft = {{ seconds_left|int }};
     let pollingStopped = false;
@@ -269,28 +278,28 @@
 
             if (data.status === 'success' || data.status === 'completed') {
                 pollingStopped = true;
-                setStatus(`Payment confirmed. TX: ${data.tx_hash || 'N/A'}`, 'px-alert-success');
+                setStatus(`Payment confirmed. Reference: ${data.payment_id || 'N/A'}`, 'px-alert-success');
             } else if (data.status === 'expired' || data.status === 'cancelled') {
                 pollingStopped = true;
                 setStatus('Deposit expired. Create a new request to continue.', 'px-alert-warning');
             } else {
-                setStatus('Waiting for payment on-chain...', 'px-alert-info');
+                setStatus('Waiting for payment provider confirmation...', 'px-alert-info');
             }
 
             renderCountdown();
         } catch (e) {
-            // Keep silent to avoid noisy UI when RPC is temporarily slow.
+            // Keep silent to avoid noisy UI when the provider callback has not arrived yet.
         }
     }
 
-    copyWalletBtn.addEventListener('click', async function() {
+    copyReferenceBtn.addEventListener('click', async function() {
         try {
-            await navigator.clipboard.writeText(walletAddress);
-            copyWalletBtn.textContent = 'Copied';
-            setTimeout(() => { copyWalletBtn.textContent = 'Copy Wallet'; }, 1200);
+            await navigator.clipboard.writeText(paymentReference);
+            copyReferenceBtn.textContent = 'Copied';
+            setTimeout(() => { copyReferenceBtn.textContent = 'Copy'; }, 1200);
         } catch (e) {
-            copyWalletBtn.textContent = 'Copy Failed';
-            setTimeout(() => { copyWalletBtn.textContent = 'Copy Wallet'; }, 1200);
+            copyReferenceBtn.textContent = 'Copy Failed';
+            setTimeout(() => { copyReferenceBtn.textContent = 'Copy'; }, 1200);
         }
     });
 

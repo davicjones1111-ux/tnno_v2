@@ -1,6 +1,6 @@
 """
 Deposit Routes
-Cryptocurrency deposit handling
+NowPayments deposit handling
 """
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ from app.datetime_utils import utc_now
 from app.extensions import db
 from app.services import DepositService
 from app.services.history_service import HistoryService
-from app.utils import generate_qr_code
 
 
 deposit_bp = Blueprint('deposit', __name__)
@@ -206,21 +205,10 @@ def index():
     HistoryService.archive_due_items(user_id=current_user.id)
     page = request.args.get('page', 1, type=int)
     deposits = DepositService.get_user_deposits(current_user.id, page=page, per_page=20)
-    coin_contracts = current_app.config.get('COIN_CONTRACTS', {})
-    allowed = set(current_app.config.get('ALLOWED_DEPOSIT_COINS', ())) or set(coin_contracts.keys())
-    
-    # Prepare coin choices for dropdown
-    coins = [
-        {'type': coin, 'config': config}
-        for coin, config in coin_contracts.items()
-        if coin in allowed
-    ]
-    
+
     return render_template(
         'deposit/index.html',
         deposits=deposits,
-        coins=coins,
-        wallet_address=current_app.config.get('WALLET_ADDRESS'),
     )
 
 
@@ -235,41 +223,29 @@ def create():
 @deposit_bp.route('/<int:deposit_id>')
 @login_required
 def view(deposit_id):
-    """Payment page for a specific deposit."""
+    """Status page for a specific NowPayments deposit."""
     deposit = DepositService.get_deposit_by_id(deposit_id)
 
     if not deposit or deposit.user_id != current_user.id:
         flash('Deposit not found', 'error')
         return redirect(url_for('deposit.index'))
 
-    wallet_address = current_app.config.get('WALLET_ADDRESS')
     coin_type = deposit.coin_type or 'USDT'
     expected_amount = deposit.expected_amount if deposit.expected_amount is not None else deposit.usdt_amount
-
-    qr_payload = (
-        f'{coin_type} Deposit\n'
-        f'Wallet: {wallet_address}\n'
-        f'Amount: {_format_usdt(expected_amount)} {coin_type}'
-    )
-    qr_code = generate_qr_code(qr_payload)
+    requested_amount = deposit.amount if deposit.amount is not None else deposit.usdt_amount
 
     now = utc_now()
     seconds_left = 0
     if deposit.expires_at:
         seconds_left = max(0, int((deposit.expires_at - now).total_seconds()))
 
-    coin_contracts = current_app.config.get('COIN_CONTRACTS', {})
-    coin_config = coin_contracts.get(coin_type, {})
-
     return render_template(
         'deposit/payment.html',
         deposit=deposit,
         coin_type=coin_type,
-        coin_config=coin_config,
-        wallet_address=wallet_address,
-        qr_code=qr_code,
         expected_amount_display=_format_usdt(expected_amount),
-        amount_display=_format_usdt(deposit.usdt_amount),
+        amount_display=_format_usdt(requested_amount),
+        payment_reference=deposit.payment_id,
         seconds_left=seconds_left,
     )
 
@@ -291,6 +267,6 @@ def status(deposit_id):
     return jsonify({
         'id': deposit.id,
         'status': deposit.status,
-        'tx_hash': deposit.tx_hash,
+        'payment_id': deposit.payment_id,
         'seconds_left': seconds_left,
     })

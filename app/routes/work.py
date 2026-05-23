@@ -385,21 +385,9 @@ def finance():
     # Get recent withdrawals
     withdrawals_list = WithdrawRequest.query.filter_by(user_id=current_user.id).filter(WithdrawRequest.is_archived.is_(False)).order_by(WithdrawRequest.created_at.desc()).limit(10).all()
 
-    coin_contracts = current_app.config.get('COIN_CONTRACTS', {})
-    allowed = set(current_app.config.get('ALLOWED_DEPOSIT_COINS', ())) or set(coin_contracts.keys())
-    
-    # Prepare coin choices for dropdown
-    coins = [
-        {'type': coin, 'config': config}
-        for coin, config in coin_contracts.items()
-        if coin in allowed
-    ]
-
     return render_template(
         'work/finance.html',
         deposits=deposits,
         withdrawals=withdrawals_list,
-        coins=coins,
-        wallet_address=current_app.config.get('WALLET_ADDRESS'),
         request_fee=get_work_request_fee()
     )

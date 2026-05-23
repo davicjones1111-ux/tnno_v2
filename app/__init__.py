@@ -60,9 +60,12 @@ def create_app(config_name=None):
 
     # Initialize extensions
     init_extensions(app)
+    app.logger.info('Startup phase complete: extensions initialized')
     verify_database_connection(app)
+    app.logger.info('Startup phase complete: database verified')
     CloudinaryService.init_app(app)
     init_game_state(app)
+    app.logger.info('Startup phase complete: media and game state initialized')
 
     if config_name == 'production':
         optional_missing = [
@@ -165,15 +168,19 @@ def create_app(config_name=None):
 
     # Register blueprints
     register_blueprints(app)
+    app.logger.info('Startup phase complete: blueprints registered')
 
     # Register error handlers
     register_error_handlers(app)
+    app.logger.info('Startup phase complete: error handlers registered')
 
     # Register context processors
     register_context_processors(app)
+    app.logger.info('Startup phase complete: context processors registered')
 
     # Register custom filters
     register_filters(app)
+    app.logger.info('Startup phase complete: template filters registered')
 
     # Create/ensure schema in development-style environments.
     if app.config.get('AUTO_CREATE_SCHEMA_ON_START', True):
@@ -223,6 +230,8 @@ def create_app(config_name=None):
 
     # Start background tasks
     register_background_tasks(app)
+    app.logger.info('Startup phase complete: background tasks registered')
+    app.logger.info('Application startup complete')
 
     return app
 
@@ -522,21 +531,8 @@ def register_filters(app):
 
 
 def register_background_tasks(app):
-    """Register background tasks"""
-
-    if not app.config.get('START_BLOCKCHAIN_CHECKER', True):
-        app.logger.info('Blockchain checker disabled by config')
-        return
-
-    try:
-        from app.services.blockchain_service import BlockchainChecker
-    except Exception as exc:
-        app.logger.warning(f'Blockchain checker unavailable; skipping background task startup: {exc}')
-        return
-
-    # Initialize blockchain checker
-    checker = BlockchainChecker(app)
-    checker.start()
+    """No background startup tasks are required for NowPayments-only deploys."""
+    app.logger.info('No background startup tasks configured')
 
 
 def ensure_runtime_indexes():

@@ -1,15 +1,14 @@
 """
-Background worker entrypoint.
-Runs app context so background tasks (e.g., blockchain checker) can run independently
-from web workers.
+Legacy worker entrypoint.
+
+The app now uses NowPayments only and does not require a separate background
+worker. This process stays idle only so older deployments do not crash before
+the worker service is removed from Render.
 """
 from __future__ import annotations
 
-import os
 import signal
 import time
-
-from app import create_app
 
 
 running = True
@@ -24,7 +23,6 @@ def main():
     signal.signal(signal.SIGTERM, _stop)
     signal.signal(signal.SIGINT, _stop)
 
-    create_app(os.environ.get('FLASK_ENV', 'production'))
     while running:
         time.sleep(1)
 
