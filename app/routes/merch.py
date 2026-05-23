@@ -51,18 +51,42 @@ def _uploaded_product_images(uploaded_images):
     return [image for image in uploaded_images if image and image.filename]
 
 
+def _product_image_slot_uploads():
+    """Return product image uploads in slot order, with legacy multi-upload fallback."""
+    slot_uploads = [request.files.get(f'image_{index}') for index in range(1, MAX_PRODUCT_IMAGES + 1)]
+    if any(image and image.filename for image in slot_uploads) or any(
+        f'image_{index}' in request.files for index in range(1, MAX_PRODUCT_IMAGES + 1)
+    ):
+        return slot_uploads
+
+    legacy_uploads = _uploaded_product_images(request.files.getlist('images'))[:MAX_PRODUCT_IMAGES]
+    return legacy_uploads + [None] * (MAX_PRODUCT_IMAGES - len(legacy_uploads))
+
+
+def _save_product_gallery_image(uploaded_image, subfolder='merch'):
+    """Save one uploaded product image and return the stored filename."""
+    if not uploaded_image or not uploaded_image.filename:
+        return None
+    image_path = save_uploaded_image_optimized(uploaded_image, subfolder)
+    return image_path.split('/')[-1] if image_path else None
+
+
 def _save_product_gallery_images(uploaded_images, subfolder='merch'):
     """Save up to three uploaded product images and return stored filenames."""
     saved_filenames = []
-    for image in uploaded_images:
-        if not image or not image.filename:
-            continue
-        image_path = save_uploaded_image_optimized(image, subfolder)
-        image_filename = image_path.split('/')[-1] if image_path else None
-        if image_filename and image_filename not in saved_filenames:
-            saved_filenames.append(image_filename)
-        if len(saved_filenames) >= MAX_PRODUCT_IMAGES:
-            break
+    try:
+        for image in uploaded_images:
+            if not image or not image.filename:
+                continue
+            image_filename = _save_product_gallery_image(image, subfolder)
+            if image_filename and image_filename not in saved_filenames:
+                saved_filenames.append(image_filename)
+            if len(saved_filenames) >= MAX_PRODUCT_IMAGES:
+                break
+    except ValueError:
+        for filename in saved_filenames:
+            delete_merch_file(filename, subfolder)
+        raise
     return saved_filenames
 
 
@@ -750,7 +774,7 @@ def admin_create():
         contact_link = (request.form.get('contact_link') or '').strip()
         physical_quantity = request.form.get('physical_quantity', type=int, default=0)
         files = request.files.getlist('files')
-        uploaded_images = _uploaded_product_images(request.files.getlist('images'))
+        image_slots = _product_image_slot_uploads()
         
         if not name:
             flash('Product name is required', 'error')
@@ -782,18 +806,14 @@ def admin_create():
                 return redirect(url_for('merch.admin_create'))
         
         try:
-            if len(uploaded_images) < MIN_PRODUCT_IMAGES:
-                flash('Add 1 to 3 product photos. The first photo becomes the store cover.', 'error')
-                return redirect(url_for('merch.admin_create'))
-
-            if len(uploaded_images) > MAX_PRODUCT_IMAGES:
-                flash('You can upload up to 3 product photos.', 'error')
+            if not image_slots[0] or not image_slots[0].filename:
+                flash('Photo 1 is required. It becomes the main store cover.', 'error')
                 return redirect(url_for('merch.admin_create'))
 
             # Save product gallery if provided
             image_filenames = []
             try:
-                image_filenames = _save_product_gallery_images(uploaded_images, 'merch')
+                image_filenames = _save_product_gallery_images(image_slots, 'merch')
             except ValueError as exc:
                 flash(str(exc), 'error')
                 return redirect(url_for('merch.admin_create'))
@@ -902,20 +922,48 @@ def admin_edit(product_id):
                 product.physical_quantity = physical_quantity
         
         # Handle gallery upload
-        uploaded_images = _uploaded_product_images(request.files.getlist('images'))
-        if len(uploaded_images) > MAX_PRODUCT_IMAGES:
-            flash('You can upload up to 3 product photos.', 'error')
-            return redirect(url_for('merch.admin_edit', product_id=product.id))
-
+        image_slots = _product_image_slot_uploads()
+        remove_flags = [
+            request.form.get(f'remove_image_{index}') == 'on'
+            for index in range(1, MAX_PRODUCT_IMAGES + 1)
+        ]
         gallery_files_to_delete = []
-        if uploaded_images:
+        gallery_update_requested = any(image and image.filename for image in image_slots) or any(remove_flags)
+        if gallery_update_requested:
+            newly_saved_files = []
             try:
-                new_filenames = _save_product_gallery_images(uploaded_images, 'merch')
-                if len(new_filenames) < MIN_PRODUCT_IMAGES:
-                    flash('Add at least one valid product photo.', 'error')
+                existing_gallery = product.gallery_filenames
+                saved_slot_filenames = []
+
+                for uploaded_image in image_slots:
+                    saved_filename = _save_product_gallery_image(uploaded_image, 'merch')
+                    saved_slot_filenames.append(saved_filename)
+                    if saved_filename:
+                        newly_saved_files.append(saved_filename)
+
+                updated_gallery = []
+                for index in range(MAX_PRODUCT_IMAGES):
+                    if remove_flags[index]:
+                        continue
+
+                    if saved_slot_filenames[index]:
+                        updated_gallery.append(saved_slot_filenames[index])
+                        continue
+
+                    existing_filename = existing_gallery[index] if index < len(existing_gallery) else None
+                    if existing_filename:
+                        updated_gallery.append(existing_filename)
+
+                if len(updated_gallery) < MIN_PRODUCT_IMAGES:
+                    for filename in newly_saved_files:
+                        delete_merch_file(filename, 'merch')
+                    flash('Keep at least Photo 1 or another remaining product photo.', 'error')
                     return redirect(url_for('merch.admin_edit', product_id=product.id))
-                gallery_files_to_delete = _sync_product_gallery(product, new_filenames)
+
+                gallery_files_to_delete = _sync_product_gallery(product, updated_gallery)
             except ValueError as exc:
+                for filename in newly_saved_files:
+                    delete_merch_file(filename, 'merch')
                 flash(str(exc), 'error')
                 return redirect(url_for('merch.admin_edit', product_id=product.id))
         elif not product.gallery_filenames:

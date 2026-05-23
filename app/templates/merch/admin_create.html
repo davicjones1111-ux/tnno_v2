@@ -23,6 +23,7 @@
         {% else %}
             <p class="px-text-muted">Your seller plan has expired. Renew to show products in the store.</p>
             <form method="POST" action="{{ url_for('profile.seller_plan') }}" class="px-mt-md">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="px-form-group">
                     {% for key, plan in seller_plans.items() %}
                     <label class="px-flex px-gap-sm px-items-center px-mb-sm">
@@ -39,6 +40,7 @@
     
     <div class="px-panel merch-create-shell" style="max-width: 860px;">
         <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="merch-create-grid">
                 <div>
             <div class="px-form-group">
@@ -75,9 +77,25 @@
 
             <div class="px-form-group">
                 <label class="px-label">Product Photos</label>
-                <input type="file" name="images" class="px-input" accept="image/*" multiple required title="Product Photos">
+                <div class="merch-photo-slots">
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
+                        <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
+                        <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
+                    </div>
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
+                        <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
+                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                    </div>
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
+                        <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
+                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                    </div>
+                </div>
                 <p class="px-text-sm px-text-muted px-mt-sm">
-                    Add 1 to 3 photos. The first photo becomes the main cover shown on store cards.
+                    Upload photos one by one. Limit: 3 photos total.
                 </p>
             </div>
                 </div>
@@ -164,6 +182,22 @@
     background: rgba(255,255,255,0.88);
     border: 1px solid rgba(63, 88, 138, 0.14);
     color: var(--px-text);
+}
+
+.merch-photo-slots {
+    display: grid;
+    gap: 12px;
+}
+
+.merch-photo-slot {
+    padding: 12px;
+    background: rgba(255,255,255,0.82);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+}
+
+.merch-photo-slot-label {
+    margin-bottom: 8px;
+    display: block;
 }
 
 @media (max-width: 900px) {

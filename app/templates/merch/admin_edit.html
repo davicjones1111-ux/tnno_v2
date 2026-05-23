@@ -14,6 +14,7 @@
         <!-- Edit Form -->
         <div class="px-panel">
             <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="px-form-group">
                     <label class="px-label">Product Name *</label>
                     <input type="text" name="name" class="px-input" required 
@@ -49,11 +50,42 @@
                 </div>
                 {% endif %}
                 
+                {% set current_gallery = product.gallery_filenames %}
                 <div class="px-form-group">
-                    <label class="px-label">Add Product Photos</label>
-                    <input type="file" name="images" class="px-input" accept="image/*" multiple title="Upload product photos">
+                    <label class="px-label">Product Photo Slots</label>
+                    <div class="merch-photo-slots">
+                        {% for slot_index in range(1, 4) %}
+                        {% set image_filename = current_gallery[slot_index - 1] if current_gallery|length >= slot_index else None %}
+                        <div class="merch-photo-slot">
+                            <label class="px-label merch-photo-slot-label" for="image_{{ slot_index }}">
+                                Photo {{ slot_index }}{% if slot_index == 1 %} (Cover){% endif %}{% if slot_index == 1 %} *{% endif %}
+                            </label>
+                            {% if image_filename %}
+                            <div class="merch-photo-slot-preview">
+                                <img
+                                    src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
+                                    alt="{{ product.name }} photo {{ slot_index }}"
+                                    class="merch-photo-slot-preview-img"
+                                >
+                            </div>
+                            <label class="merch-photo-remove">
+                                <input type="checkbox" name="remove_image_{{ slot_index }}">
+                                <span>Remove this photo</span>
+                            </label>
+                            {% endif %}
+                            <input type="file" id="image_{{ slot_index }}" name="image_{{ slot_index }}" class="px-input" accept="image/*" title="Upload product photo {{ slot_index }}">
+                            <p class="px-text-sm px-text-muted px-mt-sm">
+                                {% if slot_index == 1 %}
+                                Upload a new file here to replace the main cover photo.
+                                {% else %}
+                                Optional detail photo slot.
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
                     <p class="px-text-sm px-text-muted px-mt-sm">
-                        Upload 1 to 3 photos to replace the current gallery. The first photo becomes the store cover.
+                        Set photos one by one. You can keep, replace, or remove each slot. Limit: 3 photos total.
                     </p>
                 </div>
                 
@@ -168,6 +200,46 @@
         </div>
     </div>
 </div>
+
+<style>
+.merch-photo-slots {
+    display: grid;
+    gap: 12px;
+}
+
+.merch-photo-slot {
+    padding: 12px;
+    background: rgba(255,255,255,0.84);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+}
+
+.merch-photo-slot-label {
+    margin-bottom: 8px;
+    display: block;
+}
+
+.merch-photo-slot-preview {
+    width: 110px;
+    height: 110px;
+    margin-bottom: 10px;
+    border: 2px solid var(--px-border);
+    background: var(--px-bg-dark);
+    overflow: hidden;
+}
+
+.merch-photo-slot-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.merch-photo-remove {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: var(--px-text-muted);
+}
+</style>
 {% endblock %}
-
-
