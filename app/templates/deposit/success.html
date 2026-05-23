@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}
+Deposit Success
+{% endblock %}
+
+{% block content %}
+<div class="px-panel px-mt-lg">
+    <div class="px-panel-header">
+        <h1 class="px-panel-title">Payment Successful</h1>
+    </div>
+    <div class="px-panel-body">
+        <p class="px-text-lg">Payment successful. Your balance will update shortly after confirmation.</p>
+        <p class="px-text-muted">If you do not see the credit within a few minutes, please wait for the webhook to finish processing.</p>
+        <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-primary">Go to Profile</a>
+    </div>
+</div>
+{% endblock %}

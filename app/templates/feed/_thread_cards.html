@@ -1,0 +1,51 @@
+{% if posts %}
+    {% for post in posts %}
+        {% if not post.parent_id %}
+        <div class="chan-op-container" id="post-{{ post.post_number or post.id }}">
+            <div class="chan-post">
+                <div class="chan-post-header">
+                    {% if post.author and post.author.profile_pic %}
+                    <img src="{{ post.author.profile_pic|media_url }}" alt="Avatar" class="chan-author-avatar">
+                    {% endif %}
+                    <a href="{{ url_for('profile.view', username=post.author.username) if post.author else '#' }}" class="chan-author-link">
+                        <span class="name">{{ post.author.username if post.author else 'Unknown' }}</span>
+                    </a>
+                    {% if post.author and post.author.user_6digit %}
+                    <span class="chan-user-id">#{{ post.author.user_6digit }}</span>
+                    {% endif %}
+                    <span class="post-id">ID: {{ post.post_number[-8:] if post.post_number else '????' }}</span>
+                    <span class="date">{{ post.created_at.strftime('%m/%d/%y(%a)%H:%M:%S') if post.created_at else '' }}</span>
+                    <span class="post-number" onclick="insertReply({{ post.post_number or post.id }})">No.{{ post.post_number or post.id }}</span>
+                    {% if current_user.is_authenticated and (post.user_id == current_user.id or current_user.is_admin()) %}
+                    <form method="POST" action="{{ url_for('feed.delete', post_id=post.id) }}" style="display:inline;">
+                        <a href="#" class="chan-delete-link" style="margin-left: 8px;"
+                           onclick="if (confirm('Delete this thread?')) { this.closest('form').submit(); } return false;">Delete</a>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if post.image_path %}
+                <div class="chan-post-image-container">
+                    <img
+                        data-src="{{ post.image_path|media_url }}"
+                        alt="Post image"
+                        class="chan-post-image lazy-image"
+                        loading="lazy"
+                        onclick="expandImage(this)"
+                    >
+                    <div class="chan-file-info">File: {{ post.image_path.split('/')[-1] }}</div>
+                </div>
+                {% endif %}
+
+                <div class="chan-post-content">
+                    {{ post.content|process_post_content|safe }}
+                </div>
+
+                <div class="chan-post-footer">
+                    <a href="{{ url_for('feed.view', post_id=post.id) }}">[View Thread]</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}About App - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="about-app-wrap">
+    <div class="about-hero px-panel px-mb-lg">
+        <h1 class="about-title">About RetroQuest</h1>
+        <p class="about-subtitle">Learn how the platform works and the rules to keep your account safe and active.</p>
+        <div class="about-hero-actions">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-primary">Go to Profile</a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="px-btn px-btn-primary">Login</a>
+            <a href="{{ url_for('auth.signup') }}" class="px-btn px-btn-secondary">Create Account</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="about-grid">
+        <section class="px-panel about-card">
+            <h2>Missions</h2>
+            <p>Complete mission tasks to earn TNNO. Submit valid proof and keep content clear to avoid rejection.</p>
+        </section>
+
+        <section class="px-panel about-card">
+            <h2>Work Services</h2>
+            <p>Create work requests, track service orders, and follow order details until completion.</p>
+        </section>
+
+        <section class="px-panel about-card">
+            <h2>Merch Store</h2>
+            <p>Buy digital or physical products, view your order status, and confirm delivery when items arrive.</p>
+        </section>
+
+        <section class="px-panel about-card">
+            <h2>Seller System</h2>
+            <p>Apply for seller access, publish products, and maintain good ratings to build trust with buyers.</p>
+        </section>
+
+        <section class="px-panel about-card">
+            <h2>Games</h2>
+            <p>Play available games, compete on leaderboard rankings, and enjoy extra engagement inside the app.</p>
+        </section>
+    </div>
+
+    <div class="px-panel about-rules">
+        <h2>App Rules</h2>
+        <ul class="about-rule-list">
+            <li>Use one account only and protect your login credentials.</li>
+            <li>Submit real and valid proof for missions and requests.</li>
+            <li>Do not upload harmful, illegal, or abusive content.</li>
+            <li>Respect buyers, sellers, and support/admin communication.</li>
+            <li>Repeated fraud or abuse can lead to account restriction.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.about-app-wrap {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.about-hero {
+    border-left: 4px solid var(--px-cyan);
+}
+
+.about-title {
+    margin-bottom: 8px;
+}
+
+.about-subtitle {
+    color: var(--px-text-muted);
+    margin-bottom: 14px;
+}
+
+.about-hero-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.about-card h2,
+.about-rules h2 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.about-card p {
+    margin: 0;
+    color: var(--px-text-muted);
+    line-height: 1.5;
+}
+
+.about-rule-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--px-text-muted);
+}
+
+.about-rule-list li {
+    margin-bottom: 8px;
+}
+
+@media (max-width: 860px) {
+    .about-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

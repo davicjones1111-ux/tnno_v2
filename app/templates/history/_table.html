@@ -1,0 +1,48 @@
+{% if items %}
+<div class="px-panel">
+    <div class="history-table-wrap">
+        <table class="px-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Summary</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                {% if item.status in ['approved', 'accepted', 'completed', 'success', 'delivered', 'reviewed'] %}
+                    {% set badge = 'completed' %}
+                {% elif item.status in ['expired', 'cancelled'] %}
+                    {% set badge = 'cancelled' %}
+                {% elif item.status in ['rejected', 'refunded'] %}
+                    {% set badge = 'rejected' %}
+                {% else %}
+                    {% set badge = 'pending' %}
+                {% endif %}
+                <tr>
+                    <td>{{ item.type_label }}</td>
+                    <td>{{ item.summary }}</td>
+                    <td><span class="px-status px-status-{{ badge }}">{{ item.status|title }}</span></td>
+                    <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') if item.created_at else '' }}</td>
+                    <td>
+                        {% if item.link %}
+                        <a class="px-btn px-btn-sm px-btn-secondary" href="{{ item.link }}">Open</a>
+                        {% else %}
+                        <span class="px-text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="px-panel px-text-center">
+    <h3 class="px-mb-sm">{{ empty_title|default('No history yet') }}</h3>
+    <p class="px-text-muted">{{ empty_body|default('Your activity will appear here.') }}</p>
+</div>
+{% endif %}

@@ -1,0 +1,2014 @@
+/**
+ * Pixel Art UI - Retro Game Dashboard Style
+ * RetroQuest Platform - Professional Pixel Art Interface
+ * 
+ * Design System:
+ * - Retro pixel fonts (Press Start 2P)
+ * - Pixel-perfect borders and buttons
+ * - Dark retro game theme
+ * - Animated pixel elements
+ * - Game-like HUD components
+ */
+
+/* ==================== CSS Variables ==================== */
+:root {
+    /* Background Colors - 4chan-inspired */
+    --px-bg-dark: #eef2ff;
+    --px-bg-primary: #e6eaf7;
+    --px-bg-secondary: #d6daf0;
+    --px-bg-panel: #d6daf0;
+    --px-bg-card: #f4f6ff;
+    --px-bg-hover: #cfd6ef;
+    
+    /* Border Colors */
+    --px-border: #b7c5d9;
+    --px-border-light: #c7d2e3;
+    --px-border-glow: #8aa0c7;
+    
+    /* Text Colors */
+    --px-text: #111111;
+    --px-text-muted: #444444;
+    --px-text-dim: #666666;
+    
+    /* Accent Colors */
+    --px-gold: #4a5f8a;
+    --px-gold-light: #5f75a3;
+    --px-gold-dark: #3a4d73;
+    --px-cyan: #0000ee;
+    --px-cyan-light: #1a4de0;
+    --px-cyan-dark: #002aa3;
+    --px-red: #cc0000;
+    --px-red-light: #e23d3d;
+    --px-green: #2f7d32;
+    --px-green-light: #4f9b4f;
+    --px-green-dark: #1f5a22;
+    --px-purple: #6b7bb3;
+    --px-purple-light: #8b9bd1;
+    --px-orange: #b07a2a;
+    --px-orange-light: #c99a52;
+
+    /* Coin Gold (BTC/TNNO accent) */
+    --px-coin-gold: #d4af37;
+    --px-coin-gold-light: #f2d36b;
+    
+    /* Vinland Saga Theme Colors - Peaceful Medieval Village */
+    --vinland-sky: #89C5CC;
+    --vinland-sky-light: #B5DCDD;
+    --vinland-grass: #7C8F4D;
+    --vinland-grass-light: #9AAF6B;
+    --vinland-earth: #6D5338;
+    --vinland-wood: #8B6914;
+    --vinland-parchment: #E8DCB9;
+    --vinland-parchment-dark: #D4C4A0;
+    --vinland-text: #2C2137;
+    --vinland-accent: #A13D3D;
+    --vinland-accent-light: #C45050;
+    
+    /* Shadows */
+    --px-shadow: 3px 3px 0 #aab4c8;
+    --px-shadow-light: 2px 2px 0 #aab4c8;
+    --px-shadow-glow: 0 0 8px rgba(106, 123, 179, 0.35);
+    
+    /* Spacing */
+    --px-xs: 4px;
+    --px-sm: 8px;
+    --px-md: 16px;
+    --px-lg: 24px;
+    --px-xl: 32px;
+    --px-xxl: 48px;
+    
+    /* Border Radius */
+    --px-radius: 0;
+    
+    /* Transitions */
+    --px-transition: 0.15s ease;
+
+    /* Fonts */
+    --px-font-body: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-heading: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-pixel: 'Press Start 2P', cursive;
+    --px-font-mono: 'VT323', 'Courier New', monospace;
+}
+
+/* ==================== Base Styles ==================== */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--px-font-body);
+    font-size: 1rem;
+    line-height: 1.65;
+    background: var(--px-bg-dark);
+    color: var(--px-text);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background-image:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.95)),
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02) 1px, transparent 1px, transparent 6px),
+        repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.015), rgba(0, 0, 0, 0.015) 1px, transparent 1px, transparent 6px);
+}
+
+/* ==================== Typography ==================== */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--px-font-heading);
+    color: var(--px-text);
+    margin: 0 0 var(--px-md) 0;
+    line-height: 1.25;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    font-weight: 700;
+}
+
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1rem; }
+h4 { font-size: 0.875rem; }
+
+p {
+    margin: 0 0 var(--px-md) 0;
+}
+
+a {
+    color: var(--px-cyan);
+    text-decoration: none;
+    transition: var(--px-transition);
+}
+
+a:hover {
+    color: var(--px-red);
+    text-shadow: none;
+}
+
+/* ==================== Pixel Container ==================== */
+.px-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--px-md);
+}
+
+/* ==================== Pixel Panel ==================== */
+.px-panel {
+    background: var(--px-bg-panel);
+    border: 2px solid var(--px-border);
+    padding: var(--px-lg);
+    margin-bottom: var(--px-lg);
+    position: relative;
+    box-shadow: var(--px-shadow);
+}
+
+.px-panel::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid var(--px-border-light);
+    pointer-events: none;
+}
+
+.px-panel-header {
+    background: linear-gradient(180deg, #edf0fb, var(--px-bg-panel));
+    margin: calc(-1 * var(--px-lg)) calc(-1 * var(--px-lg)) var(--px-lg);
+    padding: var(--px-md) var(--px-lg);
+    border-bottom: 2px solid var(--px-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.px-panel-title {
+    font-size: 0.875rem;
+    margin: 0;
+    color: var(--px-cyan-dark);
+}
+
+/* ==================== Pixel Card ==================== */
+.px-card {
+    background: var(--px-bg-card);
+    border: 2px solid var(--px-border);
+    padding: var(--px-md);
+    margin-bottom: var(--px-md);
+    transition: var(--px-transition);
+    position: relative;
+}
+
+.px-card:hover {
+    border-color: var(--px-border-light);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #aab4c8;
+}
+
+.px-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--px-md);
+    padding-bottom: var(--px-sm);
+    border-bottom: 1px solid var(--px-border);
+}
+
+.px-card-title {
+    font-size: 0.875rem;
+    margin: 0;
+    color: var(--px-text);
+}
+
+.px-card-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--px-bg-hover);
+    border: 2px solid var(--px-border);
+}
+
+/* ==================== Pixel Buttons ==================== */
+.px-btn {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.625rem;
+    padding: var(--px-md) var(--px-lg);
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: var(--px-transition);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--px-sm);
+}
+
+.px-btn-primary {
+    background: linear-gradient(180deg, var(--px-gold-light), var(--px-gold-dark));
+    color: #fff;
+    border: 2px solid var(--px-gold-dark);
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 #aab4c8;
+    filter: brightness(1.05);
+}
+
+.px-btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: 1px 1px 0 #aab4c8;
+}
+
+.px-btn-secondary {
+    background: linear-gradient(180deg, #f4f6ff, var(--px-bg-secondary));
+    color: var(--px-text);
+    border: 2px solid var(--px-border);
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-secondary:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.03);
+}
+
+.px-btn-danger {
+    background: linear-gradient(180deg, var(--px-red-light), var(--px-red));
+    color: #fff;
+    border: 2px solid var(--px-red);
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-success {
+    background: linear-gradient(180deg, var(--px-green-light), var(--px-green-dark));
+    color: #fff;
+    border: 2px solid var(--px-green);
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-info {
+    background: linear-gradient(180deg, var(--px-cyan-light), var(--px-cyan-dark));
+    color: #fff;
+    border: 2px solid var(--px-cyan-dark);
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-block {
+    width: 100%;
+}
+
+.px-btn-sm {
+    padding: var(--px-sm) var(--px-md);
+    font-size: 0.5rem;
+}
+
+.px-btn-lg {
+    padding: var(--px-lg) var(--px-xl);
+    font-size: 0.75rem;
+}
+
+/* ==================== Pixel Form Elements ==================== */
+.px-form-group {
+    margin-bottom: var(--px-md);
+}
+
+.px-label {
+    font-family: var(--px-font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--px-text-muted);
+    display: block;
+    margin-bottom: var(--px-sm);
+    text-transform: none;
+    letter-spacing: 0.01em;
+}
+
+.px-input,
+.px-textarea,
+.px-select {
+    font-family: var(--px-font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+    width: 100%;
+    padding: var(--px-md);
+    background: #ffffff;
+    border: 2px solid var(--px-border);
+    color: var(--px-text);
+    transition: var(--px-transition);
+}
+
+.px-input:focus,
+.px-textarea:focus,
+.px-select:focus {
+    outline: none;
+    border-color: var(--px-cyan);
+    box-shadow: 0 0 0 3px rgba(0, 0, 238, 0.15);
+}
+
+.px-input::placeholder,
+.px-textarea::placeholder {
+    color: var(--px-text-dim);
+}
+
+.px-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* ==================== Pixel Navigation ==================== */
+.px-nav {
+    background: linear-gradient(180deg, #f2f4ff, var(--px-bg-primary));
+    border-bottom: 2px solid var(--px-border);
+    padding: var(--px-md);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.px-nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--px-md);
+}
+
+.px-nav-brand {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.875rem;
+    color: var(--px-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--px-sm);
+}
+
+.px-nav-brand:hover {
+    color: var(--px-cyan);
+    text-shadow: none;
+}
+
+.px-nav-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--px-sm);
+}
+
+.px-nav-link {
+    font-family: var(--px-font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--px-text);
+    padding: var(--px-sm) var(--px-md);
+    border: 2px solid transparent;
+    transition: var(--px-transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.px-nav-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.px-nav-text {
+    line-height: 1;
+}
+
+.px-nav-link:hover,
+.px-nav-link.active {
+    color: var(--px-cyan-dark);
+    border-color: var(--px-border);
+    background: var(--px-bg-hover);
+}
+
+.px-nav-user {
+    display: flex;
+    align-items: center;
+    gap: var(--px-md);
+}
+
+.px-nav-toggle {
+    display: none;
+    background: var(--px-bg-secondary);
+    border: 2px solid var(--px-border);
+    color: var(--px-text);
+    font-size: 1.1rem;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.px-nav-coins {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.625rem;
+    color: var(--px-gold-dark);
+    display: flex;
+    align-items: center;
+    gap: var(--px-xs);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==================== Pixel Progress Bar ==================== */
+.px-progress {
+    background: var(--px-bg-dark);
+    border: 3px solid var(--px-border);
+    height: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.px-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--px-green-dark), var(--px-green));
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.px-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.1) 10px,
+        rgba(255, 255, 255, 0.1) 20px
+    );
+}
+
+.px-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    color: #fff;
+    text-shadow: 1px 1px 0 #000;
+}
+
+/* ==================== Pixel Avatar ==================== */
+.px-avatar {
+    width: 64px;
+    height: 64px;
+    border: 3px solid var(--px-border);
+    background: var(--px-bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem;
+    color: var(--px-cyan);
+    image-rendering: pixelated;
+}
+
+.px-avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+}
+
+.px-avatar-lg {
+    width: 96px;
+    height: 96px;
+    font-size: 2rem;
+}
+
+/* ==================== Pixel Badge ==================== */
+.px-badge {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    padding: var(--px-xs) var(--px-sm);
+    border: 2px solid;
+    display: inline-block;
+}
+
+.px-badge-gold {
+    background: var(--px-gold-light);
+    border-color: var(--px-gold-dark);
+    color: #fff;
+}
+
+.px-badge-cyan {
+    background: var(--px-cyan);
+    border-color: var(--px-cyan-dark);
+    color: #fff;
+}
+
+.px-badge-red {
+    background: var(--px-red);
+    border-color: var(--px-red-light);
+    color: #fff;
+}
+
+.px-badge-green {
+    background: var(--px-green-dark);
+    border-color: var(--px-green);
+    color: #fff;
+}
+
+.px-badge-purple {
+    background: var(--px-purple);
+    border-color: var(--px-purple-light);
+    color: #fff;
+}
+
+/* ==================== Notification Badges ==================== */
+.px-notif-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.px-notif-card {
+    position: relative;
+}
+
+.px-notif-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    background: var(--px-red);
+    border: 2px solid var(--px-bg-primary);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.px-notif-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--px-red);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    border: 2px solid var(--px-bg-primary);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.px-notif-badge-inline {
+    display: inline-block;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 6px;
+    background: var(--px-red);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    border: 2px solid var(--px-bg-primary);
+    border-radius: 10px;
+    vertical-align: middle;
+}
+
+/* ==================== Pixel Table ==================== */
+.px-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #f9fbff;
+    border: 2px solid var(--px-border);
+}
+
+.px-table th,
+.px-table td {
+    padding: var(--px-md);
+    text-align: left;
+    border-bottom: 1px solid var(--px-border);
+}
+
+.px-table th {
+    font-family: var(--px-font-body);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--px-cyan-dark);
+    background: var(--px-bg-secondary);
+    text-transform: uppercase;
+}
+
+.px-table tr:hover td {
+    background: var(--px-bg-hover);
+}
+
+.px-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==================== Pixel Status ==================== */
+.px-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--px-xs);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    padding: var(--px-xs) var(--px-sm);
+    border: 2px solid;
+}
+
+.px-status-pending {
+    background: #f1e2bf;
+    border-color: var(--px-orange);
+    color: #5a3b00;
+}
+
+.px-status-completed {
+    background: #d7f0d9;
+    border-color: var(--px-green);
+    color: #1f5a22;
+}
+
+.px-status-success {
+    background: #d7f0d9;
+    border-color: var(--px-green);
+    color: #1f5a22;
+}
+
+.px-status-expired,
+.px-status-cancelled {
+    background: #f5c9c9;
+    border-color: var(--px-red);
+    color: #8a0f0f;
+}
+
+.px-status-rejected {
+    background: #f5c9c9;
+    border-color: var(--px-red);
+    color: #8a0f0f;
+}
+
+.px-status-active {
+    background: #d7e3ff;
+    border-color: var(--px-cyan);
+    color: #002aa3;
+}
+
+/* ==================== Pixel Alert ==================== */
+.px-alert {
+    padding: var(--px-md);
+    border: 3px solid;
+    margin-bottom: var(--px-md);
+    display: flex;
+    align-items: center;
+    gap: var(--px-md);
+}
+
+.px-alert-success {
+    background: #d7f0d9;
+    border-color: var(--px-green);
+    color: #1f5a22;
+}
+
+.px-alert-error {
+    background: #f5c9c9;
+    border-color: var(--px-red);
+    color: #8a0f0f;
+}
+
+.px-alert-warning {
+    background: #f1e2bf;
+    border-color: var(--px-orange);
+    color: #5a3b00;
+}
+
+.px-alert-info {
+    background: #d7e3ff;
+    border-color: var(--px-cyan);
+    color: #002aa3;
+}
+
+/* ==================== Pixel Tabs ==================== */
+.px-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--px-border);
+    margin-bottom: var(--px-lg);
+}
+
+.px-tab {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.625rem;
+    padding: var(--px-md) var(--px-lg);
+    background: var(--px-bg-secondary);
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--px-text-muted);
+    cursor: pointer;
+    transition: var(--px-transition);
+}
+
+.px-tab:hover {
+    color: var(--px-text);
+    background: var(--px-bg-hover);
+}
+
+.px-tab.active {
+    color: var(--px-cyan-dark);
+    border-bottom-color: var(--px-cyan-dark);
+    background: var(--px-bg-panel);
+}
+
+/* ==================== Pixel Modal ==================== */
+.px-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.px-modal.active {
+    display: flex;
+}
+
+.px-modal-content {
+    background: var(--px-bg-panel);
+    border: 4px solid var(--px-border);
+    padding: var(--px-lg);
+    max-width: 600px;
+    width: 90%;
+    box-shadow: var(--px-shadow-glow);
+    position: relative;
+}
+
+.px-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--px-lg);
+    padding-bottom: var(--px-md);
+    border-bottom: 3px solid var(--px-border);
+}
+
+.px-modal-title {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.px-modal-close {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--px-text-muted);
+    transition: var(--px-transition);
+}
+
+.px-modal-close:hover {
+    color: var(--px-red);
+}
+
+/* ==================== Pixel Leaderboard ==================== */
+.px-leaderboard {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.px-leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: var(--px-md);
+    padding: var(--px-md);
+    background: var(--px-bg-card);
+    border: 2px solid var(--px-border);
+    margin-bottom: var(--px-sm);
+    transition: var(--px-transition);
+}
+
+.px-leaderboard-item:hover {
+    border-color: var(--px-border-light);
+    background: var(--px-bg-hover);
+}
+
+.px-leaderboard-item.top-1 {
+    border-color: var(--px-gold);
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), transparent);
+}
+
+.px-leaderboard-item.top-2 {
+    border-color: #c0c0c0;
+}
+
+.px-leaderboard-item.top-3 {
+    border-color: #cd7f32;
+}
+
+.px-leaderboard-rank {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.75rem;
+    width: 40px;
+    text-align: center;
+}
+
+.px-leaderboard-rank.gold { color: var(--px-gold); }
+.px-leaderboard-rank.silver { color: #c0c0c0; }
+.px-leaderboard-rank.bronze { color: #cd7f32; }
+
+.px-leaderboard-info {
+    flex: 1;
+}
+
+.px-leaderboard-name {
+    font-family: var(--px-font-body);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--px-text);
+}
+
+.px-leaderboard-score {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    color: var(--px-gold);
+}
+
+/* ==================== Pixel Mission Card ==================== */
+.px-mission-card {
+    background: var(--px-bg-card);
+    border: 3px solid var(--px-border);
+    padding: var(--px-lg);
+    margin-bottom: var(--px-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.px-mission-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 40px 40px 0;
+    border-color: transparent var(--px-border) transparent transparent;
+}
+
+.px-mission-card:hover {
+    border-color: var(--px-cyan);
+    transform: translateY(-4px);
+    box-shadow: 6px 6px 0 #aab4c8;
+}
+
+.px-mission-reward {
+    position: absolute;
+    top: var(--px-md);
+    right: var(--px-md);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.625rem;
+    color: var(--px-gold);
+    display: flex;
+    align-items: center;
+    gap: var(--px-xs);
+}
+
+.px-mission-title {
+    font-size: 0.875rem;
+    margin-bottom: var(--px-sm);
+    padding-right: 80px;
+}
+
+.px-mission-desc {
+    color: var(--px-text-muted);
+    margin-bottom: var(--px-md);
+}
+
+.px-mission-meta {
+    display: flex;
+    gap: var(--px-lg);
+    font-size: 0.875rem;
+    color: var(--px-text-dim);
+}
+
+/* ==================== Pixel Feed Post ==================== */
+.px-post {
+    background: var(--px-bg-card);
+    border: 3px solid var(--px-border);
+    margin-bottom: var(--px-lg);
+}
+
+.px-post-header {
+    display: flex;
+    align-items: center;
+    gap: var(--px-md);
+    padding: var(--px-md);
+    border-bottom: 2px solid var(--px-border);
+}
+
+.px-post-author {
+    font-family: var(--px-font-body);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--px-cyan);
+}
+
+.px-post-time {
+    font-size: 0.875rem;
+    color: var(--px-text-dim);
+}
+
+.px-post-content {
+    padding: var(--px-lg);
+    line-height: 1.8;
+}
+
+.px-post-image {
+    width: 100%;
+    border-top: 2px solid var(--px-border);
+    border-bottom: 2px solid var(--px-border);
+}
+
+.px-post-actions {
+    display: flex;
+    gap: var(--px-lg);
+    padding: var(--px-md);
+    background: var(--px-bg-secondary);
+}
+
+.px-post-action {
+    display: flex;
+    align-items: center;
+    gap: var(--px-xs);
+    font-size: 0.875rem;
+    color: var(--px-text-muted);
+    cursor: pointer;
+    transition: var(--px-transition);
+}
+
+.px-post-action:hover {
+    color: var(--px-cyan);
+}
+
+/* ==================== Pixel Loading Animation ==================== */
+.px-loading {
+    display: inline-block;
+    position: relative;
+    width: 40px;
+    height: 40px;
+}
+
+.px-loading-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--px-gold);
+    animation: px-bounce 1.2s infinite ease-in-out both;
+}
+
+.px-loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.px-loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes px-bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+.px-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--px-border);
+    border-top-color: var(--px-cyan);
+    border-radius: 0;
+    animation: px-spin 1s linear infinite;
+}
+
+@keyframes px-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== Pixel Coin Animation ==================== */
+.px-coin {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background: var(--px-coin-gold);
+    border: 2px solid #b8860b;
+    border-radius: 50%;
+    position: relative;
+    animation: px-coin-flip 2s ease-in-out infinite;
+}
+
+@keyframes px-coin-flip {
+    0%, 100% { transform: rotateY(0); }
+    50% { transform: rotateY(180deg); }
+}
+
+.px-coin::after {
+    content: '$';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    color: #6b4e00;
+}
+
+@media (max-width: 640px) {
+    .px-coin {
+        width: auto;
+        height: auto;
+        padding: 2px 6px;
+        background: transparent;
+        border: none;
+        animation: none;
+        position: static;
+        box-shadow: none;
+        vertical-align: middle;
+    }
+    .px-coin::after {
+        content: 'TNNO';
+        position: static;
+        transform: none;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        color: var(--px-coin-gold);
+    }
+}
+
+/* ==================== Pixel Stats Grid ==================== */
+.px-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--px-lg);
+    margin-bottom: var(--px-lg);
+}
+
+.px-stat-card {
+    background: var(--px-bg-card);
+    border: 2px solid var(--px-border);
+    padding: var(--px-lg);
+    text-align: center;
+}
+
+.px-stat-value {
+    font-family: 'Press Start 2P', cursive;
+    font-size: clamp(0.95rem, 2.2vw, 1.5rem);
+    color: var(--px-cyan-dark);
+    margin-bottom: var(--px-sm);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.px-stat-value--wide {
+    font-size: clamp(0.7rem, 1.7vw, 1.1rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+
+.px-stat-label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.5rem;
+    color: var(--px-text-muted);
+    text-transform: uppercase;
+}
+
+/* ==================== Pixel Grid Layout ==================== */
+.px-grid {
+    display: grid;
+    gap: var(--px-lg);
+}
+
+.px-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.px-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.px-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 768px) {
+    .px-grid-2,
+    .px-grid-3,
+    .px-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== Normal Text Override ==================== */
+body {
+    font-family: var(--px-font-body);
+    font-size: 1rem;
+}
+
+body,
+input,
+textarea,
+select {
+    font-family: var(--px-font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--px-font-heading);
+}
+
+button, .px-btn, .px-btn * {
+    font-family: var(--px-font-pixel);
+}
+
+.pixel-btn,
+.pixel-btn *,
+.px-nav-brand,
+.px-nav-coins,
+.px-badge,
+.px-status,
+.px-progress-text,
+.logo-text {
+    font-family: var(--px-font-pixel);
+}
+
+code, pre, .px-code-inline, .px-code-block {
+    font-family: var(--px-font-mono);
+}
+
+/* ==================== Pixel Flex Utilities ==================== */
+.px-flex { display: flex; }
+.px-flex-col { flex-direction: column; }
+.px-flex-wrap { flex-wrap: wrap; }
+.px-items-center { align-items: center; }
+.px-items-start { align-items: flex-start; }
+.px-items-end { align-items: flex-end; }
+.px-justify-center { justify-content: center; }
+.px-justify-between { justify-content: space-between; }
+.px-justify-end { justify-content: flex-end; }
+.px-gap-sm { gap: var(--px-sm); }
+.px-gap-md { gap: var(--px-md); }
+.px-gap-lg { gap: var(--px-lg); }
+
+/* ==================== Pixel Text Utilities ==================== */
+.px-text-center { text-align: center; }
+.px-text-right { text-align: right; }
+.px-text-gold { color: var(--px-gold); }
+.px-text-cyan { color: var(--px-cyan); }
+.px-text-red { color: var(--px-red); }
+.px-text-green { color: var(--px-green); }
+.px-text-muted { color: var(--px-text-muted); }
+.px-text-sm { font-size: 0.875rem; }
+.px-text-xs { font-size: 0.75rem; }
+
+/* Highlighted instruction box (gold) */
+.px-highlight-gold {
+    border: 2px solid var(--px-coin-gold);
+    background: linear-gradient(180deg, #fff6d8, #ffefc2);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.35);
+    color: #5a4700;
+}
+
+.px-highlight-gold a {
+    color: #b8860b;
+}
+
+.px-highlight-gold-lite {
+    border: 1px solid var(--px-coin-gold);
+    background: #fff6d8;
+    padding: 8px 10px;
+    color: #5a4700;
+}
+
+/* ==================== Pixel Margin/Padding Utilities ==================== */
+.px-m-0 { margin: 0; }
+.px-mt-md { margin-top: var(--px-md); }
+.px-mt-lg { margin-top: var(--px-lg); }
+.px-mb-md { margin-bottom: var(--px-md); }
+.px-mb-lg { margin-bottom: var(--px-lg); }
+.px-p-0 { padding: 0; }
+.px-p-md { padding: var(--px-md); }
+.px-p-lg { padding: var(--px-lg); }
+
+/* ==================== Pixel Display Utilities ==================== */
+.px-hidden { display: none; }
+.px-block { display: block; }
+.px-inline-block { display: inline-block; }
+
+/* ==================== Responsive Styles ==================== */
+@media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+    }
+
+    .px-container {
+        max-width: 100%;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1rem; }
+    h3 { font-size: 0.875rem; }
+    
+    .px-panel {
+        padding: var(--px-md);
+    }
+    
+    .px-nav-container {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .px-nav-menu {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        padding-top: 10px;
+    }
+
+    .px-nav-menu.open {
+        display: flex;
+    }
+
+    .px-nav-brand {
+        font-size: 0.65rem;
+    }
+
+    .px-nav-user {
+        gap: 8px;
+    }
+
+    .px-nav-user .px-btn {
+        padding: 8px 10px;
+        font-size: 0.5rem;
+    }
+
+    .px-nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Prevent iOS input focus zoom */
+    .px-input,
+    .px-textarea,
+    .px-select,
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+    
+    .px-table {
+        font-size: 0.875rem;
+    }
+    
+    .px-table th,
+    .px-table td {
+        padding: var(--px-sm);
+    }
+}
+
+/* ==================== Game Canvas Container ==================== */
+.px-game-container {
+    background: #000;
+    border: 4px solid var(--px-border);
+    position: relative;
+    aspect-ratio: 16/9;
+    max-width: 100%;
+}
+
+.px-game-container iframe,
+.px-game-container canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* ==================== QR Code Display ==================== */
+.px-qr-code {
+    background: #fff;
+    padding: var(--px-md);
+    display: inline-block;
+    border: 3px solid var(--px-border);
+}
+
+.px-qr-code img {
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* ==================== Wallet Address Display ==================== */
+.px-wallet {
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    background: var(--px-bg-dark);
+    border: 2px solid var(--px-border);
+    padding: var(--px-md);
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: var(--px-md);
+}
+
+.px-wallet-address {
+    flex: 1;
+    color: var(--px-cyan);
+}
+
+.px-wallet-copy {
+    cursor: pointer;
+    color: var(--px-text-muted);
+    transition: var(--px-transition);
+}
+
+.px-wallet-copy:hover {
+    color: var(--px-cyan);
+}
+
+/* ==================== Mobile Bottom Tabs ==================== */
+.px-mobile-tabbar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    main.px-container {
+        padding-bottom: 84px;
+    }
+
+    .px-mobile-tabbar {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-auto-flow: column;
+        gap: 0;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1200;
+        background: linear-gradient(180deg, #f2f4ff, var(--px-bg-primary));
+        border-top: 2px solid var(--px-border);
+        box-shadow: 0 -2px 0 #aab4c8;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .px-mobile-tab {
+        min-height: 64px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-width: 0;
+        color: var(--px-text-muted);
+        text-decoration: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .px-mobile-tab:last-child {
+        border-right: none;
+    }
+
+    .px-mobile-tab-icon {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .px-mobile-tab-label {
+        font-family: var(--px-font-body);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    .px-mobile-tab.active {
+        color: var(--px-cyan-dark);
+        background: rgba(0, 0, 238, 0.08);
+        text-shadow: none;
+    }
+}
+
+/* ==================== Pixel Art Auth Styles ==================== */
+
+.pixel-auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--px-bg-dark);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Falling Coins Animation */
+.falling-coins {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.coin {
+    position: absolute;
+    font-size: 2rem;
+    font-family: 'Press Start 2P', cursive;
+    animation: fallAndBlink 8s linear infinite;
+    opacity: 0;
+    color: var(--px-coin-gold);
+    background: none;
+    -webkit-text-fill-color: var(--px-coin-gold);
+    text-shadow:
+        0 0 6px rgba(212, 175, 55, 0.45),
+        0 0 12px rgba(212, 175, 55, 0.25);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* Random BTC coin positions and timings */
+.coin1 { left: 5%; animation-delay: 0s; animation-duration: 6s; }
+.coin2 { left: 15%; animation-delay: 0.8s; animation-duration: 7.5s; }
+.coin3 { left: 25%; animation-delay: 1.6s; animation-duration: 8.2s; }
+.coin4 { left: 35%; animation-delay: 2.4s; animation-duration: 6.8s; }
+.coin5 { left: 45%; animation-delay: 3.2s; animation-duration: 9.1s; }
+.coin6 { left: 55%; animation-delay: 4.0s; animation-duration: 7.3s; }
+.coin7 { left: 65%; animation-delay: 4.8s; animation-duration: 8.7s; }
+.coin8 { left: 75%; animation-delay: 5.6s; animation-duration: 6.5s; }
+.coin9 { left: 85%; animation-delay: 6.4s; animation-duration: 7.9s; }
+.coin10 { left: 12%; animation-delay: 7.2s; animation-duration: 8.4s; }
+.coin11 { left: 28%; animation-delay: 8.0s; animation-duration: 6.7s; }
+.coin12 { left: 42%; animation-delay: 8.8s; animation-duration: 9.3s; }
+
+@keyframes fallAndBlink {
+    0% {
+        top: -50px;
+        opacity: 0;
+        transform: rotate(0deg);
+    }
+    10% {
+        opacity: 1;
+    }
+    20% {
+        opacity: 0.8;
+    }
+    30% {
+        opacity: 1;
+    }
+    40% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    60% {
+        opacity: 0.8;
+    }
+    70% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        top: 100vh;
+        opacity: 0;
+        transform: rotate(360deg);
+    }
+}
+
+/* Pixel Art Auth Frame */
+.pixel-auth-frame {
+    background: var(--px-bg-panel);
+    border: 2px solid var(--px-border);
+    border-radius: 0;
+    padding: 32px;
+    max-width: 450px;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+    box-shadow: var(--px-shadow);
+    background-image: none;
+    animation: none;
+}
+
+
+
+/* TNNO Logo */
+.pixel-logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo-text {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 3rem;
+    color: var(--px-coin-gold);
+    text-shadow:
+        2px 2px 0 #c7d2e3,
+        0 0 12px rgba(212, 175, 55, 0.35);
+    animation: logoGlow 2s ease-in-out infinite alternate;
+    letter-spacing: 8px;
+    display: inline-block;
+    transform: scale(1);
+    transition: transform 0.3s ease;
+}
+
+.logo-text:hover {
+    transform: scale(1.05);
+}
+
+@keyframes logoGlow {
+    0% {
+        color: var(--px-coin-gold);
+        text-shadow:
+            2px 2px 0 #c7d2e3,
+            0 0 10px rgba(212, 175, 55, 0.25);
+    }
+    100% {
+        color: var(--px-coin-gold-light);
+        text-shadow:
+            2px 2px 0 #c7d2e3,
+            0 0 16px rgba(212, 175, 55, 0.45);
+    }
+}
+
+.pixel-coin-line {
+    margin-top: 8px;
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+}
+
+.pixel-coin-gold {
+    color: var(--px-coin-gold);
+    text-shadow: 0 0 6px rgba(212, 175, 55, 0.35);
+}
+
+/* Pixel Art Title */
+.pixel-title {
+    font-family: var(--px-font-heading);
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--px-text);
+    text-align: center;
+    margin-bottom: 32px;
+    line-height: 1.3;
+    text-shadow: none;
+    letter-spacing: 0.04em;
+}
+
+.pixel-title span {
+    color: var(--px-cyan-dark);
+    text-shadow: none;
+}
+
+/* Pixel Art Input Styles */
+.pixel-input {
+    font-family: var(--px-font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+    width: 100%;
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 2px solid var(--px-border);
+    border-radius: 0;
+    color: var(--px-text);
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    text-transform: none;
+    letter-spacing: 0.01em;
+}
+
+.pixel-input:focus {
+    outline: none;
+    border-color: var(--px-cyan);
+    box-shadow:
+        0 0 8px rgba(0, 0, 238, 0.2);
+    background: #ffffff;
+    transform: scale(1.02);
+}
+
+.pixel-input::placeholder {
+    color: var(--px-text-dim) !important;
+    font-weight: normal !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+}
+
+/* Pixel Art Button Styles */
+.pixel-btn {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7rem;
+    font-weight: normal;
+    padding: 16px 24px;
+    border: 2px solid var(--px-border);
+    border-radius: 0;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #f4f6ff 0%, var(--px-bg-secondary) 100%);
+    color: var(--px-text);
+    text-shadow: none;
+    box-shadow: var(--px-shadow);
+}
+
+.pixel-btn-primary {
+    border-color: var(--px-gold-dark);
+    background: linear-gradient(135deg, var(--px-gold-light) 0%, var(--px-gold-dark) 100%);
+    color: #fff;
+}
+
+.pixel-btn-primary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #aab4c8, 0 0 12px rgba(74, 95, 138, 0.25);
+    background: linear-gradient(135deg, var(--px-gold-light) 0%, var(--px-gold) 100%);
+}
+
+.pixel-btn-primary:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #aab4c8;
+}
+
+/* Pixel Art Link */
+.pixel-link {
+    color: var(--px-cyan);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    text-shadow: none;
+    font-family: var(--px-font-body);
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+
+.pixel-link:hover {
+    color: var(--px-red);
+    text-shadow: none;
+}
+
+/* Pixel Art Text */
+.pixel-text {
+    color: var(--px-text);
+    font-family: var(--px-font-body);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-shadow: none;
+    letter-spacing: 0.01em;
+}
+
+.pixel-text-muted {
+    color: var(--px-text-muted);
+}
+
+.pixel-text-center {
+    text-align: center;
+}
+
+.pixel-mt-md {
+    margin-top: 20px;
+}
+
+/* ==================== Responsive Mobile Enhancements ==================== */
+@media (max-width: 768px) {
+    .pixel-auth-container {
+        padding: 20px;
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+
+    .pixel-auth-frame {
+        padding: 32px 28px;
+        max-width: 100%;
+    }
+
+    .pixel-logo .logo-text {
+        font-size: 2.5rem;
+        letter-spacing: 6px;
+    }
+
+    .pixel-title {
+        font-size: 1.35rem;
+        margin-bottom: 24px;
+    }
+
+    .pixel-input {
+        font-size: 1rem;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+    }
+
+    .pixel-btn {
+        font-size: 0.6rem;
+        padding: 14px 20px;
+        margin-top: 6px;
+    }
+
+    .pixel-text {
+        font-size: 0.9rem;
+    }
+
+    .coin {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pixel-auth-container {
+        padding: 16px;
+        padding-top: 32px;
+    }
+
+    .pixel-auth-frame {
+        padding: 24px 20px;
+    }
+
+    .pixel-logo .logo-text {
+        font-size: 2rem;
+        letter-spacing: 4px;
+    }
+
+    .pixel-title {
+        font-size: 1.15rem;
+        margin-bottom: 20px;
+    }
+
+    .pixel-input {
+        font-size: 0.95rem;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+    }
+
+    .pixel-btn {
+        font-size: 0.55rem;
+        padding: 12px 18px;
+    }
+
+    .pixel-text {
+        font-size: 0.85rem;
+    }
+
+    .coin {
+        font-size: 1.2rem;
+    }
+}
+
+/* ==================== Game Result Modal Enhancement ==================== */
+.game-result-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+
+.game-result-modal.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+.result-content-vinland {
+    background: var(--vinland-parchment);
+    border: 5px solid var(--vinland-wood);
+    border-radius: 12px;
+    padding: 35px 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 
+        0 0 0 3px var(--vinland-earth),
+        0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: resultPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes resultPopIn {
+    0% { 
+        opacity: 0; 
+        transform: scale(0.8) translateY(20px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+.result-banner-vinland {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.3rem;
+    padding: 15px 25px;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.result-banner-vinland.win {
+    color: var(--vinland-grass);
+    background: linear-gradient(180deg, rgba(124, 143, 77, 0.2), transparent);
+    border: 3px solid var(--vinland-grass);
+}
+
+.result-banner-vinland.lose {
+    color: var(--vinland-accent);
+    background: linear-gradient(180deg, rgba(161, 61, 61, 0.2), transparent);
+    border: 3px solid var(--vinland-accent);
+}
+
+.result-banner-vinland.draw {
+    color: var(--vinland-sky);
+    background: linear-gradient(180deg, rgba(137, 197, 204, 0.2), transparent);
+    border: 3px solid var(--vinland-sky);
+}
+
+.result-amount-vinland {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.9rem;
+    color: var(--vinland-text);
+    margin-bottom: 25px;
+}
+
+.result-buttons-vinland {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.want-play-btn {
+    background: linear-gradient(180deg, var(--vinland-grass-light), var(--vinland-grass));
+    border: 3px solid var(--vinland-text);
+    color: #fff;
+    padding: 14px 28px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.6rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--vinland-text), 0 6px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+}
+
+.want-play-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--vinland-text), 0 8px 15px rgba(0, 0, 0, 0.25);
+    filter: brightness(1.1);
+}
+
+.want-play-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--vinland-text);
+}
+
+.leave-btn-vinland {
+    background: linear-gradient(180deg, #666, #444);
+    border: 3px solid #333;
+    color: #fff;
+    padding: 14px 28px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.6rem;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #222, 0 6px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+}
+
+.leave-btn-vinland:hover {
+    background: linear-gradient(180deg, #777, #555);
+    transform: translateY(-2px);
+}
+
+.leave-btn-vinland:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #222;
+}
+
+.waiting-opponent-text {
+    color: var(--vinland-sky);
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    margin-top: 15px;
+    animation: pulse 1.5s ease infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Mobile responsive for result modal */
+@media (max-width: 480px) {
+    .result-content-vinland {
+        padding: 25px 20px;
+    }
+    
+    .result-banner-vinland {
+        font-size: 1rem;
+        padding: 12px 20px;
+    }
+    
+    .result-amount-vinland {
+        font-size: 0.75rem;
+    }
+    
+    .want-play-btn, .leave-btn-vinland {
+        font-size: 0.5rem;
+        padding: 12px 20px;
+        width: 100%;
+    }
+    
+    .result-buttons-vinland {
+        flex-direction: column;
+    }
+}
+
+/* ==================== Extra Mobile Touch Improvements ==================== */
+@media (hover: none) and (pointer: coarse) {
+    .vinland-btn:active {
+        transform: scale(0.98);
+    }
+    
+    .want-play-btn:active,
+    .leave-btn-vinland:active {
+        transform: scale(0.96);
+    }
+    
+    .px-btn:active {
+        transform: translateY(1px);
+    }
+}

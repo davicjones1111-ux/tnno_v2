@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="admin-shell">
+<div class="px-panel admin-hero px-mb-lg">
+    <p class="admin-kicker">Control Center</p>
+    <h1 class="px-mb-sm">Admin Panel</h1>
+    <p class="px-text-muted">Manage users, payments, missions, and seller activity from one clean dashboard.</p>
+</div>
+
+<!-- Quick Stats -->
+<div class="px-stats-grid admin-stats-grid">
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ total_users }}</div>
+        <div class="px-stat-label">Total Users</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ active_missions }}</div>
+        <div class="px-stat-label">Active Missions</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ pending_deposits }}</div>
+        <div class="px-stat-label">Pending Deposits</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ pending_withdraws }}</div>
+        <div class="px-stat-label">Pending Withdraws</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value px-stat-value--wide">{{ '{:,}'.format(total_site_coins|int) }}</div>
+        <div class="px-stat-label">Total Site Coins</div>
+    </div>
+</div>
+
+<!-- Admin Navigation -->
+<div class="px-panel admin-surface px-mb-lg">
+    <div class="px-flex px-flex-wrap px-gap-md">
+        <a href="{{ url_for('admin.users') }}" class="px-btn px-btn-secondary">Users</a>
+        <a href="{{ url_for('admin.missions') }}" class="px-btn px-btn-secondary">Missions</a>
+        <a href="{{ url_for('admin.submissions') }}" class="px-btn px-btn-secondary">
+            Submissions
+            {% if pending_submissions %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_submissions }} pending submissions">
+                {{ pending_submissions }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.deposits') }}" class="px-btn px-btn-secondary">
+            Deposits
+            {% if pending_deposits %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_deposits }} pending deposits">
+                {{ pending_deposits }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.withdrawals') }}" class="px-btn px-btn-secondary">
+            Withdrawals
+            {% if pending_withdraws %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_withdraws }} pending withdrawals">
+                {{ pending_withdraws }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.work_requests') }}" class="px-btn px-btn-secondary">
+            Work Requests
+            {% if pending_work_requests %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_work_requests }} pending work requests">
+                {{ pending_work_requests }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.service_orders') }}" class="px-btn px-btn-secondary">
+            Service Orders
+            {% if pending_service_orders %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_service_orders }} pending service orders">
+                {{ pending_service_orders }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">Merch Products</a>
+        <a href="{{ url_for('admin.seller_requests') }}" class="px-btn px-btn-secondary">
+            Seller Requests
+            {% if pending_seller_requests %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_seller_requests }} pending seller requests">
+                {{ pending_seller_requests }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.seller_reports') }}" class="px-btn px-btn-secondary">
+            Seller Reports
+            {% if pending_seller_reports %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_seller_reports }} pending seller reports">
+                {{ pending_seller_reports }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('admin.notifications') }}" class="px-btn px-btn-secondary">
+            Notifications
+            {% if pending_notifications %}
+            <span class="px-notif-badge-inline" aria-label="{{ pending_notifications }} unread notifications">
+                {{ pending_notifications }}
+            </span>
+            {% endif %}
+        </a>
+        <a href="{{ url_for('history.admin_index') }}" class="px-btn px-btn-secondary">History Center</a>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="px-grid admin-activity-grid" style="grid-template-columns: 1fr 1fr;">
+    <!-- Recent Deposits -->
+    <div class="px-panel admin-surface">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Recent Deposits</h2>
+            <a href="{{ url_for('admin.deposits') }}" class="px-btn px-btn-sm px-btn-secondary">View All</a>
+        </div>
+
+        {% if recent_deposits %}
+        <table class="px-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deposit in recent_deposits %}
+                {% if deposit.status in ['success', 'completed'] %}
+                    {% set badge = 'completed' %}
+                {% elif deposit.status in ['expired', 'cancelled'] %}
+                    {% set badge = 'cancelled' %}
+                {% else %}
+                    {% set badge = 'pending' %}
+                {% endif %}
+                <tr>
+                    <td>User #{{ deposit.user_id }}</td>
+                    <td>{{ '%.6f'|format(deposit.usdt_amount) }} USDT</td>
+                    <td>
+                        <span class="px-status px-status-{{ badge }}">
+                            {{ deposit.status|title }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="px-text-muted">No recent deposits</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent Withdrawals -->
+    <div class="px-panel admin-surface">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Recent Withdrawals</h2>
+            <a href="{{ url_for('admin.withdrawals') }}" class="px-btn px-btn-sm px-btn-secondary">View All</a>
+        </div>
+
+        {% if recent_withdraws %}
+        <table class="px-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for withdraw in recent_withdraws %}
+                <tr>
+                    <td>User #{{ withdraw.user_id }}</td>
+                    <td>{{ withdraw.amount }} TNNO</td>
+                    <td>
+                        <span class="px-status px-status-{{ withdraw.status }}">
+                            {{ withdraw.status|title }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="px-text-muted">No recent withdrawals</p>
+        {% endif %}
+    </div>
+<style>
+.admin-hero,
+.admin-surface,
+.admin-stats-grid .px-stat-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.admin-kicker {
+    margin: 0 0 8px;
+    color: var(--px-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .admin-activity-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+</div>
+{% endblock %}

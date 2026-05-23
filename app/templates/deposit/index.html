@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}
+Deposit - RetroQuest
+{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg deposit-header-row">
+    <h1 style="margin:0;">Crypto Deposit</h1>
+</div>
+
+<div class="px-grid deposit-layout" style="grid-template-columns: 1.2fr 1.8fr; gap: 16px;">
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Create Deposit</h2>
+        </div>
+
+        <form method="POST" action="/create-deposit" id="depositForm" data-turbo="false" target="_top">
+            <div class="px-form-group">
+                <label class="px-label" for="amount">Amount (USDT)</label>
+                <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    class="px-input"
+                    placeholder="Enter amount"
+                    step="0.01"
+                    min="1"
+                    required
+                >
+            </div>
+
+            <div class="px-form-group">
+                <label class="px-label" for="network">Network</label>
+                <select id="network" name="network" class="px-input" required>
+                    <option value="ERC20">USDT (ERC20)</option>
+                    <option value="BEP20">USDT (BEP20)</option>
+                </select>
+            </div>
+
+            <p class="px-text-muted px-text-sm" style="color: #f5d442; margin-top: 12px;">
+                ⚠️ Send only using the selected network. Wrong network may result in permanent loss.
+            </p>
+
+            <button type="submit" class="px-btn px-btn-primary px-btn-lg" style="width: 100%; margin-top: 16px;">Create Deposit</button>
+        </form>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const depositForm = document.getElementById('depositForm');
+                if (!depositForm) return;
+                depositForm.setAttribute('data-turbo', 'false');
+                depositForm.setAttribute('target', '_top');
+            });
+        </script>
+
+        <div class="px-panel" style="background: var(--px-bg-dark); margin-top: 16px;">
+            <h4 style="color: var(--px-orange);">Payment Rules</h4>
+            <ul class="px-text-sm px-text-muted" style="line-height: 1.6; padding-left: 18px;">
+                <li>Deposit is created through NowPayments and will open the payment provider page.</li>
+                <li>Use the selected network exactly as shown.</li>
+                <li>Payment confirmation may take a few minutes.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Your Deposits</h2>
+        </div>
+
+        {% if deposits.items %}
+        <table class="px-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Amount (USDT)</th>
+                    <th>Network</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deposit in deposits.items %}
+                {% set amount_value = deposit.amount if deposit.amount is not none else deposit.usdt_amount %}
+                {% set network_value = deposit.network if deposit.network else deposit.coin_type %}
+                {% if deposit.status in ['completed', 'success'] %}
+                    {% set badge = 'completed' %}
+                {% elif deposit.status in ['expired', 'cancelled', 'timeout'] %}
+                    {% set badge = 'cancelled' %}
+                {% elif deposit.status == 'pending' %}
+                    {% set badge = 'pending' %}
+                {% else %}
+                    {% set badge = 'pending' %}
+                {% endif %}
+                <tr>
+                    <td>#{{ deposit.id }}</td>
+                    <td>{{ '%.2f'|format(amount_value|float) }} USDT</td>
+                    <td>{{ network_value }}</td>
+                    <td><span class="px-status px-status-{{ badge }}">{{ deposit.status|title }}</span></td>
+                    <td>{{ deposit.created_at.strftime('%Y-%m-%d %H:%M') if deposit.created_at else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if deposits.pages > 1 %}
+        <div class="px-pagination px-mt-md">
+            {% if deposits.has_prev %}
+            <a href="{{ url_for('deposit.index', page=deposits.prev_num) }}" class="px-btn px-btn-secondary">Previous</a>
+            {% endif %}
+            <span class="px-pagination-info">Page {{ deposits.page }} of {{ deposits.pages }}</span>
+            {% if deposits.has_next %}
+            <a href="{{ url_for('deposit.index', page=deposits.next_num) }}" class="px-btn px-btn-secondary">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="px-text-muted">No deposits yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@media (max-width: 900px) {
+    .deposit-layout {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .deposit-header-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .deposit-header-row .px-btn,
+    #depositForm .px-btn,
+    .px-pagination .px-btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+
+    .deposit-layout .px-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .deposit-layout .px-table th,
+    .deposit-layout .px-table td {
+        padding: 8px 6px;
+        font-size: 0.7rem;
+    }
+
+    .deposit-layout .px-table th {
+        font-size: 0.6rem;
+    }
+
+    /* Hide non-essential columns on mobile */
+    .deposit-layout .px-table th:nth-child(1),
+    .deposit-layout .px-table td:nth-child(1) {
+        display: none; /* Hide ID */
+    }
+
+    .deposit-layout .px-table th:nth-child(3),
+    .deposit-layout .px-table td:nth-child(3) {
+        display: none; /* Hide Expected */
+    }
+
+    .deposit-layout .px-table th:nth-child(5),
+    .deposit-layout .px-table td:nth-child(5) {
+        display: none; /* Hide Created */
+    }
+
+    .deposit-layout .px-table td a {
+        padding: 4px 8px;
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .deposit-layout .px-panel {
+        padding: 12px;
+    }
+
+    .deposit-header-row .px-btn,
+    #depositForm .px-btn,
+    .px-pagination .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+
+    .deposit-layout .px-table th,
+    .deposit-layout .px-table td {
+        padding: 6px 4px;
+        font-size: 0.65rem;
+    }
+
+    .deposit-layout .px-table th {
+        font-size: 0.55rem;
+    }
+
+    .px-form-group {
+        margin-bottom: 8px;
+    }
+
+    .px-label {
+        font-size: 0.8rem;
+    }
+
+    .px-input {
+        font-size: 0.9rem;
+    }
+}
+</style>
+
+<!-- Price Display Box Styles -->
+<style>
+.price-display-box {
+    background: linear-gradient(135deg, var(--px-bg-secondary) 0%, var(--px-bg-panel) 100%);
+    border: 3px solid var(--px-cyan);
+    padding: 16px;
+    margin: 16px 0;
+    text-align: center;
+    box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.2), 4px 4px 0 #000;
+}
+
+.price-display-label {
+    font-size: 0.8rem;
+    color: var(--px-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.price-display-value {
+    font-size: 2rem;
+    color: #ffffff;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-family: 'VT323', monospace;
+}
+
+.price-display-tnno {
+    font-size: 0.9rem;
+    color: var(--px-gold-light);
+    font-family: 'VT323', monospace;
+}
+
+@media (max-width: 480px) {
+    .price-display-box {
+        padding: 12px;
+        margin: 12px 0;
+    }
+
+    .price-display-value {
+        font-size: 1.5rem;
+    }
+
+    .price-display-label {
+        font-size: 0.7rem;
+    }
+}
+</style>
+
+{% endblock %}

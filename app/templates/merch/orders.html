@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Merch Store{% endblock %}
+
+{% block content %}
+<div class="orders-page">
+    <section class="orders-hero px-panel px-mb-lg">
+        <div>
+            <div class="orders-kicker">Buyer Dashboard</div>
+            <h1 style="margin: 0;">My Purchases</h1>
+            <p class="px-text-muted orders-subtitle">Track your downloads, protected physical delivery timeline, and refunds in one cleaner place.</p>
+        </div>
+        <div class="orders-filter-row">
+            <a href="{{ url_for('merch.my_orders') }}" class="px-btn {% if request.args.get('type') == None %}px-btn-primary{% else %}px-btn-secondary{% endif %}">All</a>
+            <a href="{{ url_for('merch.my_orders', type='digital') }}" class="px-btn {% if request.args.get('type') == 'digital' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Digital</a>
+            <a href="{{ url_for('merch.my_orders', type='physical') }}" class="px-btn {% if request.args.get('type') == 'physical' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Physical</a>
+        </div>
+    </section>
+
+    {% if orders_page and orders_page.pages > 1 %}
+    <div class="px-pagination px-mb-lg">
+        {% if orders_page.has_prev %}
+        <a href="{{ url_for('merch.my_orders', page=orders_page.prev_num, type=request.args.get('type')) }}" class="px-btn px-btn-secondary">Previous</a>
+        {% endif %}
+        <span class="px-pagination-info">Page {{ orders_page.page }} of {{ orders_page.pages }}</span>
+        {% if orders_page.has_next %}
+        <a href="{{ url_for('merch.my_orders', page=orders_page.next_num, type=request.args.get('type')) }}" class="px-btn px-btn-secondary">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('merch.index') }}" class="px-btn px-btn-sm orders-back-link" style="margin-bottom: 20px; display: inline-block;">← Back to Store</a>
+
+    {% if orders %}
+    <div class="orders-stack">
+        {% if digital_orders %}
+        <section class="orders-section">
+            <h2 class="orders-section-title">Digital Orders</h2>
+            <div class="orders-list">
+                {% for order in digital_orders %}
+                <article class="px-panel order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <div class="order-card-label">Digital Purchase</div>
+                            <h3 class="order-card-title">{{ order.product.name }}</h3>
+                            <div class="order-meta-grid">
+                                <div><span>Quantity</span><strong>{{ order.quantity }}</strong></div>
+                                <div><span>Total</span><strong>🪙 {{ order.total_price }}</strong></div>
+                                <div><span>Purchased</span><strong>{{ order.purchased_at.strftime('%Y-%m-%d %H:%M') if order.purchased_at else 'N/A' }}</strong></div>
+                            </div>
+                        </div>
+                        <span class="px-status px-status-success">Completed</span>
+                    </div>
+
+                    <div class="order-card-panel">
+                        {% set file_count = order.files.count() %}
+                        <h4 class="order-panel-title">Your Files ({{ file_count }})</h4>
+                        <div class="order-files">
+                            {% for file in order.files.all() %}
+                            <div class="order-file-row">
+                                <span class="order-file-name" title="{{ file.original_name or file.file_filename }}">
+                                    {{ order.product.name }}{% if file_count > 1 %} - File {{ loop.index }}{% endif %}
+                                </span>
+                                <a href="{{ url_for('merch.download_file', file_id=file.id) }}" class="px-btn px-btn-sm px-btn-primary order-file-download">Download</a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {% if physical_orders %}
+        <section class="orders-section">
+            <h2 class="orders-section-title">Physical Orders</h2>
+            <div class="orders-list">
+                {% for order in physical_orders %}
+                <article class="px-panel order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <div class="order-card-label">Physical Purchase</div>
+                            <h3 class="order-card-title">{{ order.product.name }}</h3>
+                            <div class="order-meta-grid">
+                                <div><span>Quantity</span><strong>{{ order.quantity }}</strong></div>
+                                <div><span>Total</span><strong>🪙 {{ order.total_price }}</strong></div>
+                                <div><span>Purchased</span><strong>{{ order.purchased_at.strftime('%Y-%m-%d %H:%M') if order.purchased_at else 'N/A' }}</strong></div>
+                            </div>
+                        </div>
+                        <span class="px-status px-status-{{ order.status }}">{{ order.status|title }}</span>
+                    </div>
+
+                    <div class="order-physical-grid">
+                        <div class="order-card-panel">
+                            <h4 class="order-panel-title">Shipping Details</h4>
+                            <p class="px-text-sm px-text-muted">Name: {{ order.shipping_name }}</p>
+                            <p class="px-text-sm px-text-muted">Country: {{ order.shipping_country }}</p>
+                            <p class="px-text-sm px-text-muted">City: {{ order.shipping_city }}</p>
+                            <p class="px-text-sm px-text-muted">Phone: {{ order.shipping_phone }}</p>
+                            {% if order.shipping_location_text %}
+                            <p class="px-text-sm px-text-muted">Location: {{ order.shipping_location_text }}</p>
+                            {% endif %}
+                            {% if order.product.contact_link %}
+                            <p class="px-text-sm px-text-muted">Contact: <a href="{{ order.product.contact_link }}" target="_blank" rel="noopener">{{ order.product.contact_link }}</a></p>
+                            {% endif %}
+                        </div>
+
+                        <div class="order-card-panel">
+                            <h4 class="order-panel-title">Delivery ETA</h4>
+                            {% if order.delivery_eta %}
+                            <p class="px-text-sm px-text-muted">ETA: {{ order.delivery_eta.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p class="px-text-sm eta-countdown" data-eta="{{ order.delivery_eta.isoformat() }}"></p>
+                            {% if order._cancel_policy == 'penalty' %}
+                            <p class="px-text-sm px-text-muted">Cancel before ETA: refund {{ order._cancel_refund }} TNNO, seller {{ order._cancel_seller }} TNNO, fee {{ order._cancel_fee }} TNNO.</p>
+                            {% elif order._cancel_policy == 'free' %}
+                            <p class="px-text-sm px-text-muted">ETA passed. You can cancel with a full refund.</p>
+                            {% endif %}
+                            {% else %}
+                            <p class="px-text-sm px-text-muted">Seller has not set an ETA yet.</p>
+                            {% if order._cancel_policy == 'blocked' %}
+                            <p class="px-text-sm px-text-muted">Seller has until {{ order._eta_set_deadline.strftime('%Y-%m-%d %H:%M') }} to set delivery time. If not set within 3 days, this order auto-cancels and your full TNNO is returned.</p>
+                            {% elif order._cancel_policy == 'free' %}
+                            <p class="px-text-sm px-text-muted">Seller missed the 3-day ETA rule. This order is eligible for a full refund.</p>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if order.status == 'pending' %}
+                    <div class="order-actions">
+                        <form method="POST" action="{{ url_for('merch.confirm_physical_arrived', order_id=order.id) }}">
+                            {% if order.delivery_eta %}
+                            <button type="submit" class="px-btn px-btn-sm px-btn-success">Arrived</button>
+                            {% else %}
+                            <button type="submit" class="px-btn px-btn-sm px-btn-success" disabled title="Seller must set ETA first.">Arrived</button>
+                            {% endif %}
+                        </form>
+                        <form method="POST" action="{{ url_for('merch.report_physical_not_arrived', order_id=order.id) }}">
+                            {% if order._cancel_policy == 'blocked' %}
+                            <button type="submit" class="px-btn px-btn-sm px-btn-secondary" disabled title="Seller still has time to set ETA.">Cancel (wait for ETA)</button>
+                            {% else %}
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger">Cancel / Not Arrived</button>
+                            {% endif %}
+                        </form>
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="px-panel orders-empty">
+        <div style="font-size: 4rem; margin-bottom: 20px;">📦</div>
+        <h2 class="orders-section-title" style="font-size: 1rem;">No Purchases Yet</h2>
+        <p class="px-text-muted">Visit the store to buy digital or physical products.</p>
+        <a href="{{ url_for('merch.index') }}" class="px-btn px-btn-primary" style="margin-top: 20px;">Browse Store</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateCountdowns() {
+    const nodes = document.querySelectorAll('.eta-countdown');
+    const now = Date.now();
+    nodes.forEach((node) => {
+        const eta = node.getAttribute('data-eta');
+        if (!eta) return;
+        const target = new Date(eta).getTime();
+        if (Number.isNaN(target)) return;
+        const diff = target - now;
+        if (diff <= 0) {
+            node.textContent = 'Delivery time passed';
+            node.style.color = 'var(--px-red)';
+            return;
+        }
+        const totalSeconds = Math.floor(diff / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        node.textContent = `Time left: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+        node.style.color = 'var(--px-green)';
+    });
+}
+
+updateCountdowns();
+setInterval(updateCountdowns, 1000);
+</script>
+
+<style>
+.orders-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.orders-kicker {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--px-blue);
+    margin-bottom: 8px;
+}
+
+.orders-subtitle {
+    max-width: 680px;
+    margin-top: 10px;
+}
+
+.orders-filter-row,
+.order-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.orders-stack,
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.orders-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.orders-section-title,
+.order-card-title,
+.order-panel-title {
+    font-family: 'Press Start 2P', cursive;
+}
+
+.orders-section-title {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.order-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(240,244,252,0.96));
+}
+
+.order-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.order-card-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--px-blue);
+    margin-bottom: 8px;
+}
+
+.order-card-title {
+    font-size: 0.7rem;
+    color: var(--px-gold);
+    margin-bottom: 8px;
+}
+
+.order-meta-grid,
+.order-physical-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.order-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.order-physical-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 12px;
+}
+
+.order-meta-grid div,
+.order-card-panel,
+.order-file-row {
+    border: 1px solid rgba(93, 132, 214, 0.16);
+    background: rgba(255,255,255,0.84);
+}
+
+.order-meta-grid div {
+    padding: 10px 12px;
+}
+
+.order-meta-grid span {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--px-text-muted);
+    margin-bottom: 4px;
+}
+
+.order-meta-grid strong {
+    font-size: 0.88rem;
+    color: var(--px-text);
+}
+
+.order-card-panel {
+    padding: 14px;
+}
+
+.order-panel-title {
+    font-size: 0.5rem;
+    margin-bottom: 12px;
+}
+
+.order-files {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.px-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-status-delivered,
+.px-status-completed,
+.px-status-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-status-refunded {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.order-file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+}
+
+.order-file-name {
+    flex: 1 1 auto;
+    font-size: 0.95em;
+    color: var(--px-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.order-file-download {
+    flex-shrink: 0;
+}
+
+.orders-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+@media (max-width: 768px) {
+    .orders-hero,
+    .order-card-head,
+    .order-physical-grid {
+        flex-direction: column;
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .orders-filter-row {
+        width: 100%;
+    }
+
+    .order-meta-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .orders-filter-row .px-btn,
+    .order-actions .px-btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

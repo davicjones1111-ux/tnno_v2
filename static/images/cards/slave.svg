@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2e1b1b"/>
+      <stop offset="100%" stop-color="#130909"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="264" height="384" rx="18" fill="url(#bg)" stroke="#ff6b6b" stroke-width="8"/>
+  <rect x="24" y="24" width="232" height="352" rx="12" fill="#1b1111" stroke="#6b2e2e" stroke-width="2"/>
+  <rect x="125" y="92" width="30" height="150" fill="#ff6b6b"/>
+  <polygon points="95,110 185,110 140,70" fill="#ff9a9a"/>
+  <polygon points="125,240 155,240 170,315 110,315" fill="#d24d4d"/>
+  <text x="140" y="330" text-anchor="middle" font-family="Verdana, sans-serif" font-size="28" fill="#ff6b6b">SLAVE</text>
+</svg>

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Submissions - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Manage Mission Submissions</h1>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+
+<!-- Submissions List -->
+{% if submissions.items %}
+<div class="px-panel">
+    <table class="px-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Mission</th>
+                <th>Status</th>
+                <th>Code</th>
+                <th>Proof</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in submissions.items %}
+            <tr>
+                <td>
+                    <strong>{{ sub.user.username }}</strong>
+                </td>
+                <td>{{ sub.mission_title }}</td>
+                <td>
+                    <span class="px-badge px-badge-{{ sub.status }}">
+                        {{ sub.status|title }}
+                    </span>
+                </td>
+                <td>
+                    {% if sub.code %}
+                        <code class="px-code-inline">{{ sub.code[:15] }}...</code>
+                    {% else %}
+                        <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if sub.mission_photo and sub.mission_photo|static_exists %}
+                        <a href="{{ sub.mission_photo|media_url }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">
+                            View
+                        </a>
+                    {% elif sub.mission_photo %}
+                        <span class="px-text-danger">missing</span>
+                    {% else %}
+                        <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ sub.submission_time.strftime('%Y-%m-%d %H:%M') if sub.submission_time else '-' }}</td>
+                <td>
+                    {% if sub.status == 'pending' %}
+                    <div class="px-flex px-gap-sm">
+                        <a href="{{ url_for('admin.view_submission', submission_id=sub.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            Details
+                        </a>
+                        <form method="POST" action="{{ url_for('admin.approve_submission', submission_id=sub.id) }}" style="display:inline;">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-success">Approve</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.reject_submission', submission_id=sub.id) }}" style="display:inline;">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger">Reject</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if submissions.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if submissions.has_prev %}
+    <a href="{{ url_for('admin.submissions', page=submissions.prev_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ submissions.page }} of {{ submissions.pages }}
+    </span>
+    
+    {% if submissions.has_next %}
+    <a href="{{ url_for('admin.submissions', page=submissions.next_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No submissions found.</p>
+</div>
+{% endif %}
+
+<style>
+.px-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.px-table th,
+.px-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.95em;
+}
+
+.px-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.px-table tr:hover {
+    background: #f9f9f9;
+}
+
+.px-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-badge-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-badge-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-badge-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.px-code-inline {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.px-text-muted {
+    color: #999;
+}
+
+.px-flex {
+    display: flex;
+}
+
+.px-gap-sm {
+    gap: 5px;
+}
+
+.px-btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.px-btn-success:hover {
+    background: #218838;
+}
+
+.px-btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.px-btn-danger:hover {
+    background: #c82333;
+}
+
+.px-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.px-pagination-info {
+    color: #666;
+}
+</style>
+{% endblock %}

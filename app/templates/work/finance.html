@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Finance Center - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="finance-page">
+<div class="finance-header px-panel px-mb-lg">
+    <div>
+        <p class="finance-kicker">Town Bank</p>
+        <h1 class="px-mb-sm">Finance Center</h1>
+        <p class="px-text-muted">Manage deposits and withdrawals from one cozy pixel-art wallet screen.</p>
+    </div>
+</div>
+
+<div class="finance-toggle-row px-mb-lg">
+    <button id="deposit-toggle" type="button" class="px-btn px-btn-primary finance-toggle active" onclick="showDeposit()">
+        💰 Deposit
+    </button>
+    <button id="withdraw-toggle" type="button" class="px-btn px-btn-secondary finance-toggle" onclick="showWithdraw()">
+        💸 Withdraw
+    </button>
+</div>
+
+<!-- Deposit Section -->
+<div id="deposit-section" class="finance-section">
+    <div class="px-grid finance-layout" style="grid-template-columns: 1.2fr 1.8fr; gap: 16px;">
+        <div class="px-panel finance-card">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Create Deposit</h2>
+            </div>
+
+            <form method="POST" action="/create-deposit" id="depositForm" data-turbo="false" target="_top">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="px-form-group">
+                    <label class="px-label" for="amount">Amount (USDT)</label>
+                    <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        class="px-input"
+                        placeholder="Enter amount"
+                        step="0.01"
+                        min="1"
+                        required
+                    >
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label" for="network">Network</label>
+                    <select id="network" name="network" class="px-input" required>
+                        <option value="ERC20">USDT (ERC20)</option>
+                        <option value="BEP20">USDT (BEP20)</option>
+                    </select>
+                </div>
+
+                <p class="px-text-muted px-text-sm" style="color: #f5d442; margin-top: 12px;">
+                    ⚠️ Send only using the selected network. Wrong network may result in permanent loss.
+                </p>
+
+                <button type="submit" class="px-btn px-btn-primary px-btn-lg" style="width: 100%; margin-top: 16px;">Create Deposit</button>
+            </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const depositForm = document.getElementById('depositForm');
+                    if (!depositForm) return;
+                    depositForm.setAttribute('data-turbo', 'false');
+                    depositForm.setAttribute('target', '_top');
+                });
+            </script>
+
+            <div class="px-panel finance-note-panel" style="margin-top: 16px;">
+                <h4 style="color: var(--px-orange);">Payment Rules</h4>
+                <ul class="px-text-sm px-text-muted" style="line-height: 1.6; padding-left: 18px;">
+                    <li>Deposit is created through NowPayments and will open the payment provider page.</li>
+                    <li>Use the selected network exactly as shown.</li>
+                    <li>Payment confirmation may take a few minutes.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="px-panel finance-card">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Your Recent Deposits</h2>
+            </div>
+
+            {% if deposits.items %}
+            <table class="px-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Amount (USDT)</th>
+                        <th>Network</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for deposit in deposits.items %}
+                    {% set amount_value = deposit.amount if deposit.amount is not none else deposit.usdt_amount %}
+                    {% set network_value = deposit.network if deposit.network else deposit.coin_type %}
+                    {% if deposit.status in ['completed', 'success'] %}
+                        {% set badge = 'completed' %}
+                    {% elif deposit.status in ['expired', 'cancelled', 'timeout'] %}
+                        {% set badge = 'cancelled' %}
+                    {% elif deposit.status == 'pending' %}
+                        {% set badge = 'pending' %}
+                    {% else %}
+                        {% set badge = 'pending' %}
+                    {% endif %}
+                    <tr>
+                        <td>#{{ deposit.id }}</td>
+                        <td>{{ '%.2f'|format(amount_value|float) }} USDT</td>
+                        <td>{{ network_value }}</td>
+                        <td><span class="px-status px-status-{{ badge }}">{{ deposit.status|title }}</span></td>
+                        <td>{{ deposit.created_at.strftime('%Y-%m-%d %H:%M') if deposit.created_at else '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="px-text-muted">No deposits yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Withdraw Section -->
+<div id="withdraw-section" class="finance-section" style="display: none;">
+    <div class="px-grid finance-layout" style="grid-template-columns: 1.2fr 1.8fr; gap: 16px;">
+        <div class="px-panel finance-card finance-withdraw-card">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Create Withdrawal</h2>
+            </div>
+
+            <form method="POST" action="{{ url_for('work.create_withdraw') }}" id="withdrawForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="px-form-group">
+                    <label class="px-label" for="amount">Amount (TNNO)</label>
+                    <input
+                        type="number"
+                        id="withdraw-amount"
+                        name="amount"
+                        class="px-input"
+                        placeholder="Enter TNNO amount"
+                        min="1000"
+                        max="{{ current_user.coins }}"
+                        required
+                    >
+                    <small class="px-text-muted">Minimum: 1000 TNNO | Your balance: {{ current_user.coins|format_number }} TNNO</small>
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label" for="wallet_address">Address or Phone Number</label>
+                    <input
+                        type="text"
+                        id="wallet_address"
+                        name="wallet"
+                        class="px-input"
+                        placeholder="Enter wallet address or payout phone number"
+                        required
+                    >
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label" for="withdraw-name">Full Name</label>
+                    <input
+                        type="text"
+                        id="withdraw-name"
+                        name="name"
+                        class="px-input"
+                        placeholder="Enter your full name"
+                        required
+                    >
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label" for="withdraw-network">Payout Method</label>
+                    <select id="withdraw-network" name="network" class="px-input">
+                        <option value="ERC20">Wallet Address</option>
+                        <option value="PHONE">Phone Number</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="px-btn px-btn-success px-btn-lg finance-submit" style="width: 100%; margin-top: 16px;">Request Withdrawal</button>
+            </form>
+
+            <div class="px-panel finance-note-panel" style="margin-top: 16px;">
+                <h4 style="color: var(--px-orange);">Withdrawal Rules</h4>
+                <ul class="px-text-sm px-text-muted" style="line-height: 1.6; padding-left: 18px;">
+                    <li>Minimum withdrawal: 1000 TNNO</li>
+                    <li>Processing time: 1-3 business days</li>
+                    <li>Use your real name for approval review</li>
+                    <li>Double-check your address or phone number before submitting</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="px-panel finance-card">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Your Recent Withdrawals</h2>
+            </div>
+
+            {% if withdrawals %}
+            <table class="px-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Amount (TNNO)</th>
+                        <th>Name</th>
+                        <th>Destination</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for withdrawal in withdrawals %}
+                    {% if withdrawal.status == 'completed' %}
+                        {% set badge = 'completed' %}
+                    {% elif withdrawal.status == 'rejected' %}
+                        {% set badge = 'cancelled' %}
+                    {% else %}
+                        {% set badge = 'pending' %}
+                    {% endif %}
+                    <tr>
+                        <td>#{{ withdrawal.id }}</td>
+                        <td>{{ withdrawal.amount|format_number }} TNNO</td>
+                        <td>{{ withdrawal.name }}</td>
+                        <td><code class="finance-inline-code">{{ withdrawal.wallet[:20] }}{% if withdrawal.wallet|length > 20 %}...{% endif %}</code></td>
+                        <td><span class="px-status px-status-{{ badge }}">{{ withdrawal.status|title }}</span></td>
+                        <td>{{ withdrawal.created_at.strftime('%Y-%m-%d %H:%M') if withdrawal.created_at else '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="px-text-muted">No withdrawals yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+.finance-page {
+    --finance-surface: rgba(255,255,255,0.98);
+    --finance-surface-soft: rgba(236,241,252,0.95);
+    --finance-border: rgba(63, 88, 138, 0.2);
+    --finance-shadow: rgba(63, 88, 138, 0.12);
+}
+
+.finance-header {
+    background: linear-gradient(180deg, var(--finance-surface), var(--finance-surface-soft));
+    border-color: var(--finance-border);
+    box-shadow: 0 5px 0 var(--finance-shadow);
+}
+
+.finance-header::before,
+.finance-card::before,
+.finance-note-panel::before {
+    border-color: rgba(93, 132, 214, 0.12);
+}
+
+.finance-kicker {
+    margin: 0 0 12px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    color: var(--px-blue);
+    text-transform: uppercase;
+}
+
+.finance-toggle-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.finance-toggle {
+    padding: 12px 24px;
+    min-width: 160px;
+}
+
+.finance-toggle.active {
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.7) inset;
+}
+
+.finance-section {
+    animation: fadeIn 0.3s ease;
+}
+
+.finance-card {
+    border-color: var(--finance-border);
+    background: linear-gradient(180deg, var(--finance-surface), var(--finance-surface-soft));
+    box-shadow: 0 5px 0 var(--finance-shadow);
+}
+
+.finance-note-panel {
+    background: rgba(93, 132, 214, 0.06);
+    border-color: rgba(93, 132, 214, 0.18);
+}
+
+.finance-inline-code {
+    background: rgba(93, 132, 214, 0.08);
+    border: 2px solid rgba(93, 132, 214, 0.16);
+    padding: 4px 8px;
+    color: var(--px-text);
+    font-family: monospace;
+}
+
+.finance-submit {
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.finance-submit:hover {
+    filter: brightness(1.04);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+    .finance-layout {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .finance-layout .px-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .finance-layout .px-table th,
+    .finance-layout .px-table td {
+        padding: 8px 6px;
+        font-size: 0.7rem;
+    }
+
+    .finance-layout .px-table th {
+        font-size: 0.6rem;
+    }
+
+    .finance-toggle-row {
+        flex-direction: column;
+    }
+
+    .finance-toggle-row .finance-toggle {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+function showDeposit() {
+    document.getElementById('deposit-section').style.display = 'block';
+    document.getElementById('withdraw-section').style.display = 'none';
+    document.getElementById('deposit-toggle').classList.add('active');
+    document.getElementById('withdraw-toggle').classList.remove('active');
+}
+
+function showWithdraw() {
+    document.getElementById('deposit-section').style.display = 'none';
+    document.getElementById('withdraw-section').style.display = 'block';
+    document.getElementById('deposit-toggle').classList.remove('active');
+    document.getElementById('withdraw-toggle').classList.add('active');
+}
+
+// Initialize with deposit view
+document.addEventListener('DOMContentLoaded', function() {
+    showDeposit();
+});
+</script>
+{% endblock %}

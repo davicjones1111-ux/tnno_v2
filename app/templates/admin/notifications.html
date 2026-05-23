@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Send Notification</h1>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+</div>
+
+<div class="px-panel px-mb-lg">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">Send Message</h2>
+    </div>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="px-form-group">
+            <label class="px-form-label">Username or User ID</label>
+            <input type="text" name="user_query" class="px-input" required placeholder="username or 6-digit ID">
+            <div id="notif-user-status" class="px-text-sm" style="margin-top: 6px; display: none;"></div>
+        </div>
+        <div class="px-form-group">
+            <label class="px-form-label">Message (max 100 words)</label>
+            <textarea name="message" class="px-input" rows="4" required></textarea>
+        </div>
+        <div class="px-form-group">
+            <label class="px-form-label">Attachment (optional)</label>
+            <input type="file" name="attachment" class="px-input">
+        </div>
+        <button type="submit" class="px-btn px-btn-primary">Send</button>
+    </form>
+</div>
+
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">Recent Notifications</h2>
+    </div>
+    {% if notifications %}
+    <table class="px-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Message</th>
+                <th>Attachment</th>
+                <th>Sent</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for n in notifications %}
+            <tr>
+                <td>{{ n.user.username if n.user else n.user_id }}</td>
+                <td style="max-width: 320px;">{{ n.message }}</td>
+                <td>
+                    {% if n.attachment_path %}
+                    <a href="{{ n.attachment_path|media_url }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">View</a>
+                    {% else %}
+                    <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="px-text-muted">No notifications sent yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function initNotifUserCheck() {
+    const input = document.querySelector('input[name="user_query"]');
+    const status = document.getElementById('notif-user-status');
+    if (!input || !status) return;
+
+    let timer = null;
+    async function checkUser() {
+        const q = input.value.trim();
+        if (!q) {
+            status.style.display = 'none';
+            status.textContent = '';
+            return;
+        }
+        try {
+            const res = await fetch(`{{ url_for('admin.notifications_search') }}?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+                status.style.display = 'block';
+                status.style.color = 'green';
+                status.textContent = 'User is on';
+            } else {
+                status.style.display = 'block';
+                status.style.color = 'red';
+                status.textContent = 'User not found';
+            }
+        } catch (e) {
+            status.style.display = 'block';
+            status.style.color = 'red';
+            status.textContent = 'User not found';
+        }
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        timer = setTimeout(checkUser, 300);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initNotifUserCheck);
+document.addEventListener('turbo:load', initNotifUserCheck);
+</script>
+{% endblock %}

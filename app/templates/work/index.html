@@ -1,0 +1,77 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Work Center - RetroQuest{% endblock %}
+
+{% block content %}
+<h1 class="px-mb-lg">Work Center</h1>
+
+<div class="px-grid work-center-grid" style="grid-template-columns: repeat(2, 1fr);">
+    <!-- Work Requests -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">📝 Work Requests</h2>
+        </div>
+        <p class="px-text-muted">
+            Submit work requests. Fee: {{ request_fee|format_number }} TNNO (charged only if accepted).
+        </p>
+        <div class="work-cta-stack">
+            <a href="{{ url_for('work.requests') }}" class="px-btn px-btn-block px-btn-slate">
+                My Requests
+            </a>
+            <a href="{{ url_for('work.create_request') }}" class="px-btn px-btn-block px-btn-slate-light">
+                New Request
+            </a>
+        </div>
+    </div>
+
+    <!-- Service Orders -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">🛠️ Services</h2>
+        </div>
+        <p class="px-text-muted">Order various services and grow your account.</p>
+        <a href="{{ url_for('work.orders') }}" class="px-btn px-btn-primary px-btn-block">
+            My Orders
+        </a>
+        <a href="{{ url_for('work.create_order') }}" class="px-btn px-btn-secondary px-btn-block px-mt-md">
+            New Order
+        </a>
+    </div>
+</div>
+
+<style>
+.work-cta-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.px-btn-blue {
+    background: linear-gradient(180deg, #1e4dd8, #153aa3);
+    border: 3px solid #102a7a;
+    color: #fff;
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-slate {
+    background: linear-gradient(180deg, #6b7a9a, #52607d);
+    border: 3px solid #3f4a62;
+    color: #fff;
+    box-shadow: var(--px-shadow);
+}
+
+.px-btn-slate-light {
+    background: linear-gradient(180deg, #dfe6f5, #cfd8ee);
+    border: 3px solid #b7c5d9;
+    color: #1b2540;
+    box-shadow: var(--px-shadow);
+}
+
+@media (max-width: 768px) {
+    .work-center-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+}
+</style>
+{% endblock %}

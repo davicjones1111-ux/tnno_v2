@@ -1,0 +1,63 @@
+services:
+  - type: web
+    name: retroquest-web
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py run:app
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: AUTO_CREATE_SCHEMA_ON_START
+        value: "0"
+      - key: START_BLOCKCHAIN_CHECKER
+        value: "0"
+      - key: PREFERRED_URL_SCHEME
+        value: https
+      - key: TRUST_PROXY_HEADERS
+        value: "1"
+      - key: RATE_LIMIT_TRUST_PROXY_HEADERS
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retroquest-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+  - type: worker
+    name: retroquest-worker
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python worker.py
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: AUTO_CREATE_SCHEMA_ON_START
+        value: "0"
+      - key: START_BLOCKCHAIN_CHECKER
+        value: "1"
+      - key: PREFERRED_URL_SCHEME
+        value: https
+      - key: TRUST_PROXY_HEADERS
+        value: "1"
+      - key: RATE_LIMIT_TRUST_PROXY_HEADERS
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retroquest-db
+          property: connectionString
+      - key: SECRET_KEY
+        sync: false
+
+databases:
+  - name: retroquest-db
+    plan: starter

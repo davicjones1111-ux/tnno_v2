@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}My Service Orders - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg submissions-header">
+    <h1>My Service Orders</h1>
+    <div class="px-flex px-gap-sm">
+        <a href="{{ url_for('work.create_order') }}" class="px-btn px-btn-primary">
+            Create Order
+        </a>
+    </div>
+</div>
+
+<!-- Filter Buttons -->
+<div class="px-flex px-gap-md px-mb-lg submissions-filters">
+    <a href="{{ url_for('work.orders') }}" class="px-btn {% if request.args.get('status') == None %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        All
+    </a>
+    <a href="{{ url_for('work.orders', status='pending') }}" class="px-btn {% if request.args.get('status') == 'pending' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Pending
+    </a>
+    <a href="{{ url_for('work.orders', status='completed') }}" class="px-btn {% if request.args.get('status') == 'completed' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Completed
+    </a>
+    <a href="{{ url_for('work.orders', status='rejected') }}" class="px-btn {% if request.args.get('status') == 'rejected' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Rejected
+    </a>
+</div>
+
+<!-- Orders List -->
+{% if orders.items %}
+<div class="px-panel">
+    <div class="submissions-table-wrap">
+        <table class="px-table service-orders-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Service</th>
+                    <th>Quantity</th>
+                    <th>Charge</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders.items %}
+                <tr>
+                    <td data-label="Category">{{ order.category }}</td>
+                    <td data-label="Service">{{ order.service }}</td>
+                    <td data-label="Quantity">{{ order.quantity }}</td>
+                    <td data-label="Charge">
+                        <span class="px-coins">{{ order.charge|format_number }}</span>
+                    </td>
+                    <td data-label="Status">
+                        <span class="px-status px-status-{{ order.status }}">
+                            {{ order.status|title }}
+                        </span>
+                    </td>
+                    <td data-label="Created">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td data-label="Action">
+                        <a href="{{ url_for('work.view_order', order_id=order.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if orders.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if orders.has_prev %}
+    <a href="{{ url_for('work.orders', page=orders.prev_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ orders.page }} of {{ orders.pages }}
+    </span>
+    
+    {% if orders.has_next %}
+    <a href="{{ url_for('work.orders', page=orders.next_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No service orders found.</p>
+    <a href="{{ url_for('work.create_order') }}" class="px-btn px-btn-primary px-mt-md">
+        Create Your First Order
+    </a>
+</div>
+{% endif %}
+
+<style>
+.submissions-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .submissions-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .submissions-header .px-btn {
+        width: 100%;
+    }
+
+    .submissions-filters {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .submissions-filters .px-btn {
+        flex: 1 1 calc(50% - 8px);
+        text-align: center;
+        justify-content: center;
+    }
+
+    .service-orders-table thead {
+        display: none;
+    }
+
+    .service-orders-table,
+    .service-orders-table tbody,
+    .service-orders-table tr,
+    .service-orders-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .service-orders-table tr {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .service-orders-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .service-orders-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 10px 12px;
+    }
+
+    .service-orders-table td:last-child {
+        border-bottom: none;
+    }
+
+    .service-orders-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+        font-size: 0.82em;
+    }
+}
+</style>
+{% endblock %}

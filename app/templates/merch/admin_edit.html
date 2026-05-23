@@ -1,0 +1,168 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Edit Product{% if current_user.is_admin() %} - Admin{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-mb-lg">
+    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-sm" style="margin-bottom: 20px; display: inline-block;">
+        ← Back to Products
+    </a>
+    
+    <h1 class="px-mb-lg"> Edit Product</h1>
+    
+    <div class="px-grid" style="grid-template-columns: 1fr 1fr; gap: 40px;">
+        <!-- Edit Form -->
+        <div class="px-panel">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="px-form-group">
+                    <label class="px-label">Product Name *</label>
+                    <input type="text" name="name" class="px-input" required 
+                           value="{{ product.name }}" title="Enter the product name">
+                </div>
+                
+                <div class="px-form-group">
+                    <label class="px-label">Description</label>
+                    <textarea name="description" class="px-input" rows="4" title="Enter the product description">{{ product.description or '' }}</textarea>
+                </div>
+                
+                <div class="px-form-group">
+                    <label class="px-label">Price (in TNNO)</label>
+                    <input type="number" name="price" class="px-input" min="1" 
+                           value="{{ product.price }}" title="Enter the product price">
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label">Product Type</label>
+                    <input type="text" class="px-input" value="{{ (product.product_type or 'digital')|title }}" readonly>
+                </div>
+
+                {% if product.product_type == 'physical' %}
+                <div class="px-form-group">
+                    <label class="px-label">Physical Quantity</label>
+                    <input type="number" name="physical_quantity" class="px-input" min="0" 
+                           value="{{ product.physical_quantity }}" title="Enter physical stock quantity">
+                </div>
+                <div class="px-form-group">
+                    <label class="px-label">Contact Link</label>
+                    <input type="text" name="contact_link" class="px-input" 
+                           value="{{ product.contact_link or '' }}" title="Enter contact link">
+                </div>
+                {% endif %}
+                
+                <div class="px-form-group">
+                    <label class="px-label">Add Product Photos</label>
+                    <input type="file" name="images" class="px-input" accept="image/*" multiple title="Upload product photos">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Add up to 4 photos total. New photos are merged with the current gallery.
+                    </p>
+                </div>
+                
+                {% if product.product_type != 'physical' %}
+                <div class="px-form-group">
+                    <label class="px-label">Add More Files (Increase Quantity)</label>
+                    <input type="file" name="new_files" class="px-input" multiple accept=".zip,.rar,.pdf,.txt,.doc,.docx,.mp3,.mp4" title="Upload additional product files">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Add more files to increase available quantity
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div class="px-form-group">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" name="is_active" {% if product.is_active %}checked{% endif %}>
+                        <span>Show in Store</span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+                    <button type="submit" class="px-btn px-btn-primary">
+                         Save Changes
+                    </button>
+                    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="px-btn px-btn-danger"
+                            formaction="{{ url_for('merch.admin_delete', product_id=product.id) }}"
+                            formmethod="POST"
+                            formnovalidate
+                            onclick="return confirm('Delete this product?');">
+                        Delete Product
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Product Info -->
+        <div>
+            {% if product.product_type != 'physical' %}
+            <div class="px-panel" style="margin-bottom: 20px;">
+                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+                    Current Files ({{ product.total_files }})
+                </h3>
+                
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for file in product.files.all() %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--px-bg-dark); margin-bottom: 4px; border: 1px solid var(--px-border);">
+                        <span class="px-text-sm" style="flex: 1; overflow: hidden; text-overflow: ellipsis;">
+                            {{ file.original_name or file.file_filename }}
+                        </span>
+                        {% if file.is_sold %}
+                        <span class="px-status px-status-default" style="font-size: 0.5rem;">Sold</span>
+                        {% else %}
+                        <span class="px-status px-status-success" style="font-size: 0.5rem;">Available</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if product.gallery_filenames %}
+            <div class="px-panel" style="margin-bottom: 20px;">
+                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+                    Product Photos
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                    {% for image_filename in product.gallery_filenames %}
+                    <div style="background: var(--px-bg-dark); border: 3px solid var(--px-border); padding: 10px; aspect-ratio: 1 / 1;">
+                        <img
+                            src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
+                            alt="{{ product.name }}"
+                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                        >
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="px-panel" style="background: var(--px-bg-dark);">
+                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+                    Stock Summary
+                </h3>
+                {% if product.product_type != 'physical' %}
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--px-border);">
+                    <span>Total Files:</span>
+                    <span style="font-family: 'Press Start 2P', cursive;">{{ product.total_files }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--px-border);">
+                    <span>Sold:</span>
+                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-red);">
+                        {{ product.total_files - product.quantity }}
+                    </span>
+                </div>
+                {% endif %}
+                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                    <span>Available:</span>
+                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-green);">
+                        {{ product.quantity }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

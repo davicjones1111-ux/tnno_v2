@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Create Withdrawal Request - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Withdraw TNNO</h1>
+    <a href="{{ url_for('work.withdraw') }}" class="px-btn px-btn-secondary">
+        Back to Withdrawals
+    </a>
+</div>
+
+{% if get_flashed_messages(category_filter=['error']) %}
+<div class="px-alert px-alert-error px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['error']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="px-panel old-withdraw-panel" style="max-width: 700px; margin: 0 auto;">
+    <div class="px-info-box old-withdraw-balance px-mb-lg">
+        <strong>Available TNNO:</strong> <span class="px-coins">{{ current_user.coins|format_number }}</span>
+    </div>
+
+    <form method="POST" class="px-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="px-form-group">
+            <label for="amount" class="px-form-label">Withdrawal Amount (TNNO) *</label>
+            <input 
+                type="number" 
+                id="amount" 
+                name="amount" 
+                class="px-input" 
+                required 
+                min="1"
+                max="{{ current_user.coins }}"
+                placeholder="Enter amount to withdraw"
+            />
+            <small class="px-text-muted">Maximum: {{ current_user.coins|format_number }} TNNO</small>
+        </div>
+
+        <div class="px-form-group">
+            <label for="wallet" class="px-form-label">Address or Phone Number *</label>
+            <input 
+                type="text" 
+                id="wallet" 
+                name="wallet" 
+                class="px-input" 
+                required 
+                placeholder="Enter wallet address or payout phone number"
+            />
+        </div>
+
+        <div class="px-form-group">
+            <label for="name" class="px-form-label">Full Name *</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="px-input" 
+                required 
+                placeholder="Enter your full name"
+            />
+        </div>
+
+        <div class="px-alert px-alert-info px-mb-lg">
+            <p><strong>Note:</strong> Withdrawal requests will be processed within 24-48 hours. Please ensure your destination and name are correct.</p>
+        </div>
+
+        <div class="px-flex px-gap-md px-mt-lg">
+            <button type="submit" class="px-btn px-btn-primary">Submit Withdrawal Request</button>
+            <a href="{{ url_for('work.withdraw') }}" class="px-btn px-btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.old-withdraw-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    border-color: rgba(63, 88, 138, 0.2);
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.px-text-muted {
+    display: block;
+    color: var(--px-text-muted);
+    font-size: 0.9em;
+    margin-top: 0.25rem;
+}
+
+.old-withdraw-balance {
+    background: rgba(93, 132, 214, 0.08);
+    border: 2px solid rgba(93, 132, 214, 0.22);
+    color: var(--px-text);
+    padding: 12px 16px;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: var(--px-gold);
+}
+</style>
+{% endblock %}

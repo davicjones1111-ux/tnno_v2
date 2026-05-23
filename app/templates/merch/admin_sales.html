@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Sales History{% if current_user.is_admin() %} - Admin{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg submissions-header">
+    <div>
+        <div class="sales-kicker">Seller Dashboard</div>
+        <h1>Sales History</h1>
+    </div>
+    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">Back to Products</a>
+</div>
+
+<div class="px-flex px-gap-md px-mb-lg sales-filter-row">
+    <a href="{{ url_for('merch.admin_sales') }}" class="px-btn {% if request.args.get('type') == None %}px-btn-primary{% else %}px-btn-secondary{% endif %}">All</a>
+    <a href="{{ url_for('merch.admin_sales', type='digital') }}" class="px-btn {% if request.args.get('type') == 'digital' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Digital</a>
+    <a href="{{ url_for('merch.admin_sales', type='physical') }}" class="px-btn {% if request.args.get('type') == 'physical' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Physical</a>
+</div>
+
+{% if digital_sales or physical_sales %}
+    {% if digital_sales %}
+    <div class="px-panel sales-panel">
+        <div class="submissions-table-wrap">
+            <h2 class="sales-section-title">Digital Sales</h2>
+            <table class="px-table sales-table">
+                <thead>
+                    <tr>
+                        <th>Buyer</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th>Fee</th>
+                        <th>Payout</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in digital_sales %}
+                    <tr>
+                        <td data-label="Buyer"><div class="sales-cell-strong">{{ row.buyer.username }}</div></td>
+                        <td data-label="Product"><div class="sales-cell-strong">{{ row.product.name }}</div></td>
+                        <td data-label="Qty">{{ row.order.quantity }}</td>
+                        <td data-label="Total"><span class="px-coins">{{ row.order.total_price|format_number }}</span></td>
+                        <td data-label="Fee"><span class="px-text-muted">{{ row.fee_rate_percent }}% - {{ row.fee_amount|round|int|format_number }}</span></td>
+                        <td data-label="Payout"><span class="px-coins">{{ row.payout|round|int|format_number }}</span></td>
+                        <td data-label="Time">{{ row.order.purchased_at.strftime('%Y-%m-%d %H:%M') if row.order.purchased_at else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if physical_sales %}
+    <div class="px-panel sales-panel">
+        <div class="submissions-table-wrap">
+            <h2 class="sales-section-title">Physical Orders</h2>
+            <table class="px-table sales-table">
+                <thead>
+                    <tr>
+                        <th>Buyer</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Shipping</th>
+                        <th>ETA</th>
+                        <th>Payout</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in physical_sales %}
+                    <tr>
+                        <td data-label="Buyer"><div class="sales-cell-strong">{{ row.buyer.username }}</div></td>
+                        <td data-label="Product"><div class="sales-cell-strong">{{ row.product.name }}</div></td>
+                        <td data-label="Qty">{{ row.order.quantity }}</td>
+                        <td data-label="Total"><span class="px-coins">{{ row.order.total_price|format_number }}</span></td>
+                        <td data-label="Status"><span class="px-badge px-badge-{{ row.order.status }}">{{ row.order.status|title }}</span></td>
+                        <td data-label="Shipping">
+                            <div class="px-text-sm">{{ row.order.shipping_name }}</div>
+                            <div class="px-text-sm">{{ row.order.shipping_country }}, {{ row.order.shipping_city }}</div>
+                            <div class="px-text-sm">{{ row.order.shipping_phone }}</div>
+                            {% if row.order.shipping_location_text %}
+                            <div class="px-text-sm">{{ row.order.shipping_location_text }}</div>
+                            {% endif %}
+                        </td>
+                        <td data-label="ETA">
+                            {% if row.order.delivery_eta %}
+                            <div class="px-text-sm">{{ row.order.delivery_eta.strftime('%Y-%m-%d %H:%M') }}</div>
+                            <div class="px-text-sm px-text-muted">Locked</div>
+                            {% else %}
+                                {% if row.eta_deadline_passed %}
+                                <div class="px-text-sm px-text-muted">Auto-cancelled if still pending. Deadline was {{ row.eta_deadline.strftime('%Y-%m-%d %H:%M') }}.</div>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('merch.set_delivery_eta', order_id=row.order.id) }}">
+                                    <input
+                                        type="datetime-local"
+                                        name="delivery_eta"
+                                        class="px-input"
+                                        style="min-width: 180px;"
+                                        min="{{ row.eta_min.strftime('%Y-%m-%dT%H:%M') }}"
+                                        max="{{ row.eta_max.strftime('%Y-%m-%dT%H:%M') }}"
+                                    >
+                                    <button type="submit" class="px-btn px-btn-sm px-btn-secondary" style="margin-top: 6px;">Save</button>
+                                    <div class="px-text-sm px-text-muted" style="margin-top: 6px;">Must be future, within 30 days, and set by {{ row.eta_deadline.strftime('%Y-%m-%d %H:%M') }}.</div>
+                                </form>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td data-label="Payout"><span class="px-coins">{{ row.payout|round|int|format_number }}</span></td>
+                        <td data-label="Time">{{ row.order.purchased_at.strftime('%Y-%m-%d %H:%M') if row.order.purchased_at else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if orders.pages > 1 %}
+    <div class="px-pagination px-mt-md">
+        {% if orders.has_prev %}
+        <a href="{{ url_for('merch.admin_sales', page=orders.prev_num, type=request.args.get('type')) }}" class="px-btn px-btn-secondary">Previous</a>
+        {% endif %}
+        <span class="px-pagination-info">Page {{ orders.page }} of {{ orders.pages }}</span>
+        {% if orders.has_next %}
+        <a href="{{ url_for('merch.admin_sales', page=orders.next_num, type=request.args.get('type')) }}" class="px-btn px-btn-secondary">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No sales yet.</p>
+    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-primary px-mt-md">Back to Products</a>
+</div>
+{% endif %}
+
+<style>
+.sales-kicker {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--px-blue);
+    margin-bottom: 8px;
+}
+
+.sales-panel {
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(240,244,252,0.96));
+}
+
+.sales-section-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7rem;
+    margin-bottom: 12px;
+}
+
+.submissions-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.sales-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.sales-table th,
+.sales-table td {
+    font-size: 1rem;
+    vertical-align: top;
+}
+
+.sales-table th {
+    background: rgba(93, 132, 214, 0.08);
+}
+
+.sales-table tbody tr:nth-child(even) td {
+    background: rgba(244, 247, 255, 0.55);
+}
+
+.sales-cell-strong {
+    font-weight: 700;
+    color: var(--px-text);
+}
+
+.sales-table .px-coins,
+.sales-table .px-text-muted {
+    font-size: 1rem;
+}
+
+.px-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-badge-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-badge-delivered {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-badge-refunded {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+@media (max-width: 768px) {
+    .submissions-header,
+    .sales-filter-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .submissions-header .px-btn,
+    .sales-filter-row .px-btn,
+    .px-pagination .px-btn,
+    td[data-label="ETA"] form .px-btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+
+    .sales-table thead {
+        display: none;
+    }
+
+    .sales-table,
+    .sales-table tbody,
+    .sales-table tr,
+    .sales-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .sales-table tr {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .sales-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 10px 12px;
+    }
+
+    .sales-table td:last-child {
+        border-bottom: none;
+    }
+
+    .sales-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+        font-size: 0.95em;
+    }
+}
+
+@media (max-width: 480px) {
+    .submissions-header .px-btn,
+    .sales-filter-row .px-btn,
+    .px-pagination .px-btn,
+    td[data-label="ETA"] form .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+}
+</style>
+{% endblock %}

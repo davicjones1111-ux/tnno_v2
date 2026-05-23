@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Thread - RetroQuest{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chan-board.css') }}">
+<style>
+    .thread-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .reply-target-label {
+        margin-top: 8px;
+        color: #475569;
+        font-size: 12px;
+    }
+
+    .thread-reply-link {
+        background: none;
+        border: none;
+        color: var(--chan-link);
+        cursor: pointer;
+        padding: 0;
+        font-size: 10px;
+        font-family: 'Arial', 'Helvetica', sans-serif;
+        line-height: 1.1;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .thread-reply-link:hover {
+        text-decoration: underline;
+    }
+
+    .reply-indent {
+        border-left: 2px solid #dbeafe;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chan-container">
+    <div class="thread-header">
+        <h1 style="margin: 0;">Thread No.{{ post.post_number or post.id }}</h1>
+        <a href="{{ url_for('feed.index') }}" class="chan-submit-btn" style="text-decoration: none;">Back to Feed</a>
+    </div>
+
+    <div class="chan-post-form" id="reply-form">
+        <h3>Post a Reply</h3>
+        <form method="POST" action="{{ url_for('feed.create') }}" enctype="multipart/form-data" id="thread-reply-form">
+            <div class="chan-form-group">
+                <textarea
+                    name="content"
+                    class="chan-textarea"
+                    placeholder="Write your reply... Use >>No to reference another post."
+                    rows="4"
+                    required
+                    id="reply-content"
+                ></textarea>
+            </div>
+            <div class="chan-form-group">
+                <label class="chan-label" for="reply-photo">Image (Optional)</label>
+                <input type="file" name="photo" id="reply-photo" class="chan-input chan-input--large" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+            </div>
+            <input type="hidden" name="parent_id" id="reply-parent-id" value="{{ post.id }}">
+            <button type="submit" class="chan-submit-btn">Reply</button>
+            <button type="button" class="chan-submit-btn" style="margin-left: 8px; background: #4b5563;" onclick="resetReplyTarget()">
+                Reply to Thread
+            </button>
+            <div id="reply-target-label" class="reply-target-label">
+                Reply target: Thread No.{{ post.post_number or post.id }}
+            </div>
+        </form>
+    </div>
+
+    <!-- OP post -->
+    <div class="chan-op-container" id="post-{{ post.post_number or post.id }}">
+        <div class="chan-post">
+            <div class="chan-post-header">
+                <span class="name">{{ post.author.username if post.author else 'Unknown' }}</span>
+                <span class="post-id">ID: {{ post.post_number[-8:] if post.post_number else '????' }}</span>
+                <span class="date">{{ post.created_at.strftime('%m/%d/%y(%a)%H:%M:%S') if post.created_at else '' }}</span>
+                <span class="post-number">No.{{ post.post_number or post.id }}</span>
+                {% if current_user.is_authenticated and (post.user_id == current_user.id or current_user.is_admin()) %}
+                <form method="POST" action="{{ url_for('feed.delete', post_id=post.id) }}" style="display:inline;">
+                    <a href="#" class="chan-delete-link" style="margin-left: 8px;"
+                       onclick="if (confirm('Delete this thread?')) { this.closest('form').submit(); } return false;">Delete</a>
+                </form>
+                {% endif %}
+            </div>
+
+            {% if post.image_path %}
+            <div class="chan-post-image-container">
+                <img
+                    src="{{ post.image_path|media_url }}"
+                    alt="Post image"
+                    class="chan-post-image"
+                    loading="lazy"
+                    onclick="expandImage(this)"
+                >
+                <div class="chan-file-info">File: {{ post.image_path.split('/')[-1] }}</div>
+            </div>
+            {% endif %}
+
+            <div class="chan-post-content">
+                {{ post.content|process_post_content|safe }}
+            </div>
+
+            <div class="chan-post-footer">
+                <button
+                    type="button"
+                    class="thread-reply-link"
+                    data-parent-id="{{ post.id }}"
+                    data-post-number="{{ post.post_number or post.id }}"
+                    data-author-name="{{ post.author.username if post.author else 'Unknown' }}"
+                >[Reply]</button>
+                <form method="POST" action="{{ url_for('feed.like', post_id=post.id) }}" style="display:inline; margin-left: 8px;">
+                    <button type="submit" class="thread-reply-link">
+                        [Like {{ post.interactions.filter_by(interaction_type='like').count() }}]
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="chan-replies">
+        {% if replies %}
+            {% for reply in replies %}
+            {% set depth = reply_depths.get(reply.id, 1) %}
+            {% set indent = ((depth - 1) * 22) %}
+            <div
+                class="chan-reply reply-indent"
+                id="post-{{ reply.post_number or reply.id }}"
+                style="--reply-indent: {{ [indent, 132]|min }}px;"
+            >
+                <div class="chan-post-header">
+                    <span class="name">{{ reply.author.username if reply.author else 'Unknown' }}</span>
+                    <span class="post-id">ID: {{ reply.post_number[-8:] if reply.post_number else '????' }}</span>
+                    <span class="date">{{ reply.created_at.strftime('%m/%d/%y(%a)%H:%M:%S') if reply.created_at else '' }}</span>
+                    <span class="post-number">No.{{ reply.post_number or reply.id }}</span>
+                    {% if current_user.is_authenticated and (reply.user_id == current_user.id or current_user.is_admin()) %}
+                    <form method="POST" action="{{ url_for('feed.delete', post_id=reply.id) }}" style="display:inline;">
+                        <a href="#" class="chan-delete-link" style="margin-left: 8px;"
+                           onclick="if (confirm('Delete this reply?')) { this.closest('form').submit(); } return false;">Delete</a>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if reply.image_path %}
+                <div class="chan-post-image-container">
+                    <img
+                        src="{{ reply.image_path|media_url }}"
+                        alt="Reply image"
+                        class="chan-post-image"
+                        loading="lazy"
+                        onclick="expandImage(this)"
+                    >
+                </div>
+                {% endif %}
+
+                <div class="chan-post-content">
+                    {{ reply.content|process_post_content|safe }}
+                </div>
+
+                <div class="chan-post-footer">
+                    <button
+                        type="button"
+                        class="thread-reply-link"
+                        data-parent-id="{{ reply.id }}"
+                        data-post-number="{{ reply.post_number or reply.id }}"
+                        data-author-name="{{ reply.author.username if reply.author else 'Unknown' }}"
+                    >[Reply]</button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="chan-empty">
+            <p>No replies yet. Be the first to reply.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function scrollToPost(postNumber) {
+    const post = document.getElementById('post-' + postNumber);
+    if (!post) return;
+    post.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    post.style.background = '#ffe4e4';
+    setTimeout(() => {
+        post.style.background = '';
+    }, 1800);
+}
+
+function expandImage(img) {
+    if (img.style.maxWidth === 'none') {
+        img.style.maxWidth = '200px';
+        img.style.maxHeight = '200px';
+    } else {
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+    }
+}
+
+function resetReplyTarget() {
+    const parentInput = document.getElementById('reply-parent-id');
+    const label = document.getElementById('reply-target-label');
+    parentInput.value = '{{ post.id }}';
+    label.textContent = 'Reply target: Thread No.{{ post.post_number or post.id }}';
+}
+
+function setReplyTarget(parentId, postNumber, authorName) {
+    const parentInput = document.getElementById('reply-parent-id');
+    const label = document.getElementById('reply-target-label');
+    const textarea = document.getElementById('reply-content');
+
+    parentInput.value = parentId;
+    label.textContent = 'Reply target: ' + authorName + ' / No.' + postNumber;
+
+    const mention = '>>' + postNumber + '\n';
+    if (!textarea.value.includes(mention)) {
+        textarea.value = mention + textarea.value;
+    }
+    textarea.focus();
+    document.getElementById('reply-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function initThreadReplyLinks() {
+    document.querySelectorAll('.thread-reply-link[data-parent-id]').forEach(btn => {
+        if (btn.dataset.replyBound === '1') return;
+        btn.dataset.replyBound = '1';
+        btn.addEventListener('click', function() {
+            setReplyTarget(
+                this.getAttribute('data-parent-id'),
+                this.getAttribute('data-post-number'),
+                this.getAttribute('data-author-name')
+            );
+        });
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const replyTo = urlParams.get('reply_to');
+    if (replyTo) {
+        setTimeout(() => scrollToPost(replyTo), 300);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initThreadReplyLinks);
+document.addEventListener('turbo:load', initThreadReplyLinks);
+</script>
+{% endblock %}
+

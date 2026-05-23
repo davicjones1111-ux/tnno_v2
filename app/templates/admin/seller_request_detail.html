@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Request Detail - Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Seller Request Detail</h1>
+    <a href="{{ url_for('admin.seller_requests') }}" class="px-btn px-btn-secondary">Back to Requests</a>
+</div>
+
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">{{ req.user.username if req.user else 'Unknown User' }}</h2>
+        <span class="px-status px-status-{{ req.status }}">{{ req.status|title }}</span>
+    </div>
+
+    <div class="px-grid px-grid-2">
+        <div>
+            <div class="px-info-group">
+                <label>Real Name</label>
+                <p>{{ req.real_name }}</p>
+            </div>
+            <div class="px-info-group">
+                <label>Country</label>
+                <p>{{ req.country }}</p>
+            </div>
+            <div class="px-info-group">
+                <label>City</label>
+                <p>{{ req.city }}</p>
+            </div>
+            <div class="px-info-group">
+                <label>Phone</label>
+                <p>{{ req.phone }}</p>
+            </div>
+            <div class="px-info-group">
+                <label>Requested At</label>
+                <p>{{ req.created_at.strftime('%Y-%m-%d %H:%M') if req.created_at else '' }}</p>
+            </div>
+        </div>
+        <div>
+            <div class="px-info-group">
+                <label>Seller Plan</label>
+                <p>{{ (req.plan_key or 'N/A')|upper }} • {{ (req.plan_cost or 0)|format_number }} TNNO</p>
+            </div>
+            <div class="px-info-group">
+                <label>Product Description</label>
+                <p>{{ req.product_description }}</p>
+            </div>
+            <div class="px-info-group">
+                <label>Location</label>
+                {% if req.location_text %}
+                    <p>{{ req.location_text }}</p>
+                {% elif req.location_lat and req.location_lng %}
+                    <p>{{ req.location_lat }}, {{ req.location_lng }}</p>
+                {% else %}
+                    <p class="px-text-muted">Not provided</p>
+                {% endif %}
+            </div>
+            <div class="px-info-group">
+                <label>ID Card Front</label>
+                <div>
+                    <a href="{{ url_for('static', filename=req.id_front_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">View</a>
+                </div>
+            </div>
+            <div class="px-info-group">
+                <label>ID Card Back</label>
+                <div>
+                    <a href="{{ url_for('static', filename=req.id_back_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if req.status == 'pending' %}
+    <div class="px-flex px-gap-sm px-mt-lg">
+        <form method="POST" action="{{ url_for('admin.approve_seller_request', req_id=req.id) }}">
+            <button type="submit" class="px-btn px-btn-primary">Approve</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.reject_seller_request', req_id=req.id) }}">
+            <button type="submit" class="px-btn px-btn-danger">Reject</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

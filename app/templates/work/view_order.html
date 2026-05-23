@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Service Order Details - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Service Order Details</h1>
+    <a href="{{ url_for('work.orders') }}" class="px-btn px-btn-secondary">
+        Back to Orders
+    </a>
+</div>
+
+<div class="px-grid px-grid-2">
+    <!-- Order Details -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Order Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Category</label>
+            <p>{{ order.category }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Service</label>
+            <p>{{ order.service }}</p>
+        </div>
+        
+        {% if order.link %}
+        <div class="px-info-group">
+            <label>Link</label>
+            <p>
+                <a href="{{ order.link }}" target="_blank" class="px-link">
+                    {{ order.link }}
+                </a>
+            </p>
+        </div>
+        {% endif %}
+        
+        <div class="px-info-group">
+            <label>Quantity</label>
+            <p>{{ order.quantity }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Charge</label>
+            <p><span class="px-coins">{{ order.charge|format_number }}</span> TNNO</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Status</label>
+            <p>
+                <span class="px-status px-status-{{ order.status }}">
+                    {{ order.status|title }}
+                </span>
+            </p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Created</label>
+            <p>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+    </div>
+
+    <!-- User Info -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Your Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Username</label>
+            <p>{{ order.user.username }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Email</label>
+            <p>{{ order.user.email or 'Not set' }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Current TNNO</label>
+            <p><span class="px-coins">{{ order.user.coins|format_number }}</span></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #666;
+}
+
+.px-link {
+    color: #4CAF50;
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.px-link:hover {
+    text-decoration: underline;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.px-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.px-panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+.px-panel-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+</style>
+{% endblock %}

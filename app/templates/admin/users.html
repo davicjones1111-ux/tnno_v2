@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Manage Users</h1>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="px-panel admin-users-surface px-mb-lg" style="padding: 16px;">
+    <form method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search by username or ID..." class="px-input" style="flex: 1; margin: 0;">
+        <button type="submit" class="px-btn px-btn-primary">Search</button>
+        {% if q %}
+        <a href="{{ url_for('admin.users') }}" class="px-btn px-btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Users List -->
+{% if users.items %}
+<div class="px-panel admin-users-panel">
+    <div class="admin-users-table-wrap">
+    <table class="px-table admin-users-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>TNNO</th>
+                <th>Role</th>
+                <th>Seller</th>
+                <th>Seller Sales</th>
+                <th>Monthly Sales ({{ sales_month_label }})</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users.items %}
+            {% set stats = seller_stats.get(user.id) if seller_stats else None %}
+            <tr>
+                <td>
+                    <strong>{{ user.username }}</strong>
+                    {% if user.user_6digit %}
+                    <br><small class="px-text-muted">#{{ user.user_6digit }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ user.email or '-' }}</td>
+                <td>
+                    <span class="px-coins">{{ user.coins|format_number }}</span>
+                </td>
+                <td>
+                    <span class="px-badge px-badge-{{ 'admin' if user.is_admin() else 'user' }}">
+                        {{ 'Admin' if user.is_admin() else 'User' }}
+                    </span>
+                </td>
+                <td>
+                    {% if user.is_seller %}
+                        <span class="px-badge px-badge-user">Seller</span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_seller %}
+                        <div>{{ stats.total_orders if stats else 0 }} orders</div>
+                        <div class="px-text-muted">{{ (stats.total_sales if stats else 0)|format_number }} TNNO</div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_seller %}
+                        <div>{{ stats.monthly_orders if stats else 0 }} orders</div>
+                        <div class="px-text-muted">{{ (stats.monthly_sales if stats else 0)|format_number }} TNNO</div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <div class="admin-user-actions">
+                        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('admin.toggle_user_seller', user_id=user.id, q=q) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="make_seller" value="{{ '0' if user.is_seller else '1' }}">
+                            <input type="hidden" name="commission_rate" value="{% if user.seller_commission_rate %}{{ (user.seller_commission_rate * 100)|round(2) }}{% else %}3{% endif %}">
+                            <button type="submit" class="px-btn px-btn-sm {% if user.is_seller %}px-btn-secondary{% else %}px-btn-primary{% endif %}">
+                                {% if user.is_seller %}Remove Seller{% else %}Make Seller{% endif %}
+                            </button>
+                        </form>
+                        {% if user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('Delete user {{ user.username }} permanently?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if users.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if users.has_prev %}
+    <a href="{{ url_for('admin.users', page=users.prev_num) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ users.page }} of {{ users.pages }}
+    </span>
+    
+    {% if users.has_next %}
+    <a href="{{ url_for('admin.users', page=users.next_num) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No users found.</p>
+</div>
+{% endif %}
+
+<style>
+.admin-users-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    border-color: rgba(63, 88, 138, 0.2);
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.admin-users-surface {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.admin-users-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-users-table {
+    min-width: 1080px;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+    border-bottom-color: rgba(63, 88, 138, 0.16);
+}
+
+.admin-users-table tr:hover td {
+    background: rgba(93, 132, 214, 0.04);
+}
+
+.px-coins {
+    font-weight: bold;
+    color: var(--px-gold);
+}
+
+.px-badge {
+    border-radius: 0;
+}
+
+.px-badge-admin {
+    background: #d05c4c;
+    color: white;
+}
+
+.px-badge-user {
+    background: #5d84d6;
+    color: white;
+}
+
+.admin-user-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.px-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.px-pagination-info {
+    color: var(--px-text-muted);
+}
+
+.px-btn-danger {
+    background: linear-gradient(180deg, #e38272, #cd6255);
+    border: 2px solid #b04d41;
+    color: #fff;
+}
+</style>
+{% endblock %}

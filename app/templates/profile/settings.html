@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg settings-header-row">
+    <h1>Settings</h1>
+    <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary">
+        Back to Profile
+    </a>
+</div>
+
+{% if get_flashed_messages(category_filter=['error']) %}
+<div class="px-alert px-alert-error px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['error']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if get_flashed_messages(category_filter=['success']) %}
+<div class="px-alert px-alert-success px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['success']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="px-grid px-grid-2 settings-grid">
+    <!-- Change Password -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Change Password</h2>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-form-group">
+                <label for="current_password" class="px-form-label">Current Password</label>
+                <input 
+                    type="password" 
+                    id="current_password" 
+                    name="current_password" 
+                    class="px-input" 
+                    placeholder="Enter your current password"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="new_password" class="px-form-label">New Password</label>
+                <input 
+                    type="password" 
+                    id="new_password" 
+                    name="new_password" 
+                    class="px-input" 
+                    placeholder="Enter new password (min 6 characters)"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="confirm_password" class="px-form-label">Confirm New Password</label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password" 
+                    class="px-input" 
+                    placeholder="Confirm new password"
+                />
+            </div>
+
+            <button type="submit" class="px-btn px-btn-primary px-btn-block">
+                Update Password
+            </button>
+        </form>
+    </div>
+
+    <!-- Account Settings -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Account Settings</h2>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-form-group">
+                <label for="email" class="px-form-label">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="px-input" 
+                    value="{{ current_user.email or '' }}"
+                    placeholder="Enter your email address"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="username" class="px-form-label">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="px-input" 
+                    value="{{ current_user.username }}"
+                    placeholder="Enter your username"
+                    minlength="3"
+                    maxlength="80"
+                />
+            </div>
+
+            <div class="px-info-group px-mb-lg">
+                <label>6-Digit ID</label>
+                <p>#{{ current_user.user_6digit }}</p>
+            </div>
+
+            <button type="submit" class="px-btn px-btn-primary px-btn-block">
+                Update Username &amp; Email
+            </button>
+        </form>
+
+        {% if current_user.can_sell %}
+        <div class="px-mt-lg">
+            <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary px-btn-block">
+                Add Product
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="px-mt-lg">
+            <div class="px-panel-divider" style="border-top: 1px solid #ddd; padding-top: 16px; margin-top: 16px;">
+                <h3 style="font-size: 1rem; color: var(--px-red);">Danger Zone</h3>
+                <p class="px-text-muted" style="margin: 8px 0;">Delete your account permanently</p>
+                <form method="POST" action="{{ url_for('profile.delete_account') }}" style="display: inline-block; width: 100%;" onsubmit="return confirm('Are you sure? This action cannot be undone. All your data will be permanently deleted.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="px-form-group">
+                        <label for="delete_password" class="px-form-label">Current Password</label>
+                        <input
+                            type="password"
+                            id="delete_password"
+                            name="delete_password"
+                            class="px-input"
+                            placeholder="Enter your current password"
+                            required
+                        />
+                    </div>
+                    <div class="px-form-group">
+                        <label for="delete_confirmation" class="px-form-label">Type DELETE to confirm</label>
+                        <input
+                            type="text"
+                            id="delete_confirmation"
+                            name="delete_confirmation"
+                            class="px-input"
+                            placeholder="DELETE"
+                            required
+                        />
+                    </div>
+                    <button type="submit" class="px-btn px-btn-danger px-btn-block" id="delete-btn" data-original-text="Delete Account">
+                        Delete Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.px-alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.px-alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.px-alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #666;
+}
+
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.px-input:focus {
+    outline: none;
+    border-color: var(--px-cyan);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .settings-header-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .settings-header-row .px-btn,
+    .px-btn-block {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-header-row .px-btn,
+    .px-btn-block {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+
+    .px-panel {
+        padding: 14px;
+    }
+}
+</style>
+
+<script>
+function promptDelete(event) {
+    event.preventDefault();
+    const userInput = prompt('Type "DELETE" to confirm account deletion (this cannot be undone):', '');
+    if (userInput === 'DELETE') {
+        event.target.submit();
+    } else {
+        alert('Deletion cancelled. You did not type DELETE.');
+    }
+}
+</script>
+{% endblock %}

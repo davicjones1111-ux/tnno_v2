@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Register - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="pixel-auth-container">
+    <!-- Falling TNNO Animation -->
+    <div class="falling-coins">
+        <div class="coin coin1">&#8383;</div>
+        <div class="coin coin2">&#8383;</div>
+        <div class="coin coin3">&#8383;</div>
+        <div class="coin coin4">&#8383;</div>
+        <div class="coin coin5">&#8383;</div>
+        <div class="coin coin6">&#8383;</div>
+        <div class="coin coin7">&#8383;</div>
+        <div class="coin coin8">&#8383;</div>
+        <div class="coin coin9">&#8383;</div>
+        <div class="coin coin10">&#8383;</div>
+        <div class="coin coin11">&#8383;</div>
+        <div class="coin coin12">&#8383;</div>
+    </div>
+
+    <div class="pixel-auth-frame">
+        <!-- TNNO Logo -->
+        <div class="pixel-logo">
+            <span class="logo-text">TNNO</span>
+        </div>
+
+        <h1 class="pixel-title">
+            CREATE ACCOUNT<span>.</span>
+        </h1>
+
+        <form method="POST" action="{{ url_for('auth.signup') }}" data-turbo="false" id="signup-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" id="username" name="username" class="pixel-input"
+                   placeholder="Choose a username" required minlength="3" style="text-transform: none;">
+            <p id="username-message" class="pixel-text pixel-text-sm" style="margin-top: 5px;"></p>
+
+            <input type="email" id="email" name="email" class="pixel-input"
+                   placeholder="your@email.com" style="text-transform: none;">
+
+            <input type="password" id="password" name="password" class="pixel-input"
+                   placeholder="Create a password (min 6 characters)" required minlength="6" style="text-transform: none;">
+
+            <input type="password" id="confirm_password" name="confirm_password" class="pixel-input"
+                   placeholder="Confirm your password" required style="text-transform: none;">
+
+            <button type="submit" class="pixel-btn pixel-btn-primary" id="signup-submit">
+                CREATE ACCOUNT
+            </button>
+        </form>
+
+        <div class="pixel-text-center pixel-mt-md">
+            <p class="pixel-text pixel-text-muted">
+                ALREADY HAVE AN ACCOUNT?
+                <a href="{{ url_for('auth.login') }}" class="pixel-link">SIGN IN</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('username').addEventListener('input', function() {
+    const username = this.value.trim();
+    const messageEl = document.getElementById('username-message');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    if (username.length < 3) {
+        messageEl.textContent = '';
+        submitBtn.disabled = true;
+        return;
+    }
+    
+    csrfFetch('{{ url_for("auth.check_username") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'username=' + encodeURIComponent(username)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('bad response');
+        return response.json();
+    })
+    .then(data => {
+        messageEl.textContent = data.message;
+        if (data.available) {
+            messageEl.style.color = 'green';
+            submitBtn.disabled = false;
+        } else {
+            messageEl.style.color = 'red';
+            submitBtn.disabled = true;
+        }
+    })
+    .catch(error => {
+        console.error('Error checking username:', error);
+        messageEl.textContent = 'Error checking availability';
+        messageEl.style.color = 'red';
+        submitBtn.disabled = true;
+    });
+});
+
+document.getElementById('signup-form').addEventListener('submit', function(event) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const submitBtn = document.getElementById('signup-submit');
+
+    if (password.length < 6) {
+        event.preventDefault();
+        alert('Password must be at least 6 characters.');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        event.preventDefault();
+        alert('Passwords do not match.');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'CREATING ACCOUNT...';
+});
+
+// Initially disable submit
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('button[type="submit"]').disabled = true;
+});
+</script>
+
+{% endblock %}

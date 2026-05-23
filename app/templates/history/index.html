@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Recent Activity - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-panel px-mb-lg">
+    <div class="px-flex px-flex-between px-flex-wrap px-gap-md">
+        <div>
+            <h1 class="px-mb-sm">Recent Activity</h1>
+            <p class="px-text-muted">Latest 10 entries across submissions, work, wallet, and store actions.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('history.old', type=active_type) }}" class="px-btn px-btn-secondary" data-turbo-preload="true">View Old History</a>
+        </div>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg" data-history-page="recent" data-endpoint="{{ url_for('history.index') }}">
+    <div class="px-tabs history-tabs" role="tablist" aria-label="History Categories">
+        {% for filter in filters %}
+        <a
+            href="{{ url_for('history.index', type=filter.key) }}"
+            class="px-tab history-tab {% if active_type == filter.key %}active{% endif %}"
+            data-filter="{{ filter.key }}"
+            data-turbo-preload="true"
+            role="tab"
+            aria-selected="{{ 'true' if active_type == filter.key else 'false' }}"
+        >
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div id="history-loading" class="history-loading" aria-live="polite" style="display:none;">Loading history...</div>
+</div>
+
+<div id="history-results">
+    {% include 'history/_table.html' %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 0;
+}
+
+.history-tabs .history-tab {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.history-loading {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    color: var(--px-text-muted);
+    margin-top: 12px;
+}
+
+#history-results {
+    transition: opacity 0.18s ease;
+}
+
+#history-results.is-loading {
+    opacity: 0.55;
+}
+
+.history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.history-table-wrap .px-table {
+    min-width: 680px;
+}
+
+@media (max-width: 640px) {
+    .history-table-wrap .px-table {
+        min-width: 620px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    function initHistoryFilters() {
+        const wrapper = document.querySelector('[data-history-page="recent"]');
+        if (!wrapper || wrapper.dataset.bound === '1') {
+            return;
+        }
+        wrapper.dataset.bound = '1';
+
+        const endpoint = wrapper.dataset.endpoint;
+        const results = document.getElementById('history-results');
+        const loading = document.getElementById('history-loading');
+        const tabs = Array.from(wrapper.querySelectorAll('.history-tab'));
+
+        function setActive(activeKey) {
+            tabs.forEach((tab) => {
+                const isActive = tab.dataset.filter === activeKey;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        }
+
+        function fetchPartial(filterKey) {
+            if (!endpoint || !results) {
+                return;
+            }
+
+            setActive(filterKey);
+            if (loading) {
+                loading.style.display = 'block';
+            }
+            results.classList.add('is-loading');
+
+            const url = `${endpoint}?type=${encodeURIComponent(filterKey)}&partial=1`;
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+                .then((resp) => resp.text())
+                .then((html) => {
+                    results.innerHTML = html;
+                    const nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('type', filterKey);
+                    nextUrl.searchParams.delete('page');
+                    window.history.replaceState({}, '', nextUrl.toString());
+                })
+                .catch(() => {
+                    window.location.href = `${endpoint}?type=${encodeURIComponent(filterKey)}`;
+                })
+                .finally(() => {
+                    if (loading) {
+                        loading.style.display = 'none';
+                    }
+                    results.classList.remove('is-loading');
+                });
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', (event) => {
+                event.preventDefault();
+                fetchPartial(tab.dataset.filter || 'all');
+            });
+        });
+    }
+
+    document.addEventListener('turbo:load', initHistoryFilters);
+    document.addEventListener('DOMContentLoaded', initHistoryFilters);
+})();
+</script>
+{% endblock %}

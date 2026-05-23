@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Requests - Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Seller Requests</h1>
+    <div class="px-flex px-gap-sm">
+        <a href="{{ url_for('admin.seller_requests', status='pending') }}" class="px-btn px-btn-sm {% if status == 'pending' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Pending</a>
+        <a href="{{ url_for('admin.seller_requests', status='approved') }}" class="px-btn px-btn-sm {% if status == 'approved' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Approved</a>
+        <a href="{{ url_for('admin.seller_requests', status='rejected') }}" class="px-btn px-btn-sm {% if status == 'rejected' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Rejected</a>
+    </div>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+</div>
+
+{% if requests %}
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">{{ status|title }} Requests</h2>
+    </div>
+
+    <table class="px-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Real Name</th>
+                <th>Contact</th>
+                <th>Product Plan</th>
+                <th>ID Cards</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>
+                    <strong>{{ req.user.username if req.user else 'Unknown' }}</strong><br>
+                    <span class="px-text-sm px-text-muted">#{{ req.user.user_6digit if req.user else '' }}</span>
+                </td>
+                <td>{{ req.real_name }}</td>
+                <td>
+                    {{ req.phone }}<br>
+                    <span class="px-text-sm px-text-muted">{{ req.city }}, {{ req.country }}</span>
+                </td>
+                <td style="max-width: 280px;">
+                    <div class="px-text-sm">
+                        <strong>{{ (req.plan_key or 'N/A')|upper }}</strong> • {{ (req.plan_cost or 0)|format_number }} TNNO
+                    </div>
+                    <div class="px-text-sm px-text-muted">{{ req.product_description }}</div>
+                </td>
+                <td>
+                    <a href="{{ url_for('static', filename=req.id_front_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">Front</a>
+                    <a href="{{ url_for('static', filename=req.id_back_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">Back</a>
+                </td>
+                <td>
+                    {% if req.location_text %}
+                        {{ req.location_text }}
+                    {% elif req.location_lat and req.location_lng %}
+                        {{ req.location_lat }}, {{ req.location_lng }}
+                    {% else %}
+                        <span class="px-text-muted">Not provided</span>
+                    {% endif %}
+                </td>
+                <td><span class="px-status px-status-{{ req.status }}">{{ req.status|title }}</span></td>
+                <td>
+                    {% if req.status == 'pending' %}
+                    <a href="{{ url_for('admin.seller_request_detail', req_id=req.id) }}" class="px-btn px-btn-sm px-btn-secondary">Detail</a>
+                    <form method="POST" action="{{ url_for('admin.approve_seller_request', req_id=req.id) }}" style="display: inline;">
+                        <button type="submit" class="px-btn px-btn-sm px-btn-primary">Approve</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.reject_seller_request', req_id=req.id) }}" style="display: inline;">
+                        <button type="submit" class="px-btn px-btn-sm px-btn-danger">Reject</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('admin.seller_request_detail', req_id=req.id) }}" class="px-btn px-btn-sm px-btn-secondary">Detail</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="px-text-muted">No seller requests found.</p>
+{% endif %}
+{% endblock %}

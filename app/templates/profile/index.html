@@ -1,0 +1,316 @@
+﻿{% extends "base.html" %}
+
+{% block title %}My Profile - RetroQuest{% endblock %}
+
+{% block content %}
+<h1 class="px-mb-lg">My Profile</h1>
+
+<div class="px-grid profile-index-grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Profile Card -->
+    <div class="px-panel">
+        <div class="px-text-center">
+            {% if user.profile_pic %}
+                <img src="{{ user.profile_pic|media_url }}" alt="{{ user.username }}" class="px-profile-pic-lg" style="max-width: 180px; height: auto; border-radius: 8px; margin-bottom: 20px; border: 3px solid #ddd;">
+            {% else %}
+                <div class="px-avatar px-avatar-lg" style="margin: 0 auto 20px;">
+                    {{ user.username[0]|upper }}
+                </div>
+            {% endif %}
+            <h2 style="color: var(--px-cyan);">{{ user.username }}</h2>
+            {% if user.is_seller %}
+            <p><span class="px-badge px-badge-user">Seller</span></p>
+            {% endif %}
+            {% if seller_rating %}
+            {% set stars = seller_rating.avg|round(0, 'common')|int %}
+            <p class="px-text-muted">
+                {% for i in range(1, 6) %}
+                    {% if i <= stars %}★{% else %}☆{% endif %}
+                {% endfor %}
+                ({{ seller_rating.count }})
+            </p>
+            {% endif %}
+            <p class="px-text-muted">ID: #{{ user.user_6digit }}</p>
+
+            <div class="px-mt-lg">
+                <div class="px-stat-card">
+                    <div class="px-stat-value" style="color: var(--px-gold);">
+                        <span class="px-coin"></span>
+                        {{ user.coins|default(0) }}
+                    </div>
+                    <div class="px-stat-label">Total TNNO</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-mt-lg profile-main-actions">
+            <a href="{{ url_for('profile.edit') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Edit Profile</a>
+            <a href="{{ url_for('profile.settings') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Settings</a>
+            <a href="{{ url_for('profile.leaderboard') }}" class="px-btn px-btn-primary" data-turbo-preload="true">Leaderboard</a>
+            {% if current_user.can_sell %}
+            <a href="{{ url_for('profile.seller_hub') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Seller Update</a>
+            {% elif seller_request_summary and seller_request_summary.status == 'pending' %}
+            <a href="{{ url_for('profile.seller_hub') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Seller Pending</a>
+            {% else %}
+            <a href="{{ url_for('profile.seller_hub') }}" class="px-btn px-btn-primary" data-turbo-preload="true">Become Seller</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profile Details -->
+    <div>
+        <div class="px-panel px-mb-lg">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">About Me</h2>
+            </div>
+            {% if user.bio %}
+            <p>{{ user.bio }}</p>
+            {% else %}
+            <p class="px-text-muted">No bio yet. <a href="{{ url_for('profile.edit') }}">Add one!</a></p>
+            {% endif %}
+        </div>
+
+        <div class="px-panel">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Quick Links</h2>
+            </div>
+
+            <div class="px-grid profile-quick-links-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <a href="{{ url_for('missions.my_submissions') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">📋</div>
+                    <div>My Missions</div>
+                </a>
+                <a href="{{ url_for('work.requests') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">📝</div>
+                    <div>My Work</div>
+                </a>
+                <a href="{{ url_for('deposit.index') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">💰</div>
+                    <div>Deposits</div>
+                </a>
+                <a href="{{ url_for('work.withdraw') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">💸</div>
+                    <div>Withdrawals</div>
+                </a>
+                <a href="{{ url_for('merch.my_orders') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">🧾</div>
+                    <div>My Purchases</div>
+                </a>
+                <a href="{{ url_for('merch.my_chats') }}" class="px-card px-text-center px-notif-card" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">💬</div>
+                    <div>My Chats</div>
+                    {% if chat_unread_count %}
+                    <span class="px-notif-badge" aria-label="{{ chat_unread_count }} unread chat messages">
+                        {{ chat_unread_count }}
+                    </span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('profile.seller_hub') }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">
+                        {% if current_user.can_sell %}🏪{% elif seller_request_summary and seller_request_summary.status == 'pending' %}⏳{% else %}🛒{% endif %}
+                    </div>
+                    <div>
+                        {% if current_user.can_sell %}
+                        Seller Update
+                        {% elif seller_request_summary and seller_request_summary.status == 'pending' %}
+                        Seller Pending
+                        {% else %}
+                        Become Seller
+                        {% endif %}
+                    </div>
+                </a>
+                {% if current_user.can_sell %}
+                <a href="{{ url_for('merch.seller_profile', seller_id=current_user.id) }}" class="px-card px-text-center" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">🛍️</div>
+                    <div>My Store</div>
+                </a>
+                <a href="{{ url_for('merch.admin_sales') }}" class="px-card px-text-center px-notif-card" data-turbo-preload="true">
+                    <div style="font-size: 2rem;">🧾</div>
+                    <div>Sales History</div>
+                    {% if sales_unread_count %}
+                    <span class="px-notif-badge" aria-label="{{ sales_unread_count }} new orders">
+                        {{ sales_unread_count }}
+                    </span>
+                    {% endif %}
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="px-panel px-mt-lg">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Activity &amp; History</h2>
+            </div>
+            <p class="px-text-muted px-mb-md">Access your complete history timeline.</p>
+            <div class="profile-history-actions">
+                <a href="{{ url_for('history.index') }}" class="px-btn px-btn-primary" data-turbo-preload="true">
+                    My History
+                </a>
+            </div>
+        </div>
+
+        <div class="px-panel px-mt-lg">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">
+                    Notifications
+                    {% if notif_count %}
+                    <span class="px-notif-badge-inline" aria-label="{{ notif_count }} unread notifications">{{ notif_count }}</span>
+                    {% endif %}
+                </h2>
+                <a href="{{ url_for('profile.notifications') }}" class="px-btn px-btn-sm px-btn-secondary">View All</a>
+            </div>
+            {% if latest_notifications %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for n in latest_notifications %}
+                    <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                        <div class="px-text-sm">{{ n.message }}</div>
+                        {% if n.kind == 'user' and n.row.attachment_path %}
+                        <div class="px-text-sm">
+                            <a href="{{ n.row.attachment_path|media_url }}" target="_blank">View Attachment</a>
+                        </div>
+                        {% endif %}
+                        {% if n.kind == 'seller' and n.row.notification_type == 'new_message' %}
+                        <div class="px-text-sm">
+                            <a href="{{ url_for('merch.chat_conversation', conversation_id=n.row.related_id) }}">Open Chat</a>
+                        </div>
+                        {% elif n.kind == 'seller' and n.row.notification_type == 'new_purchase' %}
+                        <div class="px-text-sm">
+                            <a href="{{ url_for('merch.admin_sales') }}">View Sale</a>
+                        </div>
+                        {% endif %}
+                        <div class="px-text-muted" style="font-size: 0.7rem;">
+                            {{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="px-text-muted">No notifications yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-main-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.profile-main-actions .px-btn {
+    margin-top: 0;
+}
+
+.profile-index-grid .px-badge-user {
+    font-size: 0.58rem;
+    padding: 4px 8px;
+}
+
+@media (max-width: 768px) {
+    .profile-index-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-index-grid .px-panel {
+        padding: 14px;
+    }
+
+    .profile-index-grid .px-profile-pic-lg {
+        max-width: 120px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .profile-index-grid h2 {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .profile-index-grid .px-text-muted {
+        font-size: 0.68rem;
+    }
+
+    .profile-index-grid .px-stat-card {
+        padding: 10px;
+    }
+
+    .profile-index-grid .px-stat-value {
+        font-size: 0.74rem;
+    }
+
+    .profile-index-grid .px-stat-label {
+        font-size: 0.54rem;
+    }
+
+    .profile-quick-links-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px;
+    }
+
+    .profile-index-grid .px-btn {
+        min-height: 38px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+
+    .profile-quick-links-grid .px-card {
+        padding: 12px 8px;
+    }
+
+    .profile-quick-links-grid .px-card > div:first-child {
+        font-size: 1.3rem !important;
+    }
+
+    .profile-quick-links-grid .px-card > div:last-child {
+        font-size: 0.6rem;
+    }
+}
+
+.profile-history-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.profile-history-actions .px-btn {
+    min-width: 150px;
+}
+
+@media (max-width: 480px) {
+    .profile-quick-links-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .profile-index-grid .px-btn,
+    .profile-history-actions .px-btn {
+        min-height: 34px;
+        padding: 8px 8px;
+        font-size: 0.44rem;
+    }
+
+    .profile-main-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .profile-history-actions {
+        gap: 8px;
+    }
+
+    .profile-index-grid .px-text-muted {
+        font-size: 0.62rem;
+    }
+
+    .profile-quick-links-grid .px-card {
+        padding: 10px 6px;
+    }
+
+    .profile-quick-links-grid .px-card > div:first-child {
+        font-size: 1.12rem !important;
+    }
+
+    .profile-quick-links-grid .px-card > div:last-child {
+        font-size: 0.54rem;
+    }
+}
+</style>
+{% endblock %}

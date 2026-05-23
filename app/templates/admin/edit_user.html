@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Edit User: {{ user.username }}</h1>
+    <a href="{{ url_for('admin.users') }}" class="px-btn px-btn-secondary">
+        Back to Users
+    </a>
+</div>
+
+<div class="px-grid px-grid-2 admin-edit-grid">
+    <!-- Edit Form -->
+    <div class="px-panel admin-edit-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">User Settings</h2>
+        </div>
+        
+        <form method="POST" class="px-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-form-group">
+                <label for="coins" class="px-form-label">TNNO</label>
+                <input 
+                    type="number" 
+                    id="coins" 
+                    name="coins" 
+                    class="px-input" 
+                    value="{{ user.coins }}" 
+                    min="0"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="seller" class="px-form-label">Seller</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" id="seller" name="seller" {% if user.is_seller %}checked{% endif %} />
+                </div>
+            </div>
+
+            <div class="px-form-group" id="commission-group" {% if not user.is_seller %}style="display: none;"{% endif %}>
+                <label for="commission_rate" class="px-form-label">Platform Fee (%)</label>
+                <input type="number" id="commission_rate" name="commission_rate" class="px-input" 
+                       value="{% if user.seller_commission_rate %}{{ (user.seller_commission_rate * 100)|round(2) }}{% else %}3{% endif %}" 
+                       min="0" max="100" step="0.01" />
+                <p class="px-text-sm px-text-muted">Fee taken by the platform. Seller receives the remaining amount.</p>
+            </div>
+
+            <div class="px-flex px-gap-md px-mt-lg">
+                <button type="submit" class="px-btn px-btn-primary">Update User</button>
+                <a href="{{ url_for('admin.users') }}" class="px-btn px-btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- User Information -->
+    <div class="px-panel admin-edit-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">User Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>User ID</label>
+            <p>{{ user.id }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Username</label>
+            <p>{{ user.username }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Email</label>
+            <p>{{ user.email or 'Not set' }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>6-Digit ID</label>
+            <p>{{ user.user_6digit or 'Not set' }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Created</label>
+            <p>{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Last Updated</label>
+            <p>{{ user.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+
+        <div class="px-info-group" style="border-top: 1px solid #ddd; padding-top: 12px;">
+            <label>Seller Sales (All Time)</label>
+            {% if user.is_seller %}
+            <p>{{ seller_orders_total }} orders • {{ seller_sales_total|format_number }} TNNO</p>
+            {% else %}
+            <p class="px-text-muted">Not a seller</p>
+            {% endif %}
+        </div>
+
+        <div class="px-info-group">
+            <label>Seller Sales ({{ sales_month_label }})</label>
+            {% if user.is_seller %}
+            <p>{{ seller_orders_month }} orders • {{ seller_sales_month|format_number }} TNNO</p>
+            {% else %}
+            <p class="px-text-muted">Not a seller</p>
+            {% endif %}
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="px-mt-lg" style="border-top: 1px solid #ddd; padding-top: 16px;">
+            <h3 style="color: var(--px-red); margin: 0 0 8px 0;">Danger Zone</h3>
+            <p class="px-text-muted" style="margin: 0 0 12px 0; font-size: 0.9em;">Delete this user account and all associated data</p>
+            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete user &quot;{{ user.username }}&quot;? This action cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-btn px-btn-danger px-btn-block">
+                    Delete User Account
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-edit-grid {
+    gap: 18px;
+}
+
+.admin-edit-panel {
+    background: linear-gradient(180deg, #fff6dc, #f2dfae);
+    border-color: #6f4528;
+    box-shadow: 5px 5px 0 rgba(111, 69, 40, 0.22);
+}
+
+.admin-edit-panel .px-panel-header {
+    border-bottom-color: rgba(111, 69, 40, 0.25);
+}
+
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #4d3217;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #6e5235;
+}
+</style>
+
+<script>
+document.getElementById('seller').addEventListener('change', function() {
+    const commissionGroup = document.getElementById('commission-group');
+    if (this.checked) {
+        commissionGroup.style.display = 'block';
+    } else {
+        commissionGroup.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

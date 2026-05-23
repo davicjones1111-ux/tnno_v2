@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block title %}Board - RetroQuest{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chan-board.css') }}">
+<style>
+    /* Faster transitions */
+    .screen, .matchmaking-overlay, .result-modal, .suspense-overlay {
+        transition: opacity 0.15s ease !important;
+    }
+    
+    .screen.active {
+        animation: fadeInFast 0.15s ease !important;
+    }
+    
+    @keyframes fadeInFast {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .tnno-glow-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .tnno-glow-badge {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 14px;
+        letter-spacing: 1.5px;
+        color: #ffd84a;
+        text-shadow:
+            0 0 4px rgba(255, 216, 74, 0.7),
+            0 0 10px rgba(255, 187, 0, 0.5),
+            0 0 18px rgba(255, 153, 0, 0.35);
+        animation: tnnoGlowPulse 1.8s ease-in-out infinite;
+    }
+
+    .tnno-glow-badge--delay {
+        animation-delay: 0.9s;
+    }
+
+    @keyframes tnnoGlowPulse {
+        0%, 100% {
+            filter: brightness(1);
+            transform: translateY(0);
+        }
+        50% {
+            filter: brightness(1.25);
+            transform: translateY(-1px);
+        }
+    }
+    
+    /* X.com style reply - inline reply form */
+    .inline-reply-form {
+        display: none;
+        background: #f5f8fa;
+        border: 1px solid #e1e8ed;
+        border-radius: 12px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .inline-reply-form.active {
+        display: block;
+        animation: slideDown 0.2s ease;
+    }
+    
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .inline-reply-form textarea {
+        width: 100%;
+        border: 1px solid #cfd9de;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: inherit;
+        font-size: 14px;
+        resize: none;
+        min-height: 80px;
+        transition: border-color 0.2s;
+    }
+    
+    .inline-reply-form textarea:focus {
+        outline: none;
+        border-color: #1d9bf0;
+    }
+    
+    .inline-reply-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+    
+    .inline-reply-info {
+        font-size: 12px;
+        color: #536471;
+    }
+    
+    .inline-reply-btn {
+        background: #1d9bf0;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 999px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .inline-reply-btn:hover {
+        background: #1a8cd8;
+    }
+    
+    .inline-reply-btn:disabled {
+        background: #cfd9de;
+        cursor: not-allowed;
+    }
+    
+    .cancel-reply-btn {
+        background: transparent;
+        color: #536471;
+        border: 1px solid #cfd9de;
+        padding: 8px 16px;
+        border-radius: 999px;
+        cursor: pointer;
+        margin-right: 8px;
+    }
+    
+    .cancel-reply-btn:hover {
+        background: #f5f8fa;
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+        .inline-reply-form {
+            background: #16181c;
+            border-color: #2f3336;
+        }
+        
+        .inline-reply-form textarea {
+            background: #16181c;
+            border-color: #2f3336;
+            color: #e7e9ea;
+        }
+        
+        .inline-reply-info {
+            color: #71767b;
+        }
+        
+        .cancel-reply-btn {
+            border-color: #2f3336;
+            color: #71767b;
+        }
+        
+        .cancel-reply-btn:hover {
+            background: #27292d;
+        }
+    }
+    
+    /* Author avatars and links */
+    .chan-author-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+        object-fit: cover;
+    }
+    
+    .chan-author-link {
+        color: inherit;
+        text-decoration: none;
+    }
+    
+    .chan-author-link:hover .name {
+        color: #117743;
+        text-decoration: underline;
+    }
+    
+    .chan-user-id {
+        color: #789922;
+        font-size: 0.8em;
+        margin-left: 4px;
+    }
+    
+    .lazy-image {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .lazy-image[src] {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chan-container chan-board-index">
+    <!-- Board Header -->
+    <div class="chan-header">
+        <div class="tnno-glow-row">
+            <span class="tnno-glow-badge">TNNO</span>
+            <div>
+                <h1 style="margin: 0;">/retro/ - TNNO Community</h1>
+                <p style="margin: 5px 0 0 0; font-size: 14px;">Community discussion board</p>
+            </div>
+            <span class="tnno-glow-badge tnno-glow-badge--delay">TNNO</span>
+        </div>
+    </div>
+
+    <!-- Post Form -->
+    <div class="chan-post-form" id="post-form">
+        <h3>Start a Thread</h3>
+        <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 13px;">
+            Creating a thread costs <strong style="color: #dc2626;">{{ thread_post_cost }} TNNO</strong>.
+            Your balance: <strong style="color: #dc2626;">{{ current_user.coins }} TNNO</strong>.
+        </p>
+        {% if can_create_thread %}
+        <form method="POST" action="{{ url_for('feed.create') }}" enctype="multipart/form-data" id="chan-form">
+            <div class="chan-form-group">
+                <textarea
+                    name="content"
+                    class="chan-textarea"
+                    placeholder="Type your post here... Use > for greentext"
+                    rows="4"
+                    required
+                    id="post-content"
+                ></textarea>
+            </div>
+            <div class="chan-form-group">
+                <label class="chan-label" for="photo">Image (Optional)</label>
+                <input type="file" name="photo" id="photo" class="chan-input chan-input--compact" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+            </div>
+            <button type="submit" class="chan-submit-btn">Post</button>
+        </form>
+        {% else %}
+        <p style="margin: 0; color: #b45309; font-weight: 600;">
+            Not enough TNNO to post. You can still reply inside any thread.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Threads / Posts -->
+    <div id="board-posts">
+        {% if posts.items %}
+            <div id="feed-thread-list">
+                {% with posts=posts.items %}
+                    {% include 'feed/_thread_cards.html' %}
+                {% endwith %}
+            </div>
+
+            <div id="feed-load-more-wrap" class="chan-pagination" {% if not posts.has_next %}style="display:none;"{% endif %}>
+                <button type="button" id="feed-load-more" class="chan-submit-btn">Load More</button>
+                <div id="feed-loading-indicator" style="display:none; margin-top: 8px;">Loading...</div>
+            </div>
+        {% else %}
+        <div class="chan-empty">
+            <p>No threads yet. Be the first to post!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<style>
+.chan-delete-btn {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.chan-post:hover .chan-delete-btn,
+.chan-reply:hover .chan-delete-btn {
+    opacity: 1;
+}
+
+#post-content {
+    min-height: 120px;
+}
+
+/* Hide quick reply box - using X.com style instead */
+.chan-quick-reply {
+    display: none !important;
+}
+
+</style>
+
+<script>
+function insertReply(postNumber) {
+    const textarea = document.getElementById('post-content');
+    if (textarea) {
+        textarea.value += '>>' + postNumber + '\n';
+        textarea.focus();
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+function scrollToPost(postNumber) {
+    const post = document.getElementById('post-' + postNumber);
+    if (post) {
+        post.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        post.style.background = '#ffe4e4';
+        setTimeout(() => {
+            post.style.background = '';
+        }, 2000);
+    }
+}
+
+function expandImage(img) {
+    if (img.style.maxWidth === 'none') {
+        img.style.maxWidth = '200px';
+        img.style.maxHeight = '200px';
+    } else {
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+    }
+}
+// Make functions globally available
+window.insertReply = insertReply;
+window.scrollToPost = scrollToPost;
+window.expandImage = expandImage;
+// Handle Enter key in reply textarea (Ctrl+Enter to submit)
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.classList.contains('chan-textarea')) {
+            // Main post form
+            activeElement.closest('form').submit();
+        }
+    }
+});
+
+let feedNextPage = {{ posts.next_num if posts.has_next else 'null' }};
+let feedLoading = false;
+let observer = null;
+
+async function loadMoreFeedPosts() {
+    if (feedLoading || !feedNextPage) return;
+    const button = document.getElementById('feed-load-more');
+    const indicator = document.getElementById('feed-loading-indicator');
+    const list = document.getElementById('feed-thread-list');
+    const wrap = document.getElementById('feed-load-more-wrap');
+    if (!button || !indicator || !list || !wrap) return;
+
+    feedLoading = true;
+    button.disabled = true;
+    indicator.style.display = 'block';
+
+    try {
+        const response = await fetch(`/feed/api/posts?page=${feedNextPage}&limit=10`, {
+            credentials: 'same-origin'
+        });
+        if (!response.ok) throw new Error('Failed to load posts');
+        const data = await response.json();
+        
+        if (data.posts && data.posts.length > 0) {
+            // Render posts using the template
+            const html = renderPostsHTML(data.posts);
+            list.insertAdjacentHTML('beforeend', html);
+            
+            // Initialize lazy loading for new images
+            initializeLazyLoading();
+        }
+        
+        feedNextPage = data.next_page || null;
+        if (!data.has_next || !feedNextPage) {
+            wrap.style.display = 'none';
+        }
+    } catch (err) {
+        console.error('Could not load more posts:', err);
+        alert('Could not load more posts. Please try again.');
+    } finally {
+        feedLoading = false;
+        button.disabled = false;
+        indicator.style.display = 'none';
+    }
+}
+
+function renderPostsHTML(posts) {
+    return posts.map(post => `
+        <div class="chan-post" id="post-${post.post_number}">
+            <div class="chan-post-header">
+                <span class="chan-post-number">#${post.post_number}</span>
+                <span class="chan-post-author">
+                    ${post.author ? `<a href="/profile/${post.author.username}" class="chan-author-link">${post.author.username}</a>` : 'Anonymous'}
+                    ${post.author && post.author.user_6digit ? `<span class="chan-user-id">#${post.author.user_6digit}</span>` : ''}
+                </span>
+                <span class="chan-post-time">${new Date(post.created_at).toLocaleString()}</span>
+            </div>
+            <div class="chan-post-content">
+                <div class="chan-post-text">${formatPostContent(post.content)}</div>
+                ${post.image_path ? `<div class="chan-post-image"><img data-src="${post.image_path}" alt="Post image" class="lazy-image" loading="lazy"></div>` : ''}
+            </div>
+            <div class="chan-post-footer">
+                <a href="/feed/${post.id}" class="chan-reply-link">
+                    ${post.reply_count > 0 ? `${post.reply_count} replies` : 'Reply'}
+                </a>
+            </div>
+        </div>
+    `).join('');
+}
+
+function formatPostContent(content) {
+    if (!content) return '';
+    // Convert >>123 to reply links
+    return content.replace(/>>(\d+)/g, '<a href="#post-$1" class="chan-reply-ref" onclick="scrollToPost($1)">>>$1</a>');
+}
+
+function initializeLazyLoading() {
+    const images = document.querySelectorAll('.lazy-image');
+    images.forEach(img => {
+        if (img.dataset.src && !img.src) {
+            img.src = img.dataset.src;
+            img.classList.remove('lazy-image');
+        }
+    });
+}
+
+function setupInfiniteScroll() {
+    if (observer) observer.disconnect();
+    
+    observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.target.id === 'feed-load-more') {
+                loadMoreFeedPosts();
+            }
+        });
+    }, {
+        rootMargin: '100px'
+    });
+    
+    const loadMoreBtn = document.getElementById('feed-load-more');
+    if (loadMoreBtn) {
+        observer.observe(loadMoreBtn);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const button = document.getElementById('feed-load-more');
+    if (button && button.dataset.loadBound !== '1') {
+        button.dataset.loadBound = '1';
+        button.addEventListener('click', loadMoreFeedPosts);
+    }
+    
+    // Initialize lazy loading for existing images
+    initializeLazyLoading();
+    
+    // Setup infinite scroll
+    setupInfiniteScroll();
+});
+
+document.addEventListener('turbo:load', function() {
+    const button = document.getElementById('feed-load-more');
+    if (button && button.dataset.loadBound !== '1') {
+        button.dataset.loadBound = '1';
+        button.addEventListener('click', loadMoreFeedPosts);
+    }
+    
+    initializeLazyLoading();
+    setupInfiniteScroll();
+});
+</script>
+{% endblock %}
+

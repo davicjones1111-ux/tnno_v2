@@ -1,0 +1,969 @@
+/**
+ * 4chan Style Board CSS - RetroQuest
+ * Anonymous imageboard aesthetic with modern responsive design
+ * Supports PC and mobile/phone layouts
+ */
+
+/* ==================== CSS Variables ==================== */
+:root {
+    /* 4chan Classic Colors */
+    --chan-bg: #f0e0d6;
+    --chan-bg-hover: #f5f0e8;
+    --chan-post-bg: #d6daf0;
+    --chan-post-bg-op: rgba(214, 218, 240, 0.6);
+    --chan-reply-bg: #eef2ff;
+    --chan-reply-bg-op: rgba(238, 242, 255, 0.7);
+    --chan-border: #b7c5d6;
+    --chan-text: #800000;
+    --chan-text-body: #000000;
+    --chan-greentext: #789922;
+    --chan-link: #34345c;
+    --chan-link-hover: #d00;
+    --chan-name: #117743;
+    --chan-info: #a9a9a9;
+    --chan-header-text: #af0a0f;
+
+    /* Dark Mode Colors */
+    --chan-dark-bg: #0f0f14;
+    --chan-dark-post: #1a1a24;
+    --chan-dark-reply: #242432;
+    --chan-dark-border: #333344;
+    --chan-dark-text: #c0c0d0;
+    --chan-dark-link: #6a9bd6;
+
+    /* Spacing */
+    --chan-space-xs: 4px;
+    --chan-space-sm: 8px;
+    --chan-space-md: 12px;
+    --chan-space-lg: 16px;
+    --chan-space-xl: 24px;
+
+    /* Transitions */
+    --chan-transition: 0.2s ease;
+}
+
+/* ==================== Base Styles ==================== */
+body {
+    font-family: var(--px-font-body, 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif);
+    font-size: 15px;
+    line-height: 1.55;
+    background-color: var(--chan-bg);
+    color: var(--chan-text-body);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: var(--chan-dark-bg);
+        color: var(--chan-dark-text);
+    }
+}
+
+/* ==================== Layout Containers ==================== */
+.chan-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--chan-space-lg);
+}
+
+.chan-board-index {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Feed index uses one unified stream layout on all screen sizes:
+   header -> create thread form -> posts list. */
+.chan-board-index #board-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chan-board-index .chan-op-container {
+    margin-bottom: 0;
+}
+
+.chan-board-index .chan-post-form {
+    position: static;
+    margin-bottom: 0;
+    border-radius: 0;
+    border: 1px solid rgba(120, 130, 170, 0.35);
+    background: linear-gradient(180deg, rgba(214, 218, 240, 0.95) 0%, rgba(214, 218, 240, 0.88) 100%);
+    box-shadow: none;
+}
+
+.chan-board-index .chan-post {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.chan-board-index .chan-post:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.chan-board-index .chan-header > div {
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+.chan-board-index .chan-header {
+    margin-bottom: 0;
+    border-radius: 0;
+}
+
+.chan-board-index .chan-header h1 {
+    margin-bottom: 0;
+}
+
+.chan-board-index .chan-post-image-container {
+    float: none;
+    display: block;
+    margin: 0 0 var(--chan-space-sm) 0;
+}
+
+.chan-board-index .chan-post-image {
+    float: none;
+    display: block;
+    max-width: min(100%, 420px);
+    max-height: 320px;
+}
+
+@media (min-width: 1024px) {
+    .chan-board-index {
+        gap: 18px;
+    }
+
+    .chan-board-index .chan-post-form h3 {
+        font-size: 17px;
+        letter-spacing: 0.3px;
+    }
+}
+
+/* ==================== Board Header ==================== */
+.chan-header {
+    text-align: center;
+    margin-bottom: var(--chan-space-xl);
+    padding: var(--chan-space-lg);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 0;
+    border: 2px solid #3d3d5c;
+}
+
+.chan-header h1 {
+    font-size: 28px;
+    color: #ffd700;
+    margin: 0 0 var(--chan-space-sm) 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.chan-header p {
+    color: #8888aa;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ==================== Post Form ==================== */
+.chan-post-form {
+    background: var(--chan-post-bg);
+    border: 1px solid var(--chan-border);
+    padding: var(--chan-space-lg);
+    margin-bottom: var(--chan-space-xl);
+    border-radius: 0;
+}
+
+.chan-post-form h3 {
+    margin: 0 0 var(--chan-space-md) 0;
+    color: var(--chan-header-text);
+    font-size: 16px;
+}
+
+.chan-form-group {
+    margin-bottom: var(--chan-space-md);
+}
+
+.chan-form-group label {
+    display: block;
+    margin-bottom: var(--chan-space-xs);
+    font-weight: bold;
+    color: var(--chan-text);
+}
+
+.chan-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--chan-space-sm);
+    border: 1px solid var(--chan-border);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    resize: vertical;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.chan-textarea:focus {
+    outline: none;
+    border-color: var(--chan-link);
+    box-shadow: 0 0 4px rgba(52, 52, 92, 0.3);
+}
+
+.chan-input {
+    width: 100%;
+    padding: var(--chan-space-sm);
+    border: 1px solid var(--chan-border);
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.chan-input--compact {
+    max-width: 280px;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+
+.chan-input--large {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+}
+
+.chan-input:focus {
+    outline: none;
+    border-color: var(--chan-link);
+}
+
+@media (max-width: 640px) {
+    .chan-op-container {
+        margin-bottom: var(--chan-space-md);
+    }
+
+    .chan-post {
+        padding: var(--chan-space-md);
+        margin-bottom: var(--chan-space-xs);
+    }
+
+    .chan-input--compact {
+        max-width: 100%;
+    }
+
+    .chan-submit-btn,
+    .inline-reply-btn,
+    .cancel-reply-btn {
+        padding: 9px 14px;
+        font-size: 12px;
+    }
+}
+
+.chan-file-input {
+    margin-top: var(--chan-space-sm);
+}
+
+.chan-submit-btn {
+    background: linear-gradient(180deg, #f0e0d6 0%, #d6c0b0 100%);
+    border: 1px solid #987654;
+    padding: var(--chan-space-sm) var(--chan-space-xl);
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 0;
+    color: #543210;
+    font-size: 13px;
+    transition: var(--chan-transition);
+}
+
+.chan-submit-btn:hover {
+    background: linear-gradient(180deg, #fff 0%, #f0e0d6 100%);
+    box-shadow: 0 0 8px rgba(120, 153, 34, 0.4);
+}
+
+/* ==================== OP Post (Original Post) ==================== */
+.chan-op-container {
+    margin-bottom: var(--chan-space-lg);
+}
+
+.chan-post {
+    background: var(--chan-post-bg);
+    border: 1px solid var(--chan-border);
+    padding: var(--chan-space-lg);
+    margin-bottom: var(--chan-space-sm);
+    border-radius: 0;
+    position: relative;
+    transition: var(--chan-transition);
+}
+
+.chan-post:hover {
+    background: var(--chan-post-bg-hover);
+}
+
+.chan-post-header {
+    margin-bottom: var(--chan-space-sm);
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.chan-post-header .subject {
+    color: var(--chan-header-text);
+    font-weight: bold;
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .name {
+    color: var(--chan-name);
+    font-weight: bold;
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .tripcode {
+    color: #228854;
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .admin-cap {
+    color: #f00;
+    font-weight: bold;
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .post-id {
+    color: var(--chan-info);
+    font-family: monospace;
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .date {
+    color: var(--chan-info);
+    margin-right: var(--chan-space-sm);
+}
+
+.chan-post-header .post-number {
+    color: var(--chan-link);
+    cursor: pointer;
+}
+
+.chan-post-header .post-number:hover {
+    color: var(--chan-link-hover);
+    text-decoration: underline;
+}
+
+.chan-delete-link {
+    font-family: inherit;
+    font-size: 10px !important;
+    line-height: 1.1;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #d00;
+    cursor: pointer;
+    font-weight: normal;
+    text-decoration: none;
+}
+
+.chan-delete-link:hover {
+    text-decoration: underline;
+    color: #a00;
+}
+
+/* ==================== Reply Post ==================== */
+.chan-reply {
+    background: var(--chan-reply-bg);
+    border: 1px solid var(--chan-border);
+    padding: var(--chan-space-sm) var(--chan-space-md);
+    margin: var(--chan-space-sm) 0;
+    margin-left: var(--reply-indent, var(--chan-space-xl));
+    border-radius: 0;
+    display: block;
+    max-width: calc(100% - 24px);
+    position: relative;
+    transition: var(--chan-transition);
+}
+
+.chan-reply:hover {
+    background: #e5eaf5;
+}
+
+.chan-reply::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 10px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 12px solid var(--chan-border);
+}
+
+/* ==================== Post Content ==================== */
+.chan-post-content {
+    margin: var(--chan-space-sm) 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.chan-post-content .greentext {
+    color: var(--chan-greentext);
+}
+
+.chan-post-content .quote {
+    color: var(--chan-greentext);
+}
+
+.chan-post-content a {
+    color: var(--chan-link);
+    text-decoration: none;
+}
+
+.chan-post-content a:hover {
+    color: var(--chan-link-hover);
+    text-decoration: underline;
+}
+
+.chan-post-content .reply-link {
+    color: var(--chan-link);
+    cursor: pointer;
+}
+
+.chan-post-content .reply-link:hover {
+    color: var(--chan-link-hover);
+}
+
+/* ==================== Post Image ==================== */
+.chan-post-image-container {
+    float: left;
+    margin: 0 var(--chan-space-md) var(--chan-space-sm) 0;
+}
+
+.chan-post-image {
+    max-width: 200px;
+    max-height: 200px;
+    border: 1px solid var(--chan-border);
+    cursor: pointer;
+    transition: var(--chan-transition);
+}
+
+.chan-post-image:hover {
+    opacity: 0.8;
+}
+
+.chan-file-info {
+    font-size: 11px;
+    color: var(--chan-info);
+    margin-top: 2px;
+}
+
+/* ==================== Post Footer ==================== */
+.chan-post-footer {
+    margin-top: var(--chan-space-sm);
+    font-size: 11px;
+    color: var(--chan-info);
+    clear: both;
+}
+
+.chan-post-footer a,
+.chan-post-footer button,
+.thread-reply-link {
+    font-family: inherit;
+    font-size: 10px !important;
+    line-height: 1.1;
+    color: var(--chan-link);
+    text-decoration: none;
+    padding: 0;
+    margin-right: var(--chan-space-sm);
+    background: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: none !important;
+    outline: none !important;
+    background-color: transparent !important;
+}
+
+.chan-post-footer a:hover,
+.chan-post-footer button:hover,
+.thread-reply-link:hover {
+    color: var(--chan-link-hover);
+    text-decoration: underline;
+}
+
+.chan-post-footer a:active,
+.chan-post-footer a:visited,
+.thread-reply-link:active,
+.thread-reply-link:visited,
+.chan-delete-link:active,
+.chan-delete-link:visited {
+    color: var(--chan-link);
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.chan-post-footer a:focus,
+.thread-reply-link:focus,
+.chan-delete-link:focus {
+    outline: none;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.chan-post-footer a:focus-visible,
+.thread-reply-link:focus-visible,
+.chan-delete-link:focus-visible {
+    outline: none;
+    background-color: transparent !important;
+}
+
+.chan-post-footer a,
+.thread-reply-link,
+.chan-delete-link {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.chan-replies {
+    margin-top: var(--chan-space-sm);
+    padding-left: 0;
+}
+
+@media (min-width: 900px) {
+    .chan-replies {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .chan-reply {
+        width: fit-content;
+        max-width: 900px;
+        margin-left: min(var(--reply-indent, 24px), 6vw);
+        box-sizing: border-box;
+    }
+}
+
+.chan-replies-link {
+    color: var(--chan-link);
+    font-size: 11px;
+    margin-right: var(--chan-space-xs);
+}
+
+/* ==================== Quick Reply ==================== */
+.chan-quick-reply {
+    position: fixed;
+    bottom: var(--chan-space-lg);
+    right: var(--chan-space-lg);
+    background: var(--chan-post-bg);
+    border: 2px solid var(--chan-border);
+    padding: var(--chan-space-md);
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 300px;
+    display: none;
+}
+
+.chan-quick-reply.active {
+    display: block;
+}
+
+.chan-quick-reply-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--chan-space-sm);
+}
+
+.chan-quick-reply-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--chan-info);
+}
+
+.chan-quick-reply-close:hover {
+    color: var(--chan-link-hover);
+}
+
+/* ==================== Pagination ==================== */
+.chan-pagination {
+    text-align: center;
+    margin: var(--chan-space-xl) 0;
+    padding: var(--chan-space-lg);
+}
+
+.chan-pagination a {
+    display: inline-block;
+    padding: var(--chan-space-sm) var(--chan-space-md);
+    margin: 0 var(--chan-space-xs);
+    background: var(--chan-post-bg);
+    border: 1px solid var(--chan-border);
+    color: var(--chan-link);
+    text-decoration: none;
+    border-radius: 0;
+    transition: var(--chan-transition);
+}
+
+.chan-pagination a:hover {
+    background: var(--chan-post-bg-hover);
+    color: var(--chan-link-hover);
+}
+
+.chan-pagination a.active {
+    background: var(--chan-border);
+    color: var(--chan-text-body);
+}
+
+/* ==================== Empty State ==================== */
+.chan-empty {
+    text-align: center;
+    padding: var(--chan-space-xl);
+    color: var(--chan-info);
+}
+
+/* ==================== Mobile FAB (Floating Action Button) ==================== */
+.chan-mobile-fab {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: var(--chan-space-lg);
+    width: 56px;
+    height: 56px;
+    border-radius: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    z-index: 999;
+    transition: var(--chan-transition);
+}
+
+.chan-mobile-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+    .chan-container {
+        padding: var(--chan-space-md);
+    }
+
+    .chan-post-image {
+        max-width: 150px;
+        max-height: 150px;
+    }
+}
+
+/* Mobile landscape and below */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    .chan-container {
+        padding: var(--chan-space-sm);
+    }
+
+    .chan-header {
+        padding: var(--chan-space-md);
+    }
+
+    .chan-header h1 {
+        font-size: 22px;
+    }
+
+    .chan-post-form {
+        padding: var(--chan-space-md);
+    }
+
+    .chan-board-index {
+        gap: 12px;
+    }
+
+    .chan-board-index #board-posts {
+        gap: 12px;
+    }
+
+    .chan-post {
+        padding: var(--chan-space-sm);
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .chan-reply {
+        margin-left: var(--chan-space-md);
+        max-width: 95%;
+    }
+
+    .chan-post-image-container {
+        float: none;
+        display: block;
+        margin: var(--chan-space-sm) 0;
+    }
+
+    .chan-post-image {
+        float: none;
+        display: block;
+        max-width: 100%;
+max-height: 250px;
+        margin: var(--chan-space-sm) 0;
+    }
+
+    .chan-file-info,
+    .chan-post-content,
+    .chan-post-footer {
+        clear: both;
+    }
+
+    .chan-post-header {
+        font-size: 12px;
+        flex-wrap: wrap;
+        gap: 4px 6px;
+        line-height: 1.2;
+    }
+
+    .chan-author-avatar {
+        width: 20px;
+        height: 20px;
+        margin-right: 6px;
+    }
+
+    .chan-user-id,
+    .chan-post-header .post-id,
+    .chan-post-header .date,
+    .chan-post-header .post-number {
+        font-size: 11px;
+    }
+
+    .chan-mobile-fab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chan-quick-reply {
+        left: var(--chan-space-sm);
+        right: var(--chan-space-sm);
+        bottom: max(var(--chan-space-sm), env(keyboard-height, 0px) + 10px);
+        max-width: none;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .chan-quick-reply .chan-submit-btn {
+        background: linear-gradient(180deg, #4CAF50 0%, #45a049 100%) !important;
+        color: white !important;
+        border: 1px solid #4CAF50 !important;
+        font-weight: bold;
+        margin-top: 12px;
+        padding: 12px;
+        font-size: 16px;        min-height: 44px;
+        width: 100% !important;
+        display: block;    }
+
+    .chan-pagination a {
+        padding: var(--chan-space-xs) var(--chan-space-sm);
+        font-size: 12px;
+    }
+
+    .chan-post-content {
+        font-size: 14px;
+        line-height: 1.45;
+        margin: var(--chan-space-xs) 0;
+    }
+
+    .chan-post-footer {
+        font-size: 12px;
+    }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+    body {
+        font-size: 15px;
+    }
+
+    .chan-submit-btn,
+    .inline-reply-btn,
+    .cancel-reply-btn {
+        min-height: 34px;
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+
+    .chan-header h1 {
+        font-size: 20px;
+    }
+
+    .chan-post {
+        padding: 10px;
+    }
+
+    .chan-post-header {
+        font-size: 11px;
+        gap: 3px 5px;
+    }
+
+    .chan-author-avatar {
+        width: 18px;
+        height: 18px;
+        margin-right: 5px;
+    }
+
+    .chan-post-content {
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .chan-reply {
+        margin-left: var(--chan-space-sm);
+        padding: var(--chan-space-xs) var(--chan-space-sm);
+    }
+
+    .chan-reply::before {
+        display: none;
+    }
+
+    .chan-post-image {
+        max-height: 200px;
+    }
+
+    .chan-file-info {
+        font-size: 10px;
+    }
+
+    .chan-post-footer {
+        font-size: 11px;
+    }
+}
+
+/* Dark mode responsive */
+@media (prefers-color-scheme: dark) {
+    .chan-post {
+        background: var(--chan-dark-post);
+        border-color: var(--chan-dark-border);
+    }
+
+    .chan-post:hover {
+        background: var(--chan-dark-reply);
+    }
+
+    .chan-reply {
+        background: var(--chan-dark-reply);
+        border-color: var(--chan-dark-border);
+    }
+
+    .chan-post-form {
+        background: var(--chan-dark-post);
+        border-color: var(--chan-dark-border);
+    }
+
+    .chan-textarea,
+    .chan-input {
+        background: var(--chan-dark-bg);
+        border-color: var(--chan-dark-border);
+        color: var(--chan-dark-text);
+    }
+
+    .chan-submit-btn {
+        background: linear-gradient(180deg, #2a2a3a 0%, #1a1a24 100%);
+        border-color: #4a4a5a;
+        color: #c0c0d0;
+    }
+
+    .chan-pagination a {
+        background: var(--chan-dark-post);
+        border-color: var(--chan-dark-border);
+        color: var(--chan-dark-link);
+    }
+
+    .chan-empty {
+        color: var(--chan-info);
+    }
+}
+
+/* ==================== Thread Collapsing ==================== */
+.chan-thread-collapsed .chan-replies {
+    display: none;
+}
+
+.chan-expand-btn {
+    font-size: 11px;
+    color: var(--chan-link);
+    cursor: pointer;
+    margin-left: var(--chan-space-sm);
+}
+
+.chan-expand-btn:hover {
+    color: var(--chan-link-hover);
+}
+
+/* ==================== Loading States ==================== */
+.chan-loading {
+    text-align: center;
+    padding: var(--chan-space-xl);
+    color: var(--chan-info);
+}
+
+.chan-loading::after {
+    content: '...';
+    animation: chan-loading-dots 1.5s infinite;
+}
+
+@keyframes chan-loading-dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* ==================== Reply Preview Tooltip ==================== */
+.chan-reply-preview {
+    position: absolute;
+    background: var(--chan-post-bg);
+    border: 1px solid var(--chan-border);
+    padding: var(--chan-space-sm);
+    max-width: 300px;
+    max-height: 200px;
+    overflow: auto;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: none;
+}
+
+.chan-reply-preview.active {
+    display: block;
+}
+
+/* ==================== Back to Top ==================== */
+.chan-back-to-top {
+    position: fixed;
+    bottom: var(--chan-space-lg);
+    left: var(--chan-space-lg);
+    background: var(--chan-post-bg);
+    border: 1px solid var(--chan-border);
+    padding: var(--chan-space-sm) var(--chan-space-md);
+    border-radius: 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: var(--chan-transition);
+    z-index: 998;
+}
+
+.chan-back-to-top.visible {
+    opacity: 1;
+}
+
+.chan-back-to-top:hover {
+    background: var(--chan-post-bg-hover);
+}

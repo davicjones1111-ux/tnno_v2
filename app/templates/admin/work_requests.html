@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Work Requests - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Manage Work Requests</h1>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+
+<!-- Work Requests List -->
+{% if work_requests.items %}
+<div class="px-panel">
+    <table class="px-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>File</th>
+                <th>Created</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in work_requests.items %}
+            <tr>
+                <td>
+                    <strong>{{ req.user.username }}</strong>
+                </td>
+                <td>
+                    {{ req.message[:50] }}{% if req.message|length > 50 %}...{% endif %}
+                </td>
+                <td>
+                    <span class="px-badge px-badge-{{ req.status }}">
+                        {{ req.status|title }}
+                    </span>
+                </td>
+                <td>
+                    {% if req.file_path %}
+                        <a href="{{ url_for('static', filename=req.file_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">
+                            Download
+                        </a>
+                    {% else %}
+                        <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if req.status == 'pending' %}
+                    <div class="px-flex px-gap-sm">
+                        <a href="{{ url_for('work.view_request', request_id=req.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            View Details
+                        </a>
+                        <form method="POST" action="{{ url_for('admin.accept_work_request', request_id=req.id) }}">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-success">Accept</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.reject_work_request', request_id=req.id) }}">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger">Reject</button>
+                        </form>
+                    </div>
+                    {% else %}
+                        <a href="{{ url_for('work.view_request', request_id=req.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            View Details
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if work_requests.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if work_requests.has_prev %}
+    <a href="{{ url_for('admin.work_requests', page=work_requests.prev_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ work_requests.page }} of {{ work_requests.pages }}
+    </span>
+    
+    {% if work_requests.has_next %}
+    <a href="{{ url_for('admin.work_requests', page=work_requests.next_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No work requests found.</p>
+</div>
+{% endif %}
+
+<style>
+.px-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.px-table th,
+.px-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.px-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.px-table tr:hover {
+    background: #f9f9f9;
+}
+
+.px-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-badge-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-badge-accepted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-badge-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.px-text-muted {
+    color: #999;
+}
+
+.px-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.px-pagination-info {
+    color: #666;
+}
+</style>
+{% endblock %}

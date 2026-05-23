@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Notifications</h1>
+    <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary">Back to Profile</a>
+</div>
+
+<div class="px-panel">
+    {% if notifications %}
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for n in notifications %}
+            <li style="padding: 12px 0; border-bottom: 1px solid #eee;">
+                <div class="px-text-sm">{{ n.row.message }}</div>
+                {% if n.kind == 'user' and n.row.attachment_path %}
+                <div class="px-text-sm">
+                    <a href="{{ n.row.attachment_path|media_url }}" target="_blank">View Attachment</a>
+                </div>
+                {% endif %}
+                {% if n.kind == 'seller' and n.row.notification_type == 'new_message' %}
+                <div class="px-text-sm">
+                    <a href="{{ url_for('merch.chat_conversation', conversation_id=n.row.related_id) }}">Open Chat</a>
+                </div>
+                {% elif n.kind == 'seller' and n.row.notification_type == 'new_purchase' %}
+                <div class="px-text-sm">
+                    <a href="{{ url_for('merch.admin_sales') }}">View Sale</a>
+                </div>
+                {% endif %}
+                <div class="px-text-muted" style="font-size: 0.75rem;">
+                    {{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="px-text-muted">No notifications.</p>
+    {% endif %}
+</div>
+{% endblock %}

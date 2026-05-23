@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Hub - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="seller-hub-page">
+    <div class="seller-hub-topbar">
+        <div>
+            <div class="seller-hub-kicker">Marketplace Tools</div>
+            <h1>Seller Hub</h1>
+            <p class="px-text-muted">Manage your seller request, renew your seller plan, and keep your store ready like a real app.</p>
+        </div>
+        <div class="seller-hub-top-actions">
+            <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Back to Profile</a>
+            {% if current_user.can_sell %}
+            <a href="{{ url_for('merch.seller_profile', seller_id=current_user.id) }}" class="px-btn px-btn-primary" data-turbo-preload="true">Open My Store</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="seller-hub-flashes">
+        {% for category, message in messages %}
+        <div class="px-alert {% if category == 'error' %}px-alert-error{% elif category == 'success' %}px-alert-success{% else %}px-alert-info{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if current_user.is_seller %}
+    <section class="px-panel seller-hub-panel">
+        <div class="seller-hub-panel-head">
+            <div>
+                <div class="seller-hub-section-label">Seller Status</div>
+                <h2>Keep your store active</h2>
+            </div>
+            <span class="seller-hub-badge {% if current_user.seller_active %}is-active{% else %}is-expired{% endif %}">
+                {% if current_user.seller_active %}Active{% else %}Expired{% endif %}
+            </span>
+        </div>
+
+        <div class="seller-hub-status-grid">
+            <div class="seller-hub-status-card">
+                <span>Status</span>
+                <strong>{% if current_user.seller_active %}Seller plan is live{% else %}Seller plan needs renewal{% endif %}</strong>
+            </div>
+            <div class="seller-hub-status-card">
+                <span>Plan expiry</span>
+                <strong>{{ current_user.seller_expires_at.strftime('%Y-%m-%d') if current_user.seller_expires_at else 'No active plan' }}</strong>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('profile.seller_plan') }}">
+            <div class="seller-hub-plan-grid">
+                {% for key, plan in seller_plans.items() %}
+                <label class="seller-hub-plan-card">
+                    <input type="radio" name="plan" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+                    <span class="seller-hub-plan-name">{{ plan.label }}</span>
+                    <strong>{{ plan.cost|format_number }} TNNO</strong>
+                    <small>{{ plan.months }} month{% if plan.months != 1 %}s{% endif %}</small>
+                </label>
+                {% endfor %}
+            </div>
+
+            <div class="seller-hub-action-row">
+                <button type="submit" class="px-btn px-btn-primary">
+                    {% if current_user.seller_active %}Renew Seller Plan{% else %}Activate Seller Plan{% endif %}
+                </button>
+                <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Add Product</a>
+                <a href="{{ url_for('merch.admin_sales') }}" class="px-btn px-btn-secondary" data-turbo-preload="true">Sales History</a>
+            </div>
+        </form>
+    </section>
+    {% else %}
+    <section class="px-panel seller-hub-panel">
+        <div class="seller-hub-panel-head">
+            <div>
+                <div class="seller-hub-section-label">Seller Request</div>
+                <h2>Open your store</h2>
+            </div>
+            {% if seller_request_summary %}
+            <span class="seller-hub-badge {% if seller_request_summary.status == 'pending' %}is-pending{% elif seller_request_summary.status == 'approved' %}is-active{% else %}is-expired{% endif %}">
+                {{ seller_request_summary.status|title }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if seller_request_summary %}
+        <div class="seller-hub-status-grid seller-hub-status-grid-compact">
+            <div class="seller-hub-status-card">
+                <span>Latest request</span>
+                <strong>{{ seller_request_summary.status|title }}</strong>
+            </div>
+            <div class="seller-hub-status-card">
+                <span>Selected plan</span>
+                <strong>{{ (seller_request_summary.plan_key or 'N/A')|upper }}{% if seller_request_summary.plan_cost %} • {{ seller_request_summary.plan_cost|format_number }} TNNO{% endif %}</strong>
+            </div>
+        </div>
+        {% if seller_request_summary.status == 'pending' %}
+        <p class="px-text-muted">Your seller request is already under review. You can come back here anytime to check the status.</p>
+        {% elif seller_request_summary.status == 'rejected' %}
+        <p class="px-text-muted">Your previous request was rejected. Update the details below and send a cleaner seller request.</p>
+        {% endif %}
+        {% else %}
+        <p class="px-text-muted">Submit your seller information here. After approval, your store profile and products will be ready to go.</p>
+        {% endif %}
+
+        {% if not seller_request_summary or seller_request_summary.status != 'pending' %}
+        <form method="POST" action="{{ url_for('profile.seller_request') }}" enctype="multipart/form-data">
+            <div class="seller-hub-form-grid">
+                <div class="px-form-group">
+                    <label class="px-form-label">Real Name</label>
+                    <input type="text" name="real_name" class="px-input" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-form-label">Country</label>
+                    <input type="text" name="country" class="px-input" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-form-label">City</label>
+                    <input type="text" name="city" class="px-input" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-form-label">Phone Number</label>
+                    <input type="text" name="phone" class="px-input" required>
+                </div>
+            </div>
+
+            <div class="px-form-group">
+                <label class="px-form-label">What Products Will You Sell?</label>
+                <textarea name="product_description" class="px-input" rows="4" required></textarea>
+            </div>
+
+            <div class="px-form-group">
+                <label class="px-form-label">Choose Seller Plan</label>
+                <div class="seller-hub-plan-grid">
+                    {% for key, plan in seller_plans.items() %}
+                    <label class="seller-hub-plan-card">
+                        <input type="radio" name="plan" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+                        <span class="seller-hub-plan-name">{{ plan.label }}</span>
+                        <strong>{{ plan.cost|format_number }} TNNO</strong>
+                        <small>{{ plan.months }} month{% if plan.months != 1 %}s{% endif %}</small>
+                    </label>
+                    {% endfor %}
+                </div>
+                <p class="px-text-sm px-text-muted">Plan fee is charged now. If admin rejects the request, the coins are refunded.</p>
+            </div>
+
+            <div class="seller-hub-form-grid">
+                <div class="px-form-group">
+                    <label class="px-form-label">ID Card Front</label>
+                    <input type="file" name="id_front" class="px-input" accept="image/*" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-form-label">ID Card Back</label>
+                    <input type="file" name="id_back" class="px-input" accept="image/*" required>
+                </div>
+            </div>
+
+            <div class="px-form-group">
+                <label class="px-form-label">Location</label>
+                <div class="seller-location-row">
+                    <input type="text" id="sellerLocationText" name="location_text" class="px-input" placeholder="Tap to share location" readonly>
+                    <button type="button" id="sellerLocationBtn" class="px-btn px-btn-secondary">Use My Location</button>
+                </div>
+                <input type="hidden" id="sellerLocationLat" name="location_lat">
+                <input type="hidden" id="sellerLocationLng" name="location_lng">
+            </div>
+
+            <div class="seller-hub-action-row">
+                <button type="submit" class="px-btn px-btn-primary">
+                    {% if seller_request_summary and seller_request_summary.status == 'rejected' %}Update Seller Request{% else %}Submit Seller Request{% endif %}
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+
+<style>
+.seller-hub-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    gap: 18px;
+}
+
+.seller-hub-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.seller-hub-kicker,
+.seller-hub-section-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--px-blue);
+}
+
+.seller-hub-topbar h1,
+.seller-hub-panel-head h2 {
+    margin: 6px 0 8px;
+}
+
+.seller-hub-top-actions,
+.seller-hub-action-row,
+.seller-location-row,
+.seller-hub-status-grid,
+.seller-hub-form-grid,
+.seller-hub-plan-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.seller-hub-top-actions,
+.seller-hub-action-row,
+.seller-hub-status-grid,
+.seller-hub-form-grid,
+.seller-hub-plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.seller-location-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.seller-hub-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,244,252,0.96));
+}
+
+.seller-hub-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.seller-hub-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    padding: 8px 12px;
+    border: 2px solid var(--px-border);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+}
+
+.seller-hub-badge.is-active {
+    background: #dff7e5;
+    color: #165b2c;
+}
+
+.seller-hub-badge.is-pending {
+    background: #fff1cf;
+    color: #7a5a00;
+}
+
+.seller-hub-badge.is-expired {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.seller-hub-status-card,
+.seller-hub-plan-card {
+    border: 3px solid var(--px-border);
+    background: rgba(255,255,255,0.9);
+    padding: 14px;
+}
+
+.seller-hub-status-card span,
+.seller-hub-plan-card small {
+    color: var(--px-text-light);
+}
+
+.seller-hub-status-card strong,
+.seller-hub-plan-card strong {
+    display: block;
+    margin-top: 6px;
+}
+
+.seller-hub-plan-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.seller-hub-plan-card input {
+    align-self: flex-start;
+}
+
+.seller-hub-plan-name {
+    font-weight: bold;
+}
+
+.seller-hub-flashes {
+    display: grid;
+    gap: 10px;
+}
+
+.px-alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+}
+
+.px-alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.px-alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.px-alert-info {
+    background: #d9edf7;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+@media (max-width: 768px) {
+    .seller-hub-topbar,
+    .seller-hub-panel-head {
+        flex-direction: column;
+    }
+
+    .seller-hub-top-actions,
+    .seller-hub-action-row,
+    .seller-hub-status-grid,
+    .seller-hub-form-grid,
+    .seller-hub-plan-grid,
+    .seller-location-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .seller-hub-page .px-btn {
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+
+    .seller-location-row .px-input {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .seller-hub-top-actions,
+    .seller-hub-action-row,
+    .seller-hub-status-grid,
+    .seller-hub-form-grid,
+    .seller-hub-plan-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .seller-hub-page .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+}
+</style>
+
+<script>
+const sellerLocationBtn = document.getElementById('sellerLocationBtn');
+const sellerLocationText = document.getElementById('sellerLocationText');
+const sellerLocationLat = document.getElementById('sellerLocationLat');
+const sellerLocationLng = document.getElementById('sellerLocationLng');
+
+if (sellerLocationBtn) {
+    sellerLocationBtn.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert('Location is not supported on this device.');
+            return;
+        }
+        sellerLocationBtn.disabled = true;
+        sellerLocationBtn.textContent = 'Getting location...';
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lng = pos.coords.longitude.toFixed(6);
+                sellerLocationLat.value = lat;
+                sellerLocationLng.value = lng;
+                sellerLocationText.value = `Lat ${lat}, Lng ${lng}`;
+                sellerLocationBtn.textContent = 'Location Added';
+                sellerLocationBtn.disabled = false;
+            },
+            function() {
+                sellerLocationBtn.textContent = 'Use My Location';
+                sellerLocationBtn.disabled = false;
+                alert('Unable to get location. Please allow location access.');
+            }
+        );
+    });
+}
+</script>
+{% endblock %}

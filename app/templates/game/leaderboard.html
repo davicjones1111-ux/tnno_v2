@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - RetroQuest{% endblock %}
+
+{% block extra_css %}
+<style>
+.px-leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.px-leaderboard-header {
+    background: linear-gradient(90deg, var(--px-bg-secondary), var(--px-bg-panel));
+}
+
+.px-leaderboard-header th {
+    padding: 14px;
+    text-align: left;
+    color: var(--px-gold);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--px-border-light);
+}
+
+.px-leaderboard-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background-color 0.2s ease;
+}
+
+.px-leaderboard-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.px-leaderboard-row.px-leaderboard-highlight {
+    background: rgba(255, 215, 0, 0.08);
+    box-shadow: inset 4px 0 0 var(--px-gold);
+}
+
+.px-leaderboard-row td {
+    padding: 12px 14px;
+    vertical-align: middle;
+}
+
+.px-rank-col {
+    width: 84px;
+}
+
+.px-player-col {
+    width: auto;
+}
+
+.px-score-col,
+.px-date-col {
+    width: 140px;
+    text-align: right;
+}
+
+.px-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 8px;
+    border: 2px solid var(--px-border-light);
+    background: var(--px-bg-card);
+    color: var(--px-gold);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.58rem;
+}
+
+.px-player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.px-player-avatar {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--px-border-light);
+    object-fit: cover;
+    background: var(--px-bg-card);
+}
+
+.px-avatar-default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.7rem;
+    color: var(--px-cyan);
+}
+
+.px-player-name-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.px-player-name-link:hover .px-player-name {
+    color: var(--px-gold);
+    text-decoration: underline;
+}
+
+.px-score-value {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.65rem;
+    color: var(--px-gold);
+}
+
+.px-py-lg {
+    padding: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .px-leaderboard-header th,
+    .px-leaderboard-row td {
+        padding: 10px 8px;
+    }
+
+    .px-leaderboard-header th {
+        font-size: 0.52rem;
+    }
+
+    .px-player-avatar,
+    .px-avatar-default {
+        width: 32px;
+        height: 32px;
+    }
+
+    .px-rank-badge {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Game Leaderboard</h1>
+    <a href="{{ url_for('game.index') }}" class="px-btn px-btn-secondary">
+        Back to Games
+    </a>
+</div>
+
+<!-- Game Filter -->
+<div class="px-flex px-gap-md px-mb-lg">
+    <a href="{{ url_for('game.leaderboard', game_id='emperors_circle') }}" class="px-btn {% if game_id == 'emperors_circle' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        EMPEROR'S CIRCLE
+    </a>
+</div>
+
+<!-- User's Rank -->
+{% if user_rank %}
+<div class="px-panel px-mb-lg" style="background: linear-gradient(135deg, var(--px-bg-secondary), var(--px-bg-panel));">
+    <div class="px-text-center">
+        <div class="px-stat-value" style="color: var(--px-gold); margin-bottom: 8px;">
+            #{{ user_rank }}
+        </div>
+        <p class="px-text-muted">Your Current Rank</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Leaderboard Table -->
+<div class="px-panel">
+    {% if scores %}
+    <table class="px-leaderboard-table">
+        <thead>
+            <tr class="px-leaderboard-header">
+                <th class="px-rank-col">Rank</th>
+                <th class="px-player-col">Player</th>
+                <th class="px-score-col">Score</th>
+                <th class="px-date-col">Last Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for score in scores %}
+            {% set row_user = score.user %}
+            <tr class="px-leaderboard-row {% if score.user_id == current_user.id %}px-leaderboard-highlight{% endif %}">
+                <td class="px-rank-col">
+                    <div class="px-rank-badge">#{{ loop.index }}</div>
+                </td>
+                <td class="px-player-col">
+                    <div class="px-player-info">
+                        {% if row_user and row_user.profile_pic %}
+                        <img src="{{ row_user.profile_pic|media_url }}" alt="{{ row_user.username }}" class="px-player-avatar">
+                        {% else %}
+                        <div class="px-player-avatar px-avatar-default">{{ row_user.username[0]|upper if row_user else '?' }}</div>
+                        {% endif %}
+                        <div>
+                            <a href="{{ url_for('profile.view', username=row_user.username) if row_user else '#' }}" class="px-player-name-link">
+                                <div class="px-player-name">{{ row_user.username if row_user else 'Unknown Player' }}</div>
+                            </a>
+                            {% if row_user and row_user.user_6digit %}
+                            <small class="px-text-muted">#{{ row_user.user_6digit }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td class="px-score-col">
+                    <div class="px-score-value">{{ score.score|format_number }}</div>
+                </td>
+                <td class="px-date-col">
+                    <span class="px-text-muted">{{ score.created_at.strftime('%m/%d/%Y') if score.created_at else 'N/A' }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="px-text-center px-py-lg">
+        <p class="px-text-muted">No scores recorded yet. Be the first to play!</p>
+        <a href="{{ url_for('game.emperors_circle') }}" class="px-btn px-btn-primary px-mt-md" data-turbo="false">
+            Play Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

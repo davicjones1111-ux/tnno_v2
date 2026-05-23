@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Withdrawals - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Manage Withdrawal Requests</h1>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+
+<!-- Withdrawals List -->
+{% if withdraws.items %}
+<div class="px-panel admin-withdraw-panel">
+    <div class="admin-withdraw-table-wrap">
+    <table class="px-table admin-withdraw-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Address / Phone</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for withdraw in withdraws.items %}
+            <tr>
+                <td>
+                    <strong>{{ withdraw.user.username }}</strong>
+                </td>
+                <td>
+                    <span class="px-coins">{{ withdraw.amount|format_number }}</span>
+                </td>
+                <td>
+                    <code class="px-code-inline px-wallet-full">{{ withdraw.wallet }}</code>
+                </td>
+                <td>{{ withdraw.name }}</td>
+                <td>
+                    <span class="px-badge px-badge-{{ withdraw.status }}">
+                        {{ withdraw.status|title }}
+                    </span>
+                </td>
+                <td>{{ withdraw.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if withdraw.status == 'pending' %}
+                    <div class="px-flex px-gap-sm">
+                        <form method="POST" action="{{ url_for('admin.approve_withdrawal', withdraw_id=withdraw.id) }}" style="display:inline;">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-success">Approve</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('admin.reject_withdrawal', withdraw_id=withdraw.id) }}" style="display:inline;">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger">Reject</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if withdraws.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if withdraws.has_prev %}
+    <a href="{{ url_for('admin.withdrawals', page=withdraws.prev_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ withdraws.page }} of {{ withdraws.pages }}
+    </span>
+    
+    {% if withdraws.has_next %}
+    <a href="{{ url_for('admin.withdrawals', page=withdraws.next_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No withdrawal requests found.</p>
+</div>
+{% endif %}
+
+<style>
+.admin-withdraw-panel {
+    background: linear-gradient(180deg, #fff6dc, #f2dfae);
+    border-color: #6f4528;
+}
+
+.admin-withdraw-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-withdraw-table {
+    min-width: 960px;
+}
+
+.admin-withdraw-table th,
+.admin-withdraw-table td {
+    border-bottom-color: rgba(111, 69, 40, 0.25);
+}
+
+.px-badge {
+    border-radius: 0;
+}
+
+.px-badge-pending {
+    background: #f0d58a;
+    color: #5b4312;
+}
+
+.px-badge-approved {
+    background: #cfe6b8;
+    color: #30531d;
+}
+
+.px-badge-rejected {
+    background: #edc0b8;
+    color: #712f25;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: #b37a16;
+}
+
+.px-code-inline {
+    background: #fff7df;
+    padding: 4px 8px;
+    border-radius: 0;
+    border: 2px solid #c9a25e;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.px-wallet-full {
+    color: #4e3418;
+    white-space: normal;
+    word-break: break-all;
+    display: inline-block;
+    max-width: 420px;
+}
+
+.px-text-muted {
+    color: #999;
+}
+
+.px-flex {
+    display: flex;
+}
+
+.px-gap-sm {
+    gap: 5px;
+}
+
+.px-btn-success {
+    background: linear-gradient(180deg, #8aae5b, #65823d);
+    border: 2px solid #466027;
+    color: white;
+}
+
+.px-btn-success:hover {
+    background: linear-gradient(180deg, #97ba68, #6d8b44);
+}
+
+.px-btn-danger {
+    background: linear-gradient(180deg, #d87060, #b24d3f);
+    border: 2px solid #7c3128;
+    color: white;
+}
+
+.px-btn-danger:hover {
+    background: linear-gradient(180deg, #df7e6e, #bc5848);
+}
+
+.px-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.px-pagination-info {
+    color: #666;
+}
+</style>
+{% endblock %}

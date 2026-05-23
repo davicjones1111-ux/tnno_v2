@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Deposit Payment - RetroQuest{% endblock %}
+
+{% block content %}
+<h1 class="px-mb-lg">{{ coin_type }} Deposit Payment #{{ deposit.id }}</h1>
+
+<div class="px-grid payment-layout" style="grid-template-columns: 1.3fr 1fr; gap: 16px;">
+    <div class="px-panel payment-card">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Payment Details</h2>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Coin Selected</label>
+            <div class="px-input payment-input-box" style="display: flex; align-items: center;">
+                {{ coin_type }}
+            </div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Network</label>
+            <div class="px-input" style="display: flex; align-items: center;">BNB Smart Chain (BEP20)</div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Receiving Wallet</label>
+            <div class="wallet-row">
+                <code id="walletAddress" class="wallet-code">{{ wallet_address }}</code>
+                <button id="copyWalletBtn" type="button" class="px-btn px-btn-secondary px-btn-sm">Copy</button>
+            </div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Your Requested Amount</label>
+            <div class="px-input">{{ amount_display }} {{ coin_type }}</div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Exact Amount To Send <span style="color: var(--px-green-light);">*Important</span></label>
+            <div class="exact-amount-box">{{ expected_amount_display }} {{ coin_type }}</div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Reward for Deposit</label>
+            <div class="reward-box">{{ deposit.points_amount }} TNNO</div>
+        </div>
+
+        <div class="px-form-group">
+            <label class="px-label">Time Remaining</label>
+            <div id="countdown" class="countdown-box">20:00</div>
+        </div>
+
+        <div id="statusBox" class="px-alert px-alert-info" style="margin-top: 16px;">
+            ⏳ Waiting for payment on-chain...
+        </div>
+
+        <a href="{{ url_for('deposit.index') }}" class="px-btn px-btn-secondary" style="margin-top: 10px;">← Back to Deposits</a>
+    </div>
+
+    <div class="px-panel payment-card">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Scan QR Code</h2>
+        </div>
+        <div class="qr-container">
+            <img src="{{ qr_code }}" alt="Deposit QR" class="qr-image">
+        </div>
+        <div class="payment-note-box" style="margin-top: 16px; padding: 12px;">
+            <p class="px-text-sm payment-note-title" style="margin: 0;">Instructions:</p>
+            <ul class="px-text-sm" style="margin: 8px 0 0 0; color: var(--px-text-muted); padding-left: 16px;">
+                <li>Send exactly <strong>{{ expected_amount_display }} {{ coin_type }}</strong></li>
+                <li>Use BNB Smart Chain network</li>
+                <li>Payment must arrive within the timer</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.payment-card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.payment-input-box {
+    color: var(--px-blue);
+}
+
+.wallet-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.wallet-code {
+    flex: 1;
+    display: inline-block;
+    padding: 10px;
+    border: 2px solid var(--px-border);
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+    background: rgba(93, 132, 214, 0.08);
+    color: var(--px-text);
+    font-family: 'VT323', monospace;
+    font-size: 0.9rem;
+}
+
+.exact-amount-box {
+    padding: 12px;
+    background: rgba(106, 181, 115, 0.08);
+    border: 3px solid rgba(106, 181, 115, 0.35);
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--px-green);
+    font-family: 'VT323', monospace;
+    text-align: center;
+}
+
+.reward-box {
+    padding: 12px;
+    background: rgba(219, 179, 58, 0.1);
+    border: 3px solid rgba(219, 179, 58, 0.35);
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #9f7300;
+    font-family: 'VT323', monospace;
+    text-align: center;
+}
+
+.countdown-box {
+    padding: 12px;
+    background: rgba(93, 132, 214, 0.08);
+    border: 3px solid rgba(93, 132, 214, 0.3);
+    border-radius: 4px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--px-blue);
+    font-family: 'Press Start 2P', cursive;
+    text-align: center;
+}
+
+.qr-container {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(93, 132, 214, 0.06);
+    border-radius: 4px;
+}
+
+.qr-image {
+    width: min(85vw, 240px);
+    height: auto;
+    border-radius: 8px;
+    border: 3px solid rgba(93, 132, 214, 0.3);
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 6px 18px rgba(63, 88, 138, 0.12);
+}
+
+.payment-note-box {
+    background: rgba(93, 132, 214, 0.06);
+    border-left: 3px solid rgba(93, 132, 214, 0.35);
+}
+
+.payment-note-title {
+    color: var(--px-blue);
+}
+
+.px-alert {
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.px-alert-info {
+    background-color: rgba(93, 132, 214, 0.08);
+    border-left-color: rgba(93, 132, 214, 0.35);
+    color: var(--px-text);
+}
+
+.px-alert-success {
+    background-color: rgba(46, 213, 115, 0.1);
+    border-left-color: var(--px-green);
+    color: var(--px-green-light);
+}
+
+.px-alert-warning {
+    background-color: rgba(255, 165, 2, 0.1);
+    border-left-color: var(--px-orange);
+    color: var(--px-orange-light);
+}
+
+@media (max-width: 900px) {
+    .payment-layout {
+        grid-template-columns: 1fr !important;
+    }
+
+    .wallet-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .countdown-box {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .exact-amount-box, .reward-box, .countdown-box {
+        font-size: 1rem;
+    }
+
+    .qr-image {
+        max-width: 100%;
+    }
+}
+</style>
+
+<script>
+(function() {
+    const statusUrl = "{{ url_for('deposit.status', deposit_id=deposit.id) }}";
+    const countdownEl = document.getElementById('countdown');
+    const statusBox = document.getElementById('statusBox');
+    const copyWalletBtn = document.getElementById('copyWalletBtn');
+    const walletAddress = document.getElementById('walletAddress').textContent.trim();
+
+    let secondsLeft = {{ seconds_left|int }};
+    let pollingStopped = false;
+
+    function setStatus(text, level) {
+        statusBox.className = 'px-alert';
+        statusBox.classList.add(level);
+        statusBox.textContent = text;
+    }
+
+    function renderCountdown() {
+        const minutes = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+        const seconds = String(secondsLeft % 60).padStart(2, '0');
+        countdownEl.textContent = `${minutes}:${seconds}`;
+    }
+
+    function tick() {
+        if (secondsLeft > 0) {
+            secondsLeft -= 1;
+            renderCountdown();
+        } else {
+            renderCountdown();
+            if (!pollingStopped) {
+                setStatus('Deposit expired. Create a new request to continue.', 'px-alert-warning');
+            }
+        }
+    }
+
+    async function pollStatus() {
+        if (pollingStopped) {
+            return;
+        }
+
+        try {
+            const response = await fetch(statusUrl, { credentials: 'same-origin' });
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            secondsLeft = Number(data.seconds_left || 0);
+
+            if (data.status === 'success' || data.status === 'completed') {
+                pollingStopped = true;
+                setStatus(`Payment confirmed. TX: ${data.tx_hash || 'N/A'}`, 'px-alert-success');
+            } else if (data.status === 'expired' || data.status === 'cancelled') {
+                pollingStopped = true;
+                setStatus('Deposit expired. Create a new request to continue.', 'px-alert-warning');
+            } else {
+                setStatus('Waiting for payment on-chain...', 'px-alert-info');
+            }
+
+            renderCountdown();
+        } catch (e) {
+            // Keep silent to avoid noisy UI when RPC is temporarily slow.
+        }
+    }
+
+    copyWalletBtn.addEventListener('click', async function() {
+        try {
+            await navigator.clipboard.writeText(walletAddress);
+            copyWalletBtn.textContent = 'Copied';
+            setTimeout(() => { copyWalletBtn.textContent = 'Copy Wallet'; }, 1200);
+        } catch (e) {
+            copyWalletBtn.textContent = 'Copy Failed';
+            setTimeout(() => { copyWalletBtn.textContent = 'Copy Wallet'; }, 1200);
+        }
+    });
+
+    renderCountdown();
+    setInterval(tick, 1000);
+    setInterval(pollStatus, 6000);
+    pollStatus();
+})();
+</script>
+{% endblock %}

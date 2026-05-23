@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }} - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg profile-header-row">
+    <h1>{{ profile_user.username }}'s Profile</h1>
+    <div class="profile-header-actions">
+        <a href="{{ url_for('profile.leaderboard') }}" class="px-btn px-btn-secondary">Back to Leaderboard</a>
+        <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary">My Profile</a>
+    </div>
+</div>
+
+<div class="px-grid px-grid-2 profile-view-grid">
+    <!-- Profile Card -->
+    <div class="px-panel profile-card-shell">
+        <div class="px-text-center">
+            {% if profile_user.profile_pic %}
+                <img src="{{ profile_user.profile_pic|media_url }}" alt="{{ profile_user.username }}" class="px-profile-pic" style="max-width: 180px; height: auto; border-radius: 8px; margin-bottom: 20px;">
+            {% else %}
+                <div class="px-avatar px-avatar-lg" style="margin: 0 auto 20px;">
+                    {{ profile_user.username[0]|upper }}
+                </div>
+            {% endif %}
+            
+            <h2 style="color: var(--px-blue);">{{ profile_user.username }}</h2>
+            {% if profile_user.user_6digit %}
+            <p class="px-text-muted">ID: #{{ profile_user.user_6digit }}</p>
+            {% endif %}
+            
+            <div class="px-mt-lg">
+                <div class="px-stat-card">
+                    <div class="px-stat-value" style="color: var(--px-gold);">
+                        <span class="px-coin"></span>
+                        {{ profile_user.coins|format_number }}
+                    </div>
+                    <div class="px-stat-label">TNNO</div>
+                </div>
+            </div>
+            {% if profile_user.can_sell %}
+            <div class="px-mt-md">
+                <a href="{{ url_for('merch.seller_profile', seller_id=profile_user.id) }}" class="px-btn px-btn-primary px-btn-block">
+                    Visit Seller Page
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profile Details -->
+    <div>
+        <!-- Bio -->
+        <div class="px-panel profile-card-shell px-mb-lg">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">About</h2>
+            </div>
+            {% if profile_user.bio %}
+            <p>{{ profile_user.bio }}</p>
+            {% else %}
+            <p class="px-text-muted">No bio available</p>
+            {% endif %}
+        </div>
+
+        <!-- Stats -->
+        <div class="px-panel profile-card-shell">
+            <div class="px-panel-header">
+                <h2 class="px-panel-title">Stats</h2>
+            </div>
+            
+            <div class="px-info-group">
+                <label>Member Since</label>
+                <p>{{ profile_user.created_at.strftime('%B %d, %Y') }}</p>
+            </div>
+
+            {% if stats %}
+                {% if stats.get('completed_missions') is not none %}
+                <div class="px-info-group">
+                    <label>Completed Missions</label>
+                    <p>{{ stats.completed_missions }}</p>
+                </div>
+                {% endif %}
+
+                {% if stats.get('total_coins_earned') is not none %}
+                <div class="px-info-group">
+                    <label>Total TNNO Earned</label>
+                    <p><span class="px-coins">{{ stats.total_coins_earned|format_number }}</span></p>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.px-text-muted {
+    color: var(--px-text-muted);
+}
+
+.profile-header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.profile-card-shell {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--px-text);
+}
+
+.px-info-group p {
+    margin: 0;
+    color: var(--px-text-muted);
+}
+
+.px-coins {
+    font-weight: bold;
+    color: var(--px-gold);
+}
+
+.px-panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(63, 88, 138, 0.18);
+    margin-bottom: 12px;
+}
+
+.px-panel-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.px-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #5d84d6 0%, #88a9e8 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.px-avatar-lg {
+    width: 100px;
+    height: 100px;
+}
+
+.px-stat-card {
+    background: rgba(255,255,255,0.92);
+    padding: 20px;
+    border-radius: 4px;
+    text-align: center;
+    border: 1px solid rgba(63, 88, 138, 0.16);
+}
+
+.px-stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.px-stat-label {
+    color: var(--px-text-muted);
+    font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+    .profile-header-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .profile-view-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-header-actions .px-btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-header-actions .px-btn,
+    .profile-card-shell .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+}
+</style>
+{% endblock %}

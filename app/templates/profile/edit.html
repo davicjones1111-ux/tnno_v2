@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg profile-header-row">
+    <h1>Edit Profile</h1>
+    <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary">
+        Back to Profile
+    </a>
+</div>
+
+{% if get_flashed_messages(category_filter=['error']) %}
+<div class="px-alert px-alert-error px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['error']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="px-grid px-grid-2 profile-edit-grid">
+    <!-- Profile Picture Upload -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Profile Picture</h2>
+        </div>
+        
+        <div class="px-text-center">
+            {% if current_user.profile_pic %}
+                <img src="{{ current_user.profile_pic|media_url }}" alt="{{ current_user.username }}" class="px-profile-pic-preview" style="max-width: 200px; height: auto;">
+            {% else %}
+                <div class="px-avatar px-avatar-xl" style="margin: 0 auto;">
+                    {{ current_user.username[0]|upper }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" id="profileForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-form-group px-mt-md">
+                <label for="profile_pic" class="px-form-label">Upload New Picture</label>
+                <input 
+                    type="file" 
+                    id="profile_pic" 
+                    name="profile_pic" 
+                    class="px-input" 
+                    accept="image/*"
+                />
+                <small class="px-text-muted">Supported: PNG, JPG, GIF, WEBP (Max 16MB)</small>
+            </div>
+
+            {% if current_user.is_seller %}
+            <div class="px-form-group">
+                <label for="seller_cover_photo" class="px-form-label">Seller Store Cover</label>
+                <div class="seller-cover-preview-wrap">
+                    {% if current_user.seller_cover_photo %}
+                    <img src="{{ current_user.seller_cover_photo|media_url }}" alt="Store cover" class="seller-cover-preview">
+                    {% else %}
+                    <div class="seller-cover-preview seller-cover-preview-placeholder">
+                        <span>Store Cover Banner</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <input
+                    type="file"
+                    id="seller_cover_photo"
+                    name="seller_cover_photo"
+                    class="px-input"
+                    accept="image/*"
+                />
+                <small class="px-text-muted">This shows on your public seller store like a cover photo.</small>
+            </div>
+            {% endif %}
+
+            <div class="px-form-group">
+                <label for="bio" class="px-form-label">Bio</label>
+                <textarea 
+                    id="bio" 
+                    name="bio" 
+                    class="px-textarea" 
+                    rows="6"
+                    placeholder="Tell others about yourself..."
+                >{{ current_user.bio }}</textarea>
+            </div>
+
+            <div class="px-flex px-gap-md px-mt-lg profile-edit-actions">
+                <button type="submit" class="px-btn px-btn-primary">Save Changes</button>
+                <a href="{{ url_for('profile.index') }}" class="px-btn px-btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Account Information -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Account Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Username</label>
+            <p>{{ current_user.username }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Email</label>
+            <p>{{ current_user.email or 'Not set' }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>6-Digit ID</label>
+            <p>#{{ current_user.user_6digit }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>TNNO</label>
+            <p><span class="px-coins">{{ current_user.coins|format_number }}</span></p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Role</label>
+            <p>
+                <span class="px-badge">
+                    {% if current_user.is_admin() %}Admin{% else %}User{% endif %}
+                </span>
+            </p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Member Since</label>
+            <p>{{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+
+        <div class="px-mt-lg">
+            <a href="{{ url_for('profile.settings') }}" class="px-btn px-btn-secondary px-btn-block">
+                Change Password
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.px-input,
+.px-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+.px-textarea {
+    resize: vertical;
+}
+
+.px-input:focus,
+.px-textarea:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.px-text-muted {
+    display: block;
+    color: #999;
+    font-size: 0.9em;
+    margin-top: 0.25rem;
+}
+
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #666;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.px-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: #4CAF50;
+    color: white;
+    font-size: 0.85em;
+}
+
+.px-panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+.px-panel-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.px-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.px-avatar-xl {
+    width: 100px;
+    height: 100px;
+}
+
+.px-profile-pic-preview {
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    object-fit: cover;
+}
+
+.seller-cover-preview-wrap {
+    margin-bottom: 10px;
+}
+
+.seller-cover-preview {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 6;
+    border: 3px solid var(--px-border);
+    object-fit: cover;
+    display: block;
+    background: linear-gradient(135deg, #eef4ff 0%, #dce7fb 100%);
+}
+
+.seller-cover-preview-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--px-blue);
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .profile-header-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .profile-header-row .px-btn {
+        width: 100%;
+    }
+
+    .profile-edit-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .profile-edit-actions {
+        flex-direction: column;
+    }
+
+    .profile-edit-actions .px-btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

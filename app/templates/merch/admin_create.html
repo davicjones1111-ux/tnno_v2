@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Add Product{% if current_user.is_admin() %} - Admin{% endif %}{% endblock %}
+
+{% block content %}
+<div class="px-mb-lg">
+    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-sm" style="margin-bottom: 20px; display: inline-block;">
+        ← Back to Products
+    </a>
+    
+    <h1 class="px-mb-lg">➕ Add New Product</h1>
+
+    {% if not current_user.is_admin() %}
+    <div class="px-panel px-mb-lg">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Seller Status</h2>
+        </div>
+        {% if seller_active %}
+            <p class="px-text-muted">Your seller plan is active.</p>
+            {% if seller_expires_at %}
+            <p class="px-text-sm">Expires on <strong>{{ seller_expires_at.strftime('%Y-%m-%d') }}</strong></p>
+            {% endif %}
+        {% else %}
+            <p class="px-text-muted">Your seller plan has expired. Renew to show products in the store.</p>
+            <form method="POST" action="{{ url_for('profile.seller_plan') }}" class="px-mt-md">
+                <div class="px-form-group">
+                    {% for key, plan in seller_plans.items() %}
+                    <label class="px-flex px-gap-sm px-items-center px-mb-sm">
+                        <input type="radio" name="plan" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+                        <span>{{ plan.label }} - {{ plan.cost|format_number }} TNNO</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="px-btn px-btn-primary">Update Plan</button>
+            </form>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="px-panel merch-create-shell" style="max-width: 860px;">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="merch-create-grid">
+                <div>
+            <div class="px-form-group">
+                <label class="px-label">Product Name *</label>
+                <input type="text" name="name" class="px-input" required 
+                       placeholder="e.g., Premium Wallpaper Pack">
+            </div>
+            
+            <div class="px-form-group">
+                <label class="px-label">Description</label>
+                <textarea name="description" class="px-input" rows="4" 
+                          placeholder="Describe your product..."></textarea>
+            </div>
+            
+            <div class="px-form-group">
+                <label class="px-label">Price (in TNNO) *</label>
+                <input type="number" name="price" class="px-input" required min="1" 
+                       placeholder="100" value="100">
+                <p class="px-text-sm px-text-muted px-mt-sm">
+                    How many TNNO users need to pay for 1 item
+                </p>
+            </div>
+            
+                        <div class="px-form-group">
+                <label class="px-label">Product Type *</label>
+                <select name="product_type" id="product_type" class="px-input" required>
+                    <option value="digital" selected>Digital</option>
+                    <option value="physical">Physical</option>
+                </select>
+                <p class="px-text-sm px-text-muted px-mt-sm">
+                    Digital products require files. Physical products require stock and a contact link.
+                </p>
+            </div>
+
+<div class="px-form-group">
+                <label class="px-label">Product Photos</label>
+                <input type="file" name="images" class="px-input" accept="image/*" multiple title="Product Photos">
+                <p class="px-text-sm px-text-muted px-mt-sm">
+                    Add up to 4 photos. The first photo becomes the main cover in the store.
+                </p>
+            </div>
+                </div>
+                <div class="merch-create-sidecard">
+                    <h3 class="merch-create-sidecard-title">Seller Setup</h3>
+                    <p class="px-text-sm px-text-muted">Use bright images, a short title, and one clear description so the product looks polished on both phone and PC.</p>
+                    <div class="merch-create-hint">
+                        <strong>Best result:</strong> 1 clean cover photo, correct stock, and a simple delivery/contact note.
+                    </div>
+                </div>
+            </div>
+            
+                        <div id="digital-fields">
+                <div class="px-form-group">
+                    <label class="px-label">Product Files * (Upload one file per quantity)</label>
+                    <input type="file" name="files" id="digital-files" class="px-input" multiple accept=".zip,.rar,.pdf,.txt,.doc,.docx,.mp3,.mp4" title="Product Files">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        ⚠️ <strong>Important:</strong> Select ALL files at once. 
+                        If you want to sell 5 items, select 5 files at once.<br>
+                        Each file = 1 quantity. Example: Selling 10 items = upload 10 files.
+                    </p>
+                    <div id="file-count" class="px-text-sm px-text-muted" style="margin-top: 8px;">
+                        No files selected
+                    </div>
+                </div>
+            </div>
+
+            <div id="physical-fields" style="display: none;">
+                <div class="px-form-group">
+                    <label class="px-label">Physical Quantity *</label>
+                    <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
+                </div>
+                <div class="px-form-group">
+                    <label class="px-label">Contact Link *</label>
+                    <input type="text" name="contact_link" id="contact-link" class="px-input" placeholder="Telegram/Facebook link">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Buyers will see this link for questions about delivery.
+                    </p>
+                </div>
+            </div>
+
+
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
+                    ✅ Create Product
+                </button>
+                <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.merch-create-shell {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.merch-create-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.9fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.merch-create-sidecard {
+    background: rgba(93, 132, 214, 0.06);
+    border: 2px solid rgba(93, 132, 214, 0.18);
+    padding: 16px;
+}
+
+.merch-create-sidecard-title {
+    margin: 0 0 10px;
+    color: var(--px-blue);
+    font-size: 0.88rem;
+}
+
+.merch-create-hint {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.88);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+    color: var(--px-text);
+}
+
+@media (max-width: 900px) {
+    .merch-create-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+const typeSelect = document.getElementById('product_type');
+const digitalFields = document.getElementById('digital-fields');
+const physicalFields = document.getElementById('physical-fields');
+const fileInput = document.getElementById('digital-files');
+const fileCount = document.getElementById('file-count');
+const physicalQuantity = document.getElementById('physical-quantity');
+const contactLink = document.getElementById('contact-link');
+
+if (fileInput && fileCount) {
+    fileInput.addEventListener('change', function() {
+        const count = this.files.length;
+        if (count > 0) {
+            fileCount.innerHTML = `📦 ${count} file(s) selected (${count} quantity)`;
+            fileCount.style.color = 'var(--px-green)';
+        } else {
+            fileCount.innerHTML = 'No files selected';
+            fileCount.style.color = 'var(--px-text-muted)';
+        }
+    });
+}
+
+function updateTypeFields() {
+    const isPhysical = typeSelect && typeSelect.value === 'physical';
+    if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
+    if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
+    if (fileInput) fileInput.required = !isPhysical;
+    if (physicalQuantity) physicalQuantity.required = isPhysical;
+    if (contactLink) contactLink.required = isPhysical;
+}
+
+if (typeSelect) {
+    typeSelect.addEventListener('change', updateTypeFields);
+    updateTypeFields();
+}
+</script>
+{% endblock %}

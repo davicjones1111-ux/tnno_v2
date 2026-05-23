@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}My Withdrawal Requests - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg withdraw-header">
+    <h1>My Withdrawal Requests</h1>
+    <div class="px-flex px-gap-sm">
+        <a href="{{ url_for('work.create_withdraw') }}" class="px-btn px-btn-primary">
+            New Withdrawal
+        </a>
+    </div>
+</div>
+
+<!-- Filter Buttons -->
+<div class="px-flex px-gap-md px-mb-lg withdraw-filters">
+    <a href="{{ url_for('work.withdraw') }}" class="px-btn {% if request.args.get('status') == None %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        All
+    </a>
+    <a href="{{ url_for('work.withdraw', status='pending') }}" class="px-btn {% if request.args.get('status') == 'pending' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Pending
+    </a>
+    <a href="{{ url_for('work.withdraw', status='approved') }}" class="px-btn {% if request.args.get('status') == 'approved' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Approved
+    </a>
+    <a href="{{ url_for('work.withdraw', status='rejected') }}" class="px-btn {% if request.args.get('status') == 'rejected' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Rejected
+    </a>
+</div>
+
+<!-- Balance Summary -->
+<div class="px-stats-grid px-mb-lg">
+    <div class="px-stat-card">
+        <div class="px-stat-value px-coins">{{ current_user.coins|format_number }}</div>
+        <div class="px-stat-label">Available TNNO</div>
+    </div>
+</div>
+
+<!-- Withdrawals List -->
+{% if withdraws.items %}
+<div class="px-panel">
+    <div class="withdraw-table-wrap">
+    <table class="px-table withdraw-table">
+        <thead>
+            <tr>
+                <th>Amount</th>
+                <th>Wallet</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for withdraw in withdraws.items %}
+            <tr>
+                <td data-label="Amount">
+                    <span class="px-coins">{{ withdraw.amount|format_number }}</span> TNNO
+                </td>
+                <td data-label="Wallet">
+                    <code class="px-code-inline">{{ withdraw.wallet[:20] }}{% if withdraw.wallet|length > 20 %}...{% endif %}</code>
+                </td>
+                <td data-label="Name">{{ withdraw.name }}</td>
+                <td data-label="Status">
+                    <span class="px-status px-status-{{ withdraw.status }}">
+                        {{ withdraw.status|title }}
+                    </span>
+                </td>
+                <td data-label="Created">{{ withdraw.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if withdraws.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if withdraws.has_prev %}
+    <a href="{{ url_for('work.withdraw', page=withdraws.prev_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Previous
+    </a>
+    {% endif %}
+    
+    <span class="px-pagination-info">
+        Page {{ withdraws.page }} of {{ withdraws.pages }}
+    </span>
+    
+    {% if withdraws.has_next %}
+    <a href="{{ url_for('work.withdraw', page=withdraws.next_num, status=request.args.get('status')) }}" class="px-btn px-btn-secondary">
+        Next
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No withdrawal requests found.</p>
+    <a href="{{ url_for('work.create_withdraw') }}" class="px-btn px-btn-primary px-mt-md">
+        Create Your First Withdrawal
+    </a>
+</div>
+{% endif %}
+
+<style>
+.px-coins {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.px-code-inline {
+    background: #1f2937;
+    padding: 3px 7px;
+    border-radius: 6px;
+    border: 1px solid #374151;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #fff;
+    white-space: normal;
+    word-break: break-all;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.px-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.9em;
+    font-weight: bold;
+    border: 1px solid transparent;
+    color: #fff;
+}
+
+.px-status-pending {
+    background: #7c5b12;
+    border-color: #fcd34d;
+}
+
+.px-status-approved {
+    background: #0f5132;
+    border-color: #86efac;
+}
+
+.px-status-rejected {
+    background: #7f1d1d;
+    border-color: #fca5a5;
+}
+
+.px-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.px-table th,
+.px-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #374151;
+    font-size: 16px;
+    color: #fff;
+}
+
+.px-table th {
+    background: #111827;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.px-table tr:hover {
+    background: transparent;
+}
+
+.px-text-muted {
+    color: #999;
+}
+
+.px-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.px-pagination-info {
+    color: #fff;
+}
+
+.px-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.px-stat-card {
+    background: #0f172a;
+    padding: 20px;
+    border-radius: 4px;
+    text-align: center;
+    border: 1px solid #334155;
+    box-shadow: 0 8px 20px rgba(2, 6, 23, 0.35);
+}
+
+.px-stat-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.px-stat-label {
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.withdraw-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    background: #0b1220;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.55);
+}
+
+.withdraw-table {
+    background: #0b1220;
+}
+
+.withdraw-table .px-coins {
+    color: #fff;
+}
+
+.withdraw-table tr,
+.withdraw-table td,
+.withdraw-table td::before,
+.withdraw-table .px-code-inline,
+.withdraw-table .px-status {
+    transition: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.withdraw-table tr:active,
+.withdraw-table td:active,
+.withdraw-table .px-code-inline:active,
+.withdraw-table .px-status:active {
+    background-color: inherit;
+    color: inherit;
+}
+
+@media (max-width: 768px) {
+    .withdraw-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .withdraw-header .px-btn {
+        width: 100%;
+    }
+
+    .withdraw-filters {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .withdraw-filters .px-btn {
+        flex: 1 1 calc(50% - 8px);
+        text-align: center;
+        justify-content: center;
+    }
+
+    .withdraw-table thead {
+        display: none;
+    }
+
+    .withdraw-table,
+    .withdraw-table tbody,
+    .withdraw-table tr,
+    .withdraw-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .withdraw-table tr {
+        border: 1px solid #334155;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: #0f172a;
+        overflow: hidden;
+    }
+
+    .withdraw-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .withdraw-table td {
+        border-bottom: 1px solid #334155;
+        padding: 9px 12px;
+        font-size: 15px;
+        color: #fff;
+    }
+
+    .withdraw-table td:last-child {
+        border-bottom: none;
+    }
+
+    .withdraw-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 4px;
+        font-size: 13px;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+    }
+}
+</style>
+{% endblock %}

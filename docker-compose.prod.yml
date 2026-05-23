@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-retroquest}
+      POSTGRES_USER: ${POSTGRES_USER:-retroquest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: production
+      AUTO_CREATE_SCHEMA_ON_START: "0"
+      START_BLOCKCHAIN_CHECKER: "0"
+      PREFERRED_URL_SCHEME: https
+      TRUST_PROXY_HEADERS: "1"
+      RATE_LIMIT_TRUST_PROXY_HEADERS: "1"
+      CACHE_TYPE: redis
+      ENABLE_SERVER_SIDE_SESSIONS: "1"
+      SESSION_TYPE: redis
+      GAME_STATE_BACKEND: redis
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CACHE_REDIS_URL: ${CACHE_REDIS_URL:-redis://redis:6379/0}
+      SESSION_REDIS_URL: ${SESSION_REDIS_URL:-redis://redis:6379/1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://retroquest:change-me@db:5432/retroquest}
+      GUNICORN_WORKER_CLASS: ${GUNICORN_WORKER_CLASS:-gevent}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - uploads_data:/app/app/static/uploads
+      - app_logs:/var/log/retroquest
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: python worker.py
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: production
+      AUTO_CREATE_SCHEMA_ON_START: "0"
+      START_BLOCKCHAIN_CHECKER: "1"
+      PREFERRED_URL_SCHEME: https
+      TRUST_PROXY_HEADERS: "1"
+      RATE_LIMIT_TRUST_PROXY_HEADERS: "1"
+      CACHE_TYPE: redis
+      ENABLE_SERVER_SIDE_SESSIONS: "1"
+      SESSION_TYPE: redis
+      GAME_STATE_BACKEND: redis
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CACHE_REDIS_URL: ${CACHE_REDIS_URL:-redis://redis:6379/0}
+      SESSION_REDIS_URL: ${SESSION_REDIS_URL:-redis://redis:6379/1}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://retroquest:change-me@db:5432/retroquest}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - uploads_data:/app/app/static/uploads
+      - app_logs:/var/log/retroquest
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+      - ./app/static:/srv/static:ro
+      - uploads_data:/srv/static/uploads
+      - nginx_logs:/var/log/nginx
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+  app_logs:
+  nginx_logs:

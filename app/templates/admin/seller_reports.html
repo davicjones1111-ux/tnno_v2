@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Reports - Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Seller Reports</h1>
+    <div class="px-flex px-gap-sm">
+        <a href="{{ url_for('admin.seller_reports', status='pending') }}" class="px-btn px-btn-sm {% if status == 'pending' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Pending</a>
+        <a href="{{ url_for('admin.seller_reports', status='reviewed') }}" class="px-btn px-btn-sm {% if status == 'reviewed' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">Reviewed</a>
+    </div>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+</div>
+
+{% if reports %}
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">{{ status|title }} Reports</h2>
+    </div>
+
+    <table class="px-table">
+        <thead>
+            <tr>
+                <th>Seller</th>
+                <th>Reporter</th>
+                <th>Message</th>
+                <th>Evidence</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td><strong>{{ report.seller.username if report.seller else 'Unknown' }}</strong></td>
+                <td>{{ report.reporter.username if report.reporter else 'Unknown' }}</td>
+                <td style="max-width: 320px;">{{ report.message }}</td>
+                <td>
+                    {% if report.evidence_path %}
+                    <a href="{{ url_for('static', filename=report.evidence_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-secondary">View</a>
+                    {% else %}
+                    <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td><span class="px-status px-status-{{ report.status }}">{{ report.status|title }}</span></td>
+                <td>
+                    {% if report.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('admin.review_seller_report', report_id=report.id) }}">
+                        <button type="submit" class="px-btn px-btn-sm px-btn-primary">Mark Reviewed</button>
+                    </form>
+                    {% else %}
+                    <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="px-text-muted">No seller reports found.</p>
+{% endif %}
+{% endblock %}

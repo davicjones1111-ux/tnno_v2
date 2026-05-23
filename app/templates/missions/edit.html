@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Mission - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Edit Mission</h1>
+    <a href="{{ url_for('missions.view', mission_id=mission.id) }}" class="px-btn px-btn-secondary">
+        Back to Mission
+    </a>
+</div>
+
+{% if get_flashed_messages(category_filter=['error']) %}
+<div class="px-alert px-alert-error px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['error']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="px-panel">
+    <form method="POST" class="px-form">
+        <div class="px-form-group">
+            <label for="title" class="px-form-label">Mission Title *</label>
+            <input 
+                type="text" 
+                id="title" 
+                name="title" 
+                class="px-input" 
+                value="{{ mission.title }}" 
+                required 
+                placeholder="Enter mission title"
+            />
+        </div>
+
+        <div class="px-form-group">
+            <label for="instructions" class="px-form-label">Instructions *</label>
+            <textarea 
+                id="instructions" 
+                name="instructions" 
+                class="px-textarea" 
+                required 
+                rows="6"
+                placeholder="Enter detailed mission instructions"
+            >{{ mission.instructions }}</textarea>
+        </div>
+
+        <div class="px-grid px-grid-2">
+            <div class="px-form-group">
+                <label for="reward" class="px-form-label">Reward (TNNO)</label>
+                <input 
+                    type="number" 
+                    id="reward" 
+                    name="reward" 
+                    class="px-input" 
+                    value="{{ mission.reward }}" 
+                    min="0"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="time_limit" class="px-form-label">Time Limit (Hours)</label>
+                <input 
+                    type="number" 
+                    id="time_limit" 
+                    name="time_limit" 
+                    class="px-input" 
+                    value="{{ mission.time_limit }}" 
+                    min="1"
+                />
+            </div>
+        </div>
+
+        <div class="px-grid px-grid-2">
+            <div class="px-form-group">
+                <label for="limit_count" class="px-form-label">Completion Limit (0 = Unlimited)</label>
+                <input 
+                    type="number" 
+                    id="limit_count" 
+                    name="limit_count" 
+                    class="px-input" 
+                    value="{{ mission.limit_count }}" 
+                    min="0"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="status" class="px-form-label">Status</label>
+                <select id="status" name="status" class="px-input">
+                    <option value="active" {% if mission.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if mission.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="px-flex px-gap-md px-mt-lg">
+            <button type="submit" class="px-btn px-btn-primary">Update Mission</button>
+            <a href="{{ url_for('missions.view', mission_id=mission.id) }}" class="px-btn px-btn-secondary">Cancel</a>
+            <form method="POST" action="{{ url_for('missions.delete', mission_id=mission.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this mission?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-btn px-btn-danger">Delete</button>
+            </form>
+        </div>
+    </form>
+</div>
+
+<style>
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.px-input,
+.px-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.px-textarea {
+    resize: vertical;
+}
+
+.px-input:focus,
+.px-textarea:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.px-alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+}
+
+.px-alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.px-btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.px-btn-danger:hover {
+    background: #c82333;
+}
+</style>
+{% endblock %}

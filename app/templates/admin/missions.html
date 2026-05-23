@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Missions - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Manage Missions</h1>
+    <div class="px-flex px-gap-md">
+        <a href="{{ url_for('missions.create') }}" class="px-btn px-btn-primary">
+            Create Mission
+        </a>
+        <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Missions List -->
+{% if missions %}
+<div class="px-panel admin-missions-panel">
+    <div class="admin-missions-table-wrap">
+    <table class="px-table admin-missions-table">
+        <thead>
+            <tr>
+                <th>Card</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Reward</th>
+                <th>Submissions</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mission in missions %}
+            <tr>
+                <td>
+                    {% if mission.image_path %}
+                    <img src="{{ mission.image_path|media_url }}" alt="{{ mission.title }}" class="admin-mission-thumb">
+                    {% else %}
+                    <div class="admin-mission-thumb admin-mission-thumb-empty">No Image</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ mission.title }}</strong>
+                </td>
+                <td>
+                    <span class="px-badge px-badge-{{ 'active' if mission.status == 'active' else 'inactive' }}">
+                        {{ mission.status|title }}
+                    </span>
+                </td>
+                <td>
+                    <span class="px-coins">{{ mission.reward|format_number }}</span>
+                </td>
+                <td>{{ mission.submissions.count() }}</td>
+                <td>{{ mission.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    <div class="px-flex px-gap-sm">
+                        <a href="{{ url_for('missions.view', mission_id=mission.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            View
+                        </a>
+                        <a href="{{ url_for('missions.edit', mission_id=mission.id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                            Edit
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+{% else %}
+<div class="px-panel px-text-center">
+    <p class="px-text-muted">No missions found.</p>
+    <a href="{{ url_for('missions.create') }}" class="px-btn px-btn-primary px-mt-md">
+        Create First Mission
+    </a>
+</div>
+{% endif %}
+
+<style>
+.admin-missions-panel {
+    background: linear-gradient(180deg, #fbfdff, var(--px-bg-card));
+}
+
+.admin-missions-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-missions-table {
+    min-width: 980px;
+}
+
+.admin-missions-table th,
+.admin-missions-table td {
+    border-bottom-color: rgba(183, 197, 217, 0.35);
+}
+
+.px-badge {
+    border-radius: 0;
+}
+
+.px-badge-active {
+    background: #e9f3ff;
+    color: #335b96;
+    border: 1px solid #b7c9ea;
+}
+
+.px-badge-inactive {
+    background: #eef2ff;
+    color: #4b5b8f;
+    border: 1px solid #c1c9e9;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: var(--px-cyan-dark);
+}
+
+.admin-mission-thumb {
+    width: 72px;
+    aspect-ratio: 0.74;
+    object-fit: cover;
+    border: 2px solid var(--px-border);
+    background: var(--px-bg-primary);
+    display: block;
+}
+
+.admin-mission-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: var(--px-text-dim);
+}
+
+.px-gap-sm {
+    gap: 8px;
+}
+</style>
+{% endblock %}

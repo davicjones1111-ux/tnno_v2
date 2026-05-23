@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Work Request Details - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Work Request Details</h1>
+    <a href="{{ url_for('work.requests') }}" class="px-btn px-btn-secondary">
+        Back to Requests
+    </a>
+</div>
+
+<div class="px-grid px-grid-2">
+    <!-- Request Details -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Request Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Status</label>
+            <p>
+                <span class="px-status px-status-{{ work_request.status }}">
+                    {{ work_request.status|title }}
+                </span>
+            </p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Created</label>
+            <p>{{ work_request.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Request Fee</label>
+            <p>{{ request_fee|format_number }} TNNO (charged if accepted)</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Message</label>
+            <div class="px-message-box">
+                {{ work_request.message }}
+            </div>
+        </div>
+        
+        {% if work_request.file_path %}
+        <div class="px-info-group">
+            <label>Attached File</label>
+            <p>
+                <a href="{{ url_for('static', filename=work_request.file_path) }}" target="_blank" class="px-btn px-btn-sm px-btn-primary">
+                    Download File
+                </a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- User Info -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Your Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Username</label>
+            <p>{{ work_request.user.username }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Email</label>
+            <p>{{ work_request.user.email or 'Not set' }}</p>
+        </div>
+        
+        <div class="px-info-group">
+            <label>TNNO</label>
+            <p>{{ work_request.user.coins|format_number }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #666;
+}
+
+.px-message-box {
+    background: #f9f9f9;
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 4px solid #4CAF50;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.px-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-status-accepted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.px-panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 12px;
+}
+
+.px-panel-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}My Submissions - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg submissions-header">
+    <h1>My Mission Submissions</h1>
+    <div class="px-flex px-gap-sm">
+        <a href="{{ url_for('missions.index') }}" class="px-btn px-btn-secondary">
+            Back to Missions
+        </a>
+    </div>
+</div>
+
+<!-- Filter Buttons -->
+<div class="px-flex px-gap-md px-mb-lg submissions-filters">
+    <a href="{{ url_for('missions.my_submissions') }}" class="px-btn {% if not current_status %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        All
+    </a>
+    <a href="{{ url_for('missions.my_submissions', status='pending') }}" class="px-btn {% if current_status == 'pending' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Pending
+    </a>
+    <a href="{{ url_for('missions.my_submissions', status='completed') }}" class="px-btn {% if current_status == 'completed' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Completed
+    </a>
+    <a href="{{ url_for('missions.my_submissions', status='rejected') }}" class="px-btn {% if current_status == 'rejected' %}px-btn-primary{% else %}px-btn-secondary{% endif %}">
+        Rejected
+    </a>
+</div>
+
+<!-- Submissions List -->
+{% if submissions.items %}
+<div class="px-panel">
+    <div class="submissions-table-wrap">
+    <table class="px-table missions-submissions-table">
+        <thead>
+            <tr>
+                <th>Mission</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>Code</th>
+                <th>Proof</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for submission in submissions.items %}
+            <tr>
+                <td data-label="Mission">
+                    <strong>{{ submission.mission_title }}</strong>
+                </td>
+                <td data-label="Status">
+                    <span class="px-status px-status-{{ submission.status }}">
+                        {{ submission.status|title }}
+                    </span>
+                </td>
+                <td data-label="Submitted">
+                    {{ submission.submission_time.strftime('%Y-%m-%d %H:%M') if submission.submission_time else 'N/A' }}
+                </td>
+                <td data-label="Code">
+                    {% if submission.code %}
+                        <code class="px-code-inline">{{ submission.code[:20] }}{% if submission.code|length > 20 %}...{% endif %}</code>
+                    {% else %}
+                        <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td data-label="Proof">
+                    {% if submission.mission_photo and submission.mission_photo|static_exists %}
+                        <a href="{{ submission.mission_photo|media_url }}" target="_blank">
+                            <img src="{{ submission.mission_photo|media_url }}" alt="Mission proof" class="submission-proof-image">
+                        </a>
+                    {% elif submission.mission_photo %}
+                        <span class="px-text-danger">missing</span>
+                    {% else %}
+                        <span class="px-text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td data-label="Action">
+                    <a href="{{ url_for('missions.view', mission_id=submission.mission_id) }}" class="px-btn px-btn-sm px-btn-secondary">
+                        Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% else %}
+<div class="px-panel px-text-center">
+    {% if current_status %}
+        <p class="px-text-muted">No {{ current_status }} submissions found.</p>
+    {% else %}
+        <p class="px-text-muted">You haven't submitted any missions yet. Start one now!</p>
+    {% endif %}
+    <a href="{{ url_for('missions.index') }}" class="px-btn px-btn-primary px-mt-md">
+        View Available Missions
+    </a>
+</div>
+{% endif %}
+
+{% if submissions.pages > 1 %}
+<div class="px-pagination px-mt-md">
+    {% if submissions.has_prev %}
+    <a href="{{ url_for('missions.my_submissions', page=submissions.prev_num, status=current_status) }}" class="px-btn px-btn-secondary">Previous</a>
+    {% endif %}
+    <span class="px-pagination-info">Page {{ submissions.page }} of {{ submissions.pages }}</span>
+    {% if submissions.has_next %}
+    <a href="{{ url_for('missions.my_submissions', page=submissions.next_num, status=current_status) }}" class="px-btn px-btn-secondary">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.px-code-inline {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.px-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.px-table th,
+.px-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.px-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+}
+
+.px-table tr:hover {
+    background: #f9f9f9;
+}
+
+.px-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.submission-proof-image {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border: 2px solid var(--px-border);
+}
+
+.submissions-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .submissions-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .submissions-header .px-btn {
+        width: 100%;
+    }
+
+    .submissions-filters {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .submissions-filters .px-btn {
+        flex: 1 1 calc(50% - 8px);
+        text-align: center;
+        justify-content: center;
+    }
+
+    .missions-submissions-table thead {
+        display: none;
+    }
+
+    .missions-submissions-table,
+    .missions-submissions-table tbody,
+    .missions-submissions-table tr,
+    .missions-submissions-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .missions-submissions-table tr {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .missions-submissions-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .missions-submissions-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 10px 12px;
+    }
+
+    .missions-submissions-table td:last-child {
+        border-bottom: none;
+    }
+
+    .missions-submissions-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+        font-size: 0.82em;
+    }
+
+    .submission-proof-image {
+        width: 56px;
+        height: 56px;
+    }
+}
+</style>
+{% endblock %}

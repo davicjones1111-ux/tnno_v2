@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Create Service Order - RetroQuest{% endblock %}
+
+{% block content %}
+{% set selected_category = form_data.get('category', 'TikTok') %}
+{% set selected_service = form_data.get('service', '') %}
+{% set selected_quantity = form_data.get('quantity', min_order_qty) %}
+
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Create Service Order</h1>
+    <a href="{{ url_for('work.orders') }}" class="px-btn px-btn-secondary">
+        Back to Orders
+    </a>
+</div>
+
+{% if get_flashed_messages(category_filter=['error']) %}
+<div class="px-alert px-alert-error px-mb-md">
+    {% for message in get_flashed_messages(category_filter=['error']) %}
+        <p>{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="px-panel">
+    <div class="px-info-box px-mb-lg">
+        <div><strong>Your TNNO:</strong> {{ current_user.coins|format_number }}</div>
+        <div><strong>USDT Rate:</strong> 1 USDT = {{ usdt_to_points|format_number }} TNNO</div>
+        <div><strong>Order Range:</strong> {{ min_order_qty|format_number }} to {{ max_order_qty|format_number }} units</div>
+    </div>
+
+    <form method="POST" class="px-form" id="service-order-form">
+        <div class="px-form-group">
+            <label for="category" class="px-form-label">Platform *</label>
+            <select id="category" name="category" class="px-input" required>
+                {% for platform_name in service_catalog.keys() %}
+                <option value="{{ platform_name }}" {% if platform_name == selected_category %}selected{% endif %}>
+                    {{ platform_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="px-form-group">
+            <label for="service" class="px-form-label">Service Type *</label>
+            <select id="service" name="service" class="px-input" required>
+                {% for service_name in service_catalog.get(selected_category, []) %}
+                <option value="{{ service_name }}" {% if service_name == selected_service %}selected{% endif %}>
+                    {{ service_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="px-form-group">
+            <label for="link" class="px-form-label">Profile/Post Link (Optional)</label>
+            <input
+                type="url"
+                id="link"
+                name="link"
+                class="px-input"
+                placeholder="https://example.com/your-page-or-post"
+                value="{{ form_data.get('link', '') }}"
+            />
+        </div>
+
+        <div class="px-grid px-grid-2">
+            <div class="px-form-group">
+                <label for="quantity" class="px-form-label">Quantity *</label>
+                <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    class="px-input"
+                    required
+                    value="{{ selected_quantity }}"
+                    min="{{ min_order_qty }}"
+                    max="{{ max_order_qty }}"
+                    step="1"
+                />
+            </div>
+
+            <div class="px-form-group">
+                <label for="charge" class="px-form-label">Total Charge (TNNO)</label>
+                <input
+                    type="number"
+                    id="charge"
+                    name="charge"
+                    class="px-input"
+                    readonly
+                    value="0"
+                />
+            </div>
+        </div>
+
+        <div class="px-price-note px-mb-lg">
+            <p><strong>Pricing:</strong> Followers/Subscribers/Telegram Followers = {{ premium_price_tnno }} TNNO per unit.</p>
+            <p><strong>Engagement:</strong> Likes/Comments/Shares = {{ engagement_price_tnno }} TNNO per unit.</p>
+        </div>
+
+        <div class="px-flex px-gap-md px-mt-lg">
+            <button type="submit" class="px-btn px-btn-primary">Create Order</button>
+            <a href="{{ url_for('work.orders') }}" class="px-btn px-btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+const serviceCatalog = {{ service_catalog|tojson }};
+const premiumServices = new Set({{ premium_services|tojson }});
+const premiumPrice = {{ premium_price_tnno }};
+const engagementPrice = {{ engagement_price_tnno }};
+const minQty = {{ min_order_qty }};
+const maxQty = {{ max_order_qty }};
+
+const categoryInput = document.getElementById('category');
+const serviceInput = document.getElementById('service');
+const quantityInput = document.getElementById('quantity');
+const chargeInput = document.getElementById('charge');
+
+function getUnitPrice(serviceName) {
+    return premiumServices.has(serviceName) ? premiumPrice : engagementPrice;
+}
+
+function clampQuantity() {
+    let qty = parseInt(quantityInput.value || minQty, 10);
+    if (Number.isNaN(qty)) qty = minQty;
+    if (qty < minQty) qty = minQty;
+    if (qty > maxQty) qty = maxQty;
+    quantityInput.value = qty;
+    return qty;
+}
+
+function refillServices() {
+    const selectedCategory = categoryInput.value;
+    const services = serviceCatalog[selectedCategory] || [];
+    const previous = serviceInput.value;
+
+    serviceInput.innerHTML = '';
+    services.forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        serviceInput.appendChild(opt);
+    });
+
+    if (services.includes(previous)) {
+        serviceInput.value = previous;
+    }
+}
+
+function updateCharge() {
+    const qty = clampQuantity();
+    const selectedService = serviceInput.value;
+    const unitPrice = getUnitPrice(selectedService);
+    chargeInput.value = qty * unitPrice;
+}
+
+categoryInput.addEventListener('change', () => {
+    refillServices();
+    updateCharge();
+});
+
+serviceInput.addEventListener('change', updateCharge);
+quantityInput.addEventListener('input', updateCharge);
+
+refillServices();
+updateCharge();
+</script>
+
+<style>
+.px-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.px-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1em;
+}
+
+.px-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.px-info-box {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 12px 16px;
+    border-radius: 4px;
+    line-height: 1.6;
+}
+
+.px-price-note {
+    background: #1f2937;
+    border: 1px solid #374151;
+    color: #e5e7eb;
+    padding: 12px 16px;
+    border-radius: 4px;
+}
+
+.px-price-note p {
+    margin: 0.25rem 0;
+}
+
+.px-alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.px-alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+</style>
+{% endblock %}

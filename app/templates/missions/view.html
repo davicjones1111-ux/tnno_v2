@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Mission Details - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg mission-view-topbar">
+    <h1>Mission Details</h1>
+    <a href="{{ url_for('missions.index') }}" class="px-btn px-btn-secondary">
+        Back to Missions
+    </a>
+</div>
+
+<div class="px-grid mission-view-layout" style="grid-template-columns: 2fr 1fr;">
+    <!-- Mission Details -->
+    <div class="px-panel">
+        <div class="px-flex px-justify-between px-items-start">
+            <div>
+                <h2 style="color: var(--px-cyan);">{{ mission.title }}</h2>
+            </div>
+            <div class="px-mission-reward" style="position: static;">
+                <span class="px-coin"></span>
+                {{ mission.reward }}
+            </div>
+        </div>
+        
+        <div class="px-mission-meta px-mb-lg">
+            <span>⏱️ {{ mission.time_limit }} hours</span>
+            <span>📋 {% if mission.limit_count > 0 %}{{ mission.limit_count }} max{% else %}Unlimited{% endif %}</span>
+            <span>📅 Created: {{ mission.created_at.strftime('%Y-%m-%d') if mission.created_at else 'N/A' }}</span>
+        </div>
+        
+        <h3>Instructions</h3>
+        {% set is_telegram = 'telegram' in (mission.instructions or '')|lower %}
+        <div class="px-panel {% if is_telegram %}px-highlight-gold{% endif %}" style="padding: var(--px-md);">
+            <p style="line-height: 1.8; margin: 0;">{{ mission.instructions }}</p>
+        </div>
+        
+        {% if submission %}
+        <div class="px-panel" style="background: var(--px-bg-dark);">
+            <h4 style="color: var(--px-gold);">Your Submission</h4>
+            <p><strong>Status:</strong> <span class="px-status px-status-{{ submission.status }}">{{ submission.status|title }}</span></p>
+            <p><strong>Submitted:</strong> {{ submission.submission_time.strftime('%Y-%m-%d %H:%M') if submission.submission_time else 'N/A' }}</p>
+            {% if submission.code %}
+            <p><strong>Code:</strong> {{ submission.code }}</p>
+            {% endif %}
+            {% if submission.mission_photo and submission.mission_photo|static_exists %}
+            <p><strong>Photo:</strong> <img src="{{ submission.mission_photo|media_url }}" alt="Submission" style="max-width: 200px;"></p>
+            {% elif submission.mission_photo %}
+            <p><strong>Photo:</strong> <span class="px-text-danger">image file missing</span></p>
+            {% endif %}
+            
+            {% if submission.status == 'pending' %}
+            <div class="px-alert px-alert-info px-mt-md">
+                Your submission is being reviewed. You cannot resubmit this mission yet, but you can complete other missions!
+            </div>
+            {% elif submission.status in ('completed', 'rejected') and mission.status == 'active' %}
+            <div class="px-mt-lg">
+                <h3>Start Mission Again</h3>
+                <form method="POST" action="{{ url_for('missions.submit', mission_id=mission.id) }}" enctype="multipart/form-data">
+                    <div class="px-form-group">
+                        <label class="px-label" for="code">Code (Optional)</label>
+                        <input type="text" id="code" name="code" class="px-input" placeholder="Enter completion code">
+                    </div>
+                    
+                    <div class="px-form-group">
+                        <label class="px-label" for="photo">Screenshot (Optional)</label>
+                        <input type="file" id="photo" name="photo" class="px-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                    </div>
+                    
+                    <button type="submit" class="px-btn px-btn-primary px-btn-lg mission-submit-btn">
+                        Submit Mission
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+        {% elif mission.status == 'active' %}
+        <div class="px-mt-lg">
+            <h3>Submit Proof</h3>
+            <form method="POST" action="{{ url_for('missions.submit', mission_id=mission.id) }}" enctype="multipart/form-data">
+                <div class="px-form-group">
+                    <label class="px-label" for="code">Code (Optional)</label>
+                    <input type="text" id="code" name="code" class="px-input" placeholder="Enter completion code">
+                </div>
+                
+                <div class="px-form-group">
+                    <label class="px-label" for="photo">Screenshot (Optional)</label>
+                    <input type="file" id="photo" name="photo" class="px-input" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
+                </div>
+                
+                <button type="submit" class="px-btn px-btn-primary px-btn-lg mission-submit-btn">
+                    Submit Mission
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="px-alert px-alert-warning px-mt-lg">
+            This mission is currently inactive.
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div>
+        <div class="px-panel">
+            <h3>Mission Info</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li class="px-flex px-justify-between px-mb-md">
+                    <span class="px-text-muted">Reward</span>
+                    <span class="px-text-gold"><span class="px-coin"></span> {{ mission.reward }}</span>
+                </li>
+                <li class="px-flex px-justify-between px-mb-md">
+                    <span class="px-text-muted">Time Limit</span>
+                    <span>{{ mission.time_limit }} hours</span>
+                </li>
+                <li class="px-flex px-justify-between px-mb-md">
+                    <span class="px-text-muted">Status</span>
+                    <span class="px-status px-status-{{ mission.status }}">{{ mission.status|title }}</span>
+                </li>
+            </ul>
+        </div>
+        
+        {% if current_user.is_admin() %}
+        <div class="px-panel">
+            <h3>Admin Actions</h3>
+            <a href="{{ url_for('missions.edit', mission_id=mission.id) }}" class="px-btn px-btn-secondary px-btn-block px-mb-md">
+                Edit Mission
+            </a>
+            <form method="POST" action="{{ url_for('missions.delete', mission_id=mission.id) }}" onsubmit="return confirm('Are you sure?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-btn px-btn-danger px-btn-block">Delete Mission</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<style>
+@media (max-width: 768px) {
+    .mission-view-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .mission-view-topbar .px-btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+
+    .mission-view-layout {
+        grid-template-columns: 1fr !important;
+    }
+
+    .mission-submit-btn {
+        width: 100%;
+        min-height: 42px;
+        padding: 12px 14px;
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .mission-view-topbar .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+
+    .mission-submit-btn {
+        min-height: 36px;
+        padding: 10px 12px;
+        font-size: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

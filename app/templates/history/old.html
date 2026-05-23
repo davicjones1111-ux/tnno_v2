@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Old History - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-panel px-mb-lg">
+    <div class="px-flex px-flex-between px-flex-wrap px-gap-md">
+        <div>
+            <h1 class="px-mb-sm">Old History</h1>
+            <p class="px-text-muted">Archived records and items older than {{ 30 }} days.</p>
+        </div>
+        <div class="px-flex px-gap-md px-flex-wrap">
+            <a href="{{ url_for('history.index', type=active_type) }}" class="px-btn px-btn-secondary">Back to Recent</a>
+        </div>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg">
+    <div class="px-tabs history-tabs" role="tablist" aria-label="History Categories">
+        {% for filter in filters %}
+        <a href="{{ url_for('history.old', type=filter.key) }}" class="px-tab {% if active_type == filter.key %}active{% endif %}">
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% set items = page_data['items'] %}
+{% include 'history/_table.html' %}
+
+{% if page_data['pages'] > 1 %}
+<div class="px-flex px-flex-center px-gap-md px-mt-lg">
+    {% if page_data['has_prev'] %}
+    <a class="px-btn px-btn-secondary" href="{{ url_for('history.old', type=active_type, page=page_data['prev_num']) }}">Previous</a>
+    {% endif %}
+    <span class="px-text-muted">Page {{ page_data['page'] }} / {{ page_data['pages'] }}</span>
+    {% if page_data['has_next'] %}
+    <a class="px-btn px-btn-secondary" href="{{ url_for('history.old', type=active_type, page=page_data['next_num']) }}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.history-tabs .px-tab {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.history-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.history-table-wrap .px-table {
+    min-width: 680px;
+}
+
+@media (max-width: 640px) {
+    .history-table-wrap .px-table {
+        min-width: 620px;
+    }
+}
+</style>
+{% endblock %}

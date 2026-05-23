@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Login - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="pixel-auth-container">
+    <!-- Falling TNNO Animation -->
+    <div class="falling-coins">
+        <div class="coin coin1">&#8383;</div>
+        <div class="coin coin2">&#8383;</div>
+        <div class="coin coin3">&#8383;</div>
+        <div class="coin coin4">&#8383;</div>
+        <div class="coin coin5">&#8383;</div>
+        <div class="coin coin6">&#8383;</div>
+        <div class="coin coin7">&#8383;</div>
+        <div class="coin coin8">&#8383;</div>
+        <div class="coin coin9">&#8383;</div>
+        <div class="coin coin10">&#8383;</div>
+        <div class="coin coin11">&#8383;</div>
+        <div class="coin coin12">&#8383;</div>
+    </div>
+
+
+    <div class="pixel-auth-frame">
+        <!-- TNNO Logo -->
+        <div class="pixel-logo">
+            <span class="logo-text">TNNO</span>
+        </div>
+
+
+        <h1 class="pixel-title">
+            WELCOME BACK<span>!</span>
+        </h1>
+
+        <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" data-turbo="false">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" id="username" name="username" class="pixel-input"
+                   placeholder="Enter your username" required autofocus style="text-transform: none;">
+
+            <input type="password" id="password" name="password" class="pixel-input"
+                   placeholder="Enter your password" required style="text-transform: none;">
+
+            <div style="margin: 15px 0; text-align: left;">
+                <input type="checkbox" id="remember" name="remember" value="true" style="margin-right: 8px;">
+                <label for="remember" style="color: var(--px-text-muted); font-size: 0.85rem;">Remember me on this device</label>
+            </div>
+
+            <button type="submit" class="pixel-btn pixel-btn-primary">
+                SIGN IN
+            </button>
+        </form>
+
+
+        <div class="pixel-text-center pixel-mt-md">
+            <p class="pixel-text pixel-text-muted">
+                DON'T HAVE AN ACCOUNT?
+                <a href="{{ url_for('auth.signup') }}" class="pixel-link">CREATE ONE</a>
+            </p>
+            <p class="pixel-text pixel-text-muted">
+                LEARN THE APP:
+                <a href="{{ url_for('auth.about_app') }}" class="pixel-link">ABOUT APP &amp; RULES</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

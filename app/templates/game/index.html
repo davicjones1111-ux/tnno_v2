@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Game Center - RetroQuest{% endblock %}
+
+{% block content %}
+<h1 class="px-mb-lg">Game Center</h1>
+
+<!-- Featured Game -->
+<div class="px-panel px-mb-lg" style="background: linear-gradient(135deg, var(--px-bg-panel), var(--px-purple-dark));">
+    <div class="px-flex px-flex-wrap px-gap-lg">
+        <div style="flex: 1; min-width: 300px;">
+            <h2 style="color: var(--px-gold);">Emperor's Circle</h2>
+            <p class="px-text-muted px-mb-md">
+                The ultimate pixel card game! Challenge other players in a game of 
+                King, People, Slave. Bet your TNNO and climb the ranks!
+            </p>
+            <div class="px-flex px-gap-md">
+                <a href="{{ url_for('game.emperors_circle') }}" class="px-btn px-btn-primary px-btn-lg" data-turbo="false">
+                    Play Now
+                </a>
+                <a href="{{ url_for('game.leaderboard') }}" class="px-btn px-btn-secondary">
+                    Leaderboard
+                </a>
+            </div>
+        </div>
+        <div class="px-game-container" style="width: 400px; max-width: 100%;">
+            <div class="px-flex px-items-center px-justify-center px-text-center" style="height: 100%;">
+                <div>
+                    <div style="font-size: 4rem;">👑</div>
+                    <p class="px-text-muted">Game Preview</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User's Best Scores -->
+{% if user_scores %}
+<div class="px-panel px-mb-lg">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">Your High Scores</h2>
+    </div>
+    
+    <div class="px-stats-grid">
+        {% for score in user_scores[:3] %}
+        <div class="px-stat-card">
+            <div class="px-stat-value">{{ score.score }}</div>
+            <div class="px-stat-label">{{ score.game_id|title }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Leaderboard Preview -->
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">Top Players (Most Wins)</h2>
+        <a href="{{ url_for('game.leaderboard') }}" class="px-btn px-btn-sm px-btn-secondary">
+            View All
+        </a>
+    </div>
+    
+        <ul class="px-leaderboard">{% for player in top_players[:5] %}
+            <li class="px-leaderboard-item {% if loop.index == 1 %}top-1{% elif loop.index == 2 %}top-2{% elif loop.index == 3 %}top-3{% endif %}">
+                <div class="px-leaderboard-rank {% if loop.index == 1 %}gold{% elif loop.index == 2 %}silver{% elif loop.index == 3 %}bronze{% endif %}">
+                    #{{ loop.index }}
+                </div>
+                <div class="px-avatar px-avatar-sm">
+                    {{ player.user.username[0]|upper if player.user else '?' }}
+                </div>
+                <div class="px-leaderboard-info">
+                    <div class="px-leaderboard-name">{{ player.user.username if player.user else 'Unknown' }}</div>
+                </div>
+                <div class="px-leaderboard-score">
+                    {{ player.matches_won }}W
+                </div>
+            </li>
+    {% endfor %}</ul>
+</div>
+
+<!-- How to Play -->
+<div class="px-panel">
+    <div class="px-panel-header">
+        <h2 class="px-panel-title">How to Play</h2>
+    </div>
+    
+    <div class="px-grid px-grid-3">
+        <div class="px-card">
+            <h4 style="color: var(--px-cyan);">1. Join Queue</h4>
+            <p class="px-text-muted">Select your bet amount and join the matchmaking queue.</p>
+        </div>
+        <div class="px-card">
+            <h4 style="color: var(--px-cyan);">2. Choose Your Card</h4>
+            <p class="px-text-muted">Pick between King, People, or Slave. Each card beats one and loses to another!</p>
+        </div>
+        <div class="px-card">
+            <h4 style="color: var(--px-cyan);">3. Win TNNO</h4>
+            <p class="px-text-muted">If your card beats your opponent's, you win the pot!</p>
+        </div>
+    </div>
+    
+    <div class="px-panel" style="background: var(--px-bg-dark);">
+        <h4 style="color: var(--px-gold);">Card Rules:</h4>
+        <ul style="list-style: none; padding: 0;">
+            <li class="px-flex px-items-center px-gap-md px-mb-sm">
+                <span>👑</span> King beats People
+            </li>
+            <li class="px-flex px-items-center px-gap-md px-mb-sm">
+                <span>👥</span> People beats Slave
+            </li>
+            <li class="px-flex px-items-center px-gap-md">
+                <span>⛏️</span> Slave beats King
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

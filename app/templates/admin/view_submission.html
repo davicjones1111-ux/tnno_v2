@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Submission Details - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg">
+    <h1>Submission Details</h1>
+    <a href="{{ url_for('admin.submissions') }}" class="px-btn px-btn-secondary">
+        Back to Submissions
+    </a>
+</div>
+
+<div class="px-grid px-grid-2">
+    <!-- Submission Details -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Submission Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Status</label>
+            <p>
+                <span class="px-badge px-badge-{{ submission.status }}">
+                    {{ submission.status|title }}
+                </span>
+            </p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Mission</label>
+            <p>{{ submission.mission_title }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Submitted</label>
+            <p>{{ submission.submission_time.strftime('%Y-%m-%d %H:%M:%S') if submission.submission_time else 'N/A' }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Deadline</label>
+            <p>{{ submission.mission_deadline.strftime('%Y-%m-%d %H:%M:%S') if submission.mission_deadline else 'N/A' }}</p>
+        </div>
+
+        <!-- Code -->
+        <div class="px-info-group">
+            <label>Code/Answer</label>
+            {% if submission.code %}
+            <pre class="px-code-block">{{ submission.code }}</pre>
+            {% else %}
+            <p class="px-text-muted">No code provided</p>
+            {% endif %}
+        </div>
+
+        <!-- Proof Image -->
+        <div class="px-info-group">
+            <label>Proof/Screenshot</label>
+            {% if submission.mission_photo %}
+            <div class="px-photo-container">
+                <img src="{{ submission.mission_photo|media_url }}" alt="Submission proof" class="px-submission-photo">
+            </div>
+            <a href="{{ submission.mission_photo|media_url }}" target="_blank" class="px-btn px-btn-secondary px-btn-sm px-mt-md">
+                Open Full Size
+            </a>
+            {% else %}
+            <p class="px-text-muted">No image provided</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Information -->
+    <div class="px-panel">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">User Information</h2>
+        </div>
+        
+        <div class="px-info-group">
+            <label>Username</label>
+            <p>{{ submission.user.username }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Email</label>
+            <p>{{ submission.user.email or 'Not set' }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>6-Digit ID</label>
+            <p>#{{ submission.user.user_6digit }}</p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Current TNNO</label>
+            <p><span class="px-coins">{{ submission.user.coins|format_number }}</span></p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Member Since</label>
+            <p>{{ submission.user.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+
+        <!-- Actions -->
+        {% if submission.status == 'pending' %}
+        <div class="px-mt-lg">
+            <form method="POST" action="{{ url_for('admin.approve_submission', submission_id=submission.id) }}" class="px-mb-md">
+                <button type="submit" class="px-btn px-btn-success px-btn-block">
+                    ✓ Approve Submission
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('admin.reject_submission', submission_id=submission.id) }}">
+                <button type="submit" class="px-btn px-btn-danger px-btn-block">
+                    ✗ Reject Submission
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.px-info-group {
+    margin-bottom: 1.5rem;
+}
+
+.px-info-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.px-info-group p {
+    margin: 0;
+    color: #666;
+}
+
+.px-coins {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.px-code-block {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 4px solid #4CAF50;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 0.95em;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.px-photo-container {
+    margin: 12px 0;
+    text-align: center;
+}
+
+.px-submission-photo {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    max-height: 400px;
+}
+
+.px-text-muted {
+    color: #999;
+}
+
+.px-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.px-badge-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.px-badge-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.px-badge-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.px-panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 16px;
+}
+
+.px-panel-title {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.px-mt-lg {
+    margin-top: 2rem;
+}
+
+.px-mt-md {
+    margin-top: 1rem;
+}
+
+.px-mb-md {
+    margin-bottom: 1rem;
+}
+
+.px-btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.px-btn-success:hover {
+    background: #218838;
+}
+
+.px-btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.px-btn-danger:hover {
+    background: #c82333;
+}
+
+.px-btn-block {
+    width: 100%;
+    display: block;
+    text-align: center;
+    padding: 10px 0;
+}
+</style>
+{% endblock %}

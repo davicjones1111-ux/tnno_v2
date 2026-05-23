@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Admin History - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-panel px-mb-lg">
+    <div class="px-flex px-flex-between px-flex-wrap px-gap-md">
+        <div>
+            <h1 class="px-mb-sm">Admin History Queue</h1>
+            <p class="px-text-muted">Review pending user activity across submissions, requests, orders, and wallet flows.</p>
+        </div>
+        <div class="px-flex px-gap-md px-flex-wrap">
+            <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+            <a href="{{ url_for('history.admin_old', type=active_type, status='all') }}" class="px-btn px-btn-primary">View Completed / Old</a>
+        </div>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg admin-shortcuts-panel">
+    <div class="admin-shortcuts-title">Admin Sections</div>
+    <div class="admin-shortcuts">
+        <a href="{{ url_for('history.admin_old', type='missions', status='all') }}" class="admin-shortcut">Missions</a>
+        <a href="{{ url_for('history.admin_old', type='submissions', status='all') }}" class="admin-shortcut">Submissions</a>
+        <a href="{{ url_for('history.admin_old', type='deposits', status='all') }}" class="admin-shortcut">Deposits</a>
+        <a href="{{ url_for('history.admin_old', type='withdrawals', status='all') }}" class="admin-shortcut">Withdrawals</a>
+        <a href="{{ url_for('history.admin_old', type='work_requests', status='all') }}" class="admin-shortcut">Work Requests</a>
+        <a href="{{ url_for('history.admin_old', type='service_orders', status='all') }}" class="admin-shortcut">Service Orders</a>
+        <a href="{{ url_for('history.admin_old', type='merch_products', status='all') }}" class="admin-shortcut">Merch Products</a>
+        <a href="{{ url_for('history.admin_old', type='seller_requests', status='all') }}" class="admin-shortcut">Seller Requests</a>
+        <a href="{{ url_for('history.admin_old', type='seller_reports', status='all') }}" class="admin-shortcut">Seller Reports</a>
+        <a href="{{ url_for('history.admin_old', type='notifications', status='all') }}" class="admin-shortcut">Notifications</a>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg" data-admin-history-page="active" data-endpoint="{{ url_for('history.admin_index') }}">
+    <div class="px-tabs history-tabs" role="tablist" aria-label="Admin History Categories">
+        {% for filter in type_filters %}
+        <a
+            href="{{ url_for('history.admin_index', type=filter.key, status=active_status) }}"
+            class="px-tab admin-type-tab {% if active_type == filter.key %}active{% endif %}"
+            data-type="{{ filter.key }}"
+            role="tab"
+            aria-selected="{{ 'true' if active_type == filter.key else 'false' }}"
+        >
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="px-tabs history-tabs status-tabs" role="tablist" aria-label="Admin History Status">
+        {% for filter in status_filters %}
+        <a
+            href="{{ url_for('history.admin_index', type=active_type, status=filter.key) }}"
+            class="px-tab admin-status-tab {% if active_status == filter.key %}active{% endif %}"
+            data-status="{{ filter.key }}"
+            role="tab"
+            aria-selected="{{ 'true' if active_status == filter.key else 'false' }}"
+        >
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div id="admin-history-loading" class="history-loading" style="display:none;">Loading history...</div>
+</div>
+
+<div id="admin-history-results">
+    {% set endpoint = 'history.admin_index' %}
+    {% set type_key = active_type %}
+    {% set status_key = active_status %}
+    {% include 'admin/_history_table.html' %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.history-tabs .px-tab {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.status-tabs {
+    margin-top: 10px;
+}
+
+.status-tabs .px-tab {
+    font-size: 0.58rem;
+}
+
+.history-loading {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.55rem;
+    color: var(--px-text-muted);
+    margin-top: 12px;
+}
+
+#admin-history-results {
+    transition: opacity 0.18s ease;
+}
+
+#admin-history-results.is-loading {
+    opacity: 0.55;
+}
+
+.admin-shortcuts-panel {
+    border-left: 4px solid var(--px-cyan);
+}
+
+.admin-shortcuts-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.56rem;
+    color: var(--px-text-muted);
+    margin-bottom: 12px;
+}
+
+.admin-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.admin-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border: 2px solid var(--px-border);
+    background: linear-gradient(180deg, #f8f8f8 0%, #ececec 100%);
+    color: var(--px-text);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-shortcut:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+    border-color: var(--px-cyan);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    function initAdminHistoryFilters() {
+        const wrapper = document.querySelector('[data-admin-history-page="active"]');
+        if (!wrapper || wrapper.dataset.bound === '1') {
+            return;
+        }
+        wrapper.dataset.bound = '1';
+
+        const endpoint = wrapper.dataset.endpoint;
+        const results = document.getElementById('admin-history-results');
+        const loading = document.getElementById('admin-history-loading');
+        const typeTabs = Array.from(wrapper.querySelectorAll('.admin-type-tab'));
+        const statusTabs = Array.from(wrapper.querySelectorAll('.admin-status-tab'));
+
+        let currentType = '{{ active_type }}';
+        let currentStatus = '{{ active_status }}';
+
+        function setActive(tabs, key, attrName) {
+            tabs.forEach((tab) => {
+                const isActive = tab.dataset[attrName] === key;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+        }
+
+        function fetchPartial(nextType, nextStatus) {
+            if (!endpoint || !results) {
+                return;
+            }
+
+            currentType = nextType;
+            currentStatus = nextStatus;
+            setActive(typeTabs, currentType, 'type');
+            setActive(statusTabs, currentStatus, 'status');
+
+            if (loading) {
+                loading.style.display = 'block';
+            }
+            results.classList.add('is-loading');
+
+            const url = `${endpoint}?type=${encodeURIComponent(currentType)}&status=${encodeURIComponent(currentStatus)}&partial=1`;
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+                .then((resp) => resp.text())
+                .then((html) => {
+                    results.innerHTML = html;
+                    const nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('type', currentType);
+                    nextUrl.searchParams.set('status', currentStatus);
+                    nextUrl.searchParams.delete('page');
+                    window.history.replaceState({}, '', nextUrl.toString());
+                })
+                .catch(() => {
+                    window.location.href = `${endpoint}?type=${encodeURIComponent(currentType)}&status=${encodeURIComponent(currentStatus)}`;
+                })
+                .finally(() => {
+                    if (loading) {
+                        loading.style.display = 'none';
+                    }
+                    results.classList.remove('is-loading');
+                });
+        }
+
+        typeTabs.forEach((tab) => {
+            tab.addEventListener('click', (event) => {
+                event.preventDefault();
+                fetchPartial(tab.dataset.type || 'all', currentStatus);
+            });
+        });
+
+        statusTabs.forEach((tab) => {
+            tab.addEventListener('click', (event) => {
+                event.preventDefault();
+                fetchPartial(currentType, tab.dataset.status || 'pending');
+            });
+        });
+    }
+
+    document.addEventListener('turbo:load', initAdminHistoryFilters);
+    document.addEventListener('DOMContentLoaded', initAdminHistoryFilters);
+})();
+</script>
+{% endblock %}

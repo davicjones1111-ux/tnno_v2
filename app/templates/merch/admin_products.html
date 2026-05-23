@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Products - Admin{% endblock %}
+
+{% block content %}
+<div class="px-mb-lg">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>🛒 {% if current_user.is_admin() %}Merch Products{% else %}My Store{% endif %}</h1>
+        <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary">
+            + Add Product
+        </a>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="px-panel px-mb-lg" style="padding: 20px;">
+        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search products by name..." 
+                   class="px-input" style="flex: 1; margin: 0;">
+            <button type="submit" class="px-btn px-btn-primary">Search</button>
+            {% if search %}
+            <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    {% if products_page and products_page.pages > 1 %}
+    <div class="px-pagination px-mb-md">
+        {% if products_page.has_prev %}
+        <a href="{{ url_for('merch.admin_products', page=products_page.prev_num, search=search) }}" class="px-btn px-btn-secondary">Previous</a>
+        {% endif %}
+        <span class="px-pagination-info">Page {{ products_page.page }} of {{ products_page.pages }}</span>
+        {% if products_page.has_next %}
+        <a href="{{ url_for('merch.admin_products', page=products_page.next_num, search=search) }}" class="px-btn px-btn-secondary">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if products %}
+    <div class="submissions-table-wrap">
+    <table class="px-table merch-products-table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Type</th>
+                <th>Stock</th>
+                {% if current_user.is_admin() %}<th>Seller</th>{% endif %}
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td data-label="Image">
+                    {% if product.image_filename %}
+                    <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}" 
+                         alt="{{ product.name }}" 
+                         style="width: 60px; height: 60px; object-fit: cover; border: 2px solid var(--px-border);">
+                    {% else %}
+                    <div style="width: 60px; height: 60px; background: var(--px-bg-dark); display: flex; align-items: center; justify-content: center; border: 2px solid var(--px-border);">
+                        🎁
+                    </div>
+                    {% endif %}
+                </td>
+                <td data-label="Name">
+                    <div style="font-family: 'Press Start 2P', cursive; font-size: 0.5rem;">
+                        {{ product.name }}
+                    </div>
+                </td>
+                <td data-label="Price">
+                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-gold);">
+                        🪙 {{ product.price }}
+                    </span>
+                </td>
+                <td data-label="Type">
+                    <span class="px-text-muted">{{ (product.product_type or 'digital')|title }}</span>
+                </td>
+                <td data-label="Stock">
+                    <span class="px-text-muted">
+                        {% if product.product_type == 'physical' %}{{ product.quantity }}{% else %}{{ product.quantity }} / {{ product.total_files }}{% endif %}
+                    </span>
+                </td>
+                {% if current_user.is_admin() %}
+                <td data-label="Seller">
+                    {{ product.seller.username if product.seller else 'Global' }}
+                </td>
+                {% endif %}
+                <td data-label="Status">
+                    {% if product.is_active %}
+                    <span class="px-status px-status-success">Active</span>
+                    {% else %}
+                    <span class="px-status px-status-default">Hidden</span>
+                    {% endif %}
+                </td>
+                <td data-label="Actions">
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{{ url_for('merch.admin_edit', product_id=product.id) }}" 
+                           class="px-btn px-btn-sm px-btn-secondary">
+                            Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('merch.admin_hide', product_id=product.id) }}" style="display: inline;">
+                            <button type="submit" class="px-btn px-btn-sm {{ 'px-btn-secondary' if product.is_active else 'px-btn-success' }}">
+                                {{ 'Hide' if product.is_active else 'Show' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('merch.admin_delete', product_id=product.id) }}" style="display: inline;">
+                            <button type="submit" class="px-btn px-btn-sm px-btn-danger"
+                                    onclick="return confirm('Delete this product and its files? This cannot be undone.')">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="px-panel" style="text-align: center; padding: 60px 20px;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">📦</div>
+        <h2 style="font-family: 'Press Start 2P', cursive; font-size: 1rem; margin-bottom: 10px;">No Products</h2>
+        <p class="px-text-muted">Create your first product to start selling!</p>
+        <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary" style="margin-top: 20px;">
+            + Add Product
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.merch-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 2px solid var(--px-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--px-bg-dark);
+}
+
+.merch-thumb--placeholder {
+    font-size: 1.5rem;
+}
+.submissions-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .px-mb-lg > div[style*="justify-content: space-between"] {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px;
+    }
+
+    .px-mb-lg > div[style*="justify-content: space-between"] .px-btn,
+    .px-panel form[method="GET"] .px-btn,
+    .px-pagination .px-btn {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 0.52rem;
+    }
+
+    .px-panel form[method="GET"] {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .merch-products-table thead {
+        display: none;
+    }
+
+    .merch-products-table,
+    .merch-products-table tbody,
+    .merch-products-table tr,
+    .merch-products-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .merch-products-table tr {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .merch-products-table tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .merch-products-table td {
+        border-bottom: 1px solid #ddd;
+        padding: 10px 12px;
+    }
+
+    .merch-products-table td:last-child {
+        border-bottom: none;
+    }
+
+    .merch-products-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+        font-size: 0.82em;
+    }
+
+    .merch-products-table td .merch-thumb {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    .merch-products-table td [style*="display: flex; gap: 8px"] {
+        flex-wrap: wrap;
+    }
+
+    .merch-products-table td [style*="display: flex; gap: 8px"] .px-btn,
+    .merch-products-table td [style*="display: flex; gap: 8px"] form,
+    .merch-products-table td [style*="display: flex; gap: 8px"] form .px-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .px-mb-lg > div[style*="justify-content: space-between"] .px-btn,
+    .px-panel form[method="GET"] .px-btn,
+    .px-pagination .px-btn,
+    .merch-products-table td [style*="display: flex; gap: 8px"] .px-btn {
+        min-height: 36px;
+        padding: 9px 10px;
+        font-size: 0.48rem;
+    }
+}
+</style>
+{% endblock %}

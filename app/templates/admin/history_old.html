@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Old History - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="px-panel px-mb-lg">
+    <div class="px-flex px-flex-between px-flex-wrap px-gap-md">
+        <div>
+            <h1 class="px-mb-sm">Admin Completed / Old History</h1>
+            <p class="px-text-muted">Processed, archived, and historical records across all systems.</p>
+        </div>
+        <div class="px-flex px-gap-md px-flex-wrap">
+            <a href="{{ url_for('history.admin_index', type=active_type, status='pending') }}" class="px-btn px-btn-secondary">Back to Pending</a>
+            <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+        </div>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg admin-shortcuts-panel">
+    <div class="admin-shortcuts-title">Admin Sections</div>
+    <div class="admin-shortcuts">
+        <a href="{{ url_for('history.admin_old', type='missions', status='all') }}" class="admin-shortcut">Missions</a>
+        <a href="{{ url_for('history.admin_old', type='submissions', status='all') }}" class="admin-shortcut">Submissions</a>
+        <a href="{{ url_for('history.admin_old', type='deposits', status='all') }}" class="admin-shortcut">Deposits</a>
+        <a href="{{ url_for('history.admin_old', type='withdrawals', status='all') }}" class="admin-shortcut">Withdrawals</a>
+        <a href="{{ url_for('history.admin_old', type='work_requests', status='all') }}" class="admin-shortcut">Work Requests</a>
+        <a href="{{ url_for('history.admin_old', type='service_orders', status='all') }}" class="admin-shortcut">Service Orders</a>
+        <a href="{{ url_for('history.admin_old', type='merch_products', status='all') }}" class="admin-shortcut">Merch Products</a>
+        <a href="{{ url_for('history.admin_old', type='seller_requests', status='all') }}" class="admin-shortcut">Seller Requests</a>
+        <a href="{{ url_for('history.admin_old', type='seller_reports', status='all') }}" class="admin-shortcut">Seller Reports</a>
+        <a href="{{ url_for('history.admin_old', type='notifications', status='all') }}" class="admin-shortcut">Notifications</a>
+    </div>
+</div>
+
+<div class="px-panel px-mb-lg">
+    <div class="px-tabs history-tabs" role="tablist" aria-label="Admin History Categories">
+        {% for filter in type_filters %}
+        <a href="{{ url_for('history.admin_old', type=filter.key, status=active_status) }}" class="px-tab {% if active_type == filter.key %}active{% endif %}">
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="px-tabs history-tabs status-tabs" role="tablist" aria-label="Admin History Status">
+        {% for filter in status_filters %}
+        <a href="{{ url_for('history.admin_old', type=active_type, status=filter.key) }}" class="px-tab {% if active_status == filter.key %}active{% endif %}">
+            {{ filter.label }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% set endpoint = 'history.admin_old' %}
+{% set type_key = active_type %}
+{% set status_key = active_status %}
+{% include 'admin/_history_table.html' %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.history-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.history-tabs .px-tab {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.status-tabs {
+    margin-top: 10px;
+}
+
+.status-tabs .px-tab {
+    font-size: 0.58rem;
+}
+
+.admin-shortcuts-panel {
+    border-left: 4px solid var(--px-cyan);
+}
+
+.admin-shortcuts-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.56rem;
+    color: var(--px-text-muted);
+    margin-bottom: 12px;
+}
+
+.admin-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.admin-shortcut {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border: 2px solid var(--px-border);
+    background: linear-gradient(180deg, #f8f8f8 0%, #ececec 100%);
+    color: var(--px-text);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-shortcut:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+    border-color: var(--px-cyan);
+}
+</style>
+{% endblock %}
