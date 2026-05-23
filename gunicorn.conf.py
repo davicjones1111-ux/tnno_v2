@@ -14,7 +14,12 @@ def _default_worker_count() -> int:
     return max(2, (cpu_count * 2) + 1)
 
 
-bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"
+def _default_bind() -> str:
+    port = (os.environ.get('PORT') or '10000').strip() or '10000'
+    return f'0.0.0.0:{port}'
+
+
+bind = os.environ.get('GUNICORN_BIND') or _default_bind()
 backlog = int(os.environ.get('GUNICORN_BACKLOG', '2048'))
 
 worker_class = os.environ.get('GUNICORN_WORKER_CLASS') or (
@@ -28,8 +33,8 @@ timeout = int(os.environ.get('GUNICORN_TIMEOUT', '60'))
 graceful_timeout = int(os.environ.get('GUNICORN_GRACEFUL_TIMEOUT', '30'))
 keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', '5'))
 
-accesslog = os.environ.get('GUNICORN_ACCESS_LOG', '/var/log/retroquest/gunicorn-access.log')
-errorlog = os.environ.get('GUNICORN_ERROR_LOG', '/var/log/retroquest/gunicorn-error.log')
+accesslog = os.environ.get('GUNICORN_ACCESS_LOG', '-')
+errorlog = os.environ.get('GUNICORN_ERROR_LOG', '-')
 loglevel = os.environ.get('GUNICORN_LOG_LEVEL', 'info')
 capture_output = True
 access_log_format = (

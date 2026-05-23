@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PORT=10000
 
 WORKDIR /app
 
@@ -17,11 +18,11 @@ RUN pip install --upgrade pip \
 COPY . .
 
 RUN useradd --create-home --shell /bin/bash appuser \
-    && mkdir -p /app/instance /app/app/static/uploads /var/log/retroquest \
-    && chown -R appuser:appuser /app /var/log/retroquest
+    && mkdir -p /app/instance /app/app/static/uploads /app/logs \
+    && chown -R appuser:appuser /app
 
 USER appuser
 
-EXPOSE 5000
+EXPOSE 10000
 
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "run:app"]
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-10000} --config gunicorn.conf.py run:app"]
