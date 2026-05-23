@@ -92,6 +92,17 @@ def create_app(config_name=None):
 
     @app.get('/healthz')
     def healthz():
+        try:
+            db.session.execute(text('SELECT 1'))
+        except Exception as exc:
+            app.logger.warning('Health check failed database probe: %s', exc)
+            db.session.rollback()
+            return jsonify({
+                'status': 'degraded',
+                'environment': config_name,
+                'database': 'unavailable',
+            }), 503
+
         return jsonify({
             'status': 'ok',
             'environment': config_name,

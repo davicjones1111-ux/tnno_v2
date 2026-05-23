@@ -11,7 +11,12 @@ def _as_bool(value: str | None, default: bool = False) -> bool:
 
 def _default_worker_count() -> int:
     cpu_count = multiprocessing.cpu_count() or 2
-    return max(2, (cpu_count * 2) + 1)
+    default_count = max(2, (cpu_count * 2) + 1)
+    if os.environ.get('RENDER'):
+        # Render starter instances are memory-constrained and cpu_count() can
+        # reflect the host rather than the service's practical capacity.
+        return 1
+    return min(default_count, 4)
 
 
 def _default_bind() -> str:
@@ -22,9 +27,7 @@ def _default_bind() -> str:
 bind = os.environ.get('GUNICORN_BIND') or _default_bind()
 backlog = int(os.environ.get('GUNICORN_BACKLOG', '2048'))
 
-worker_class = os.environ.get('GUNICORN_WORKER_CLASS') or (
-    'gevent' if os.environ.get('FLASK_ENV') == 'production' else 'sync'
-)
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS') or 'sync'
 workers = int(os.environ.get('WEB_CONCURRENCY') or _default_worker_count())
 worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECTIONS', '1000'))
 threads = int(os.environ.get('GUNICORN_THREADS', '1'))
