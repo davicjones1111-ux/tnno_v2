@@ -53,7 +53,7 @@
                     <label class="px-label">Add Product Photos</label>
                     <input type="file" name="images" class="px-input" accept="image/*" multiple title="Upload product photos">
                     <p class="px-text-sm px-text-muted px-mt-sm">
-                        Add up to 4 photos total. New photos are merged with the current gallery.
+                        Upload 1 to 3 photos to replace the current gallery. The first photo becomes the store cover.
                     </p>
                 </div>
                 
@@ -125,7 +125,12 @@
                 </h3>
                 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
                     {% for image_filename in product.gallery_filenames %}
-                    <div style="background: var(--px-bg-dark); border: 3px solid var(--px-border); padding: 10px; aspect-ratio: 1 / 1;">
+                    <div style="background: var(--px-bg-dark); border: 3px solid var(--px-border); padding: 10px; aspect-ratio: 1 / 1; position: relative;">
+                        {% if loop.first %}
+                        <span style="position: absolute; top: 8px; left: 8px; z-index: 1; padding: 4px 8px; background: rgba(255,255,255,0.92); border: 1px solid rgba(93, 132, 214, 0.24); color: var(--px-blue); font-size: 0.68rem; font-weight: 700;">
+                            Cover
+                        </span>
+                        {% endif %}
                         <img
                             src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
                             alt="{{ product.name }}"

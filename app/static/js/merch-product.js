@@ -130,6 +130,9 @@
         button.addEventListener('click', function() {
             if (!mainProductImage) return;
             mainProductImage.src = this.dataset.imageSrc || '';
+            if (this.dataset.imageAlt) {
+                mainProductImage.alt = this.dataset.imageAlt;
+            }
             galleryButtons.forEach((item) => item.classList.remove('is-active'));
             this.classList.add('is-active');
         });

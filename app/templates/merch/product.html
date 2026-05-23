@@ -24,21 +24,27 @@
                 <img
                     id="product-main-image"
                     src="{{ url_for('static', filename='uploads/merch/' + gallery[0]) }}"
-                    alt="{{ product.name }}"
+                    alt="{{ product.name }} photo 1"
                     class="merch-hero-image-img"
                 />
             </div>
             {% if gallery|length > 1 %}
-            <div class="merch-gallery-grid">
-                {% for image_filename in gallery %}
-                <button
-                    type="button"
-                    class="merch-gallery-thumb {% if loop.first %}is-active{% endif %}"
-                    data-image-src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
-                >
-                    <img src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}" alt="{{ product.name }} photo {{ loop.index }}" />
-                </button>
-                {% endfor %}
+            <div class="merch-gallery-shell">
+                <div class="product-section-label">More Photos</div>
+                <div class="merch-gallery-grid">
+                    {% for image_filename in gallery %}
+                    <button
+                        type="button"
+                        class="merch-gallery-thumb {% if loop.first %}is-active{% endif %}"
+                        data-image-src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
+                        data-image-alt="{{ product.name }} photo {{ loop.index }}"
+                        aria-label="View {{ product.name }} photo {{ loop.index }}"
+                    >
+                        <img src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}" alt="{{ product.name }} photo {{ loop.index }}" />
+                    </button>
+                    {% endfor %}
+                </div>
+                <p class="px-text-sm px-text-muted merch-gallery-note">Select a photo to preview it above.</p>
             </div>
             {% endif %}
             {% else %}
@@ -279,9 +285,14 @@
     display: block;
 }
 
+.merch-gallery-shell {
+    display: grid;
+    gap: 10px;
+}
+
 .merch-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
 }
 
@@ -292,10 +303,20 @@
     padding: 6px;
     aspect-ratio: 1 / 1;
     cursor: pointer;
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .merch-gallery-thumb.is-active {
     border-color: var(--px-gold);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.8) inset, 0 10px 20px rgba(93, 132, 214, 0.16);
+}
+
+.merch-gallery-thumb:hover {
+    transform: translateY(-2px);
+}
+
+.merch-gallery-note {
+    margin: 0;
 }
 
 .merch-gallery-thumb img {
@@ -578,7 +599,8 @@
     }
 
     .merch-gallery-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .merch-hero-image {

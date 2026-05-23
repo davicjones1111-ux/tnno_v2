@@ -676,14 +676,14 @@ class Product(db.Model):
 
     @property
     def gallery_filenames(self):
-        """Return up to four product image filenames including the cover image."""
+        """Return up to three product image filenames including the cover image."""
         filenames = []
         if self.image_filename:
             filenames.append(self.image_filename)
         for image in self.images.all():
             if image.image_filename and image.image_filename not in filenames:
                 filenames.append(image.image_filename)
-        return filenames[:4]
+        return filenames[:3]
     
     def __repr__(self):
         return f'<Product {self.name} seller={self.seller_id}>'

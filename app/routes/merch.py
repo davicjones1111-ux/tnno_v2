@@ -31,6 +31,8 @@ ETA_MAX_DAYS = 30
 CANCEL_REFUND_RATE = 0.50
 CANCEL_SELLER_RATE = 0.30
 DELETED_PRODUCT_MARKER = '__deleted__'
+MIN_PRODUCT_IMAGES = 1
+MAX_PRODUCT_IMAGES = 3
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -44,8 +46,13 @@ def save_merch_file(file, subfolder='merch'):
     return stored_path.rsplit('/', 1)[-1] if stored_path else None
 
 
+def _uploaded_product_images(uploaded_images):
+    """Return only non-empty uploaded product images."""
+    return [image for image in uploaded_images if image and image.filename]
+
+
 def _save_product_gallery_images(uploaded_images, subfolder='merch'):
-    """Save up to four uploaded product images and return stored filenames."""
+    """Save up to three uploaded product images and return stored filenames."""
     saved_filenames = []
     for image in uploaded_images:
         if not image or not image.filename:
@@ -54,9 +61,33 @@ def _save_product_gallery_images(uploaded_images, subfolder='merch'):
         image_filename = image_path.split('/')[-1] if image_path else None
         if image_filename and image_filename not in saved_filenames:
             saved_filenames.append(image_filename)
-        if len(saved_filenames) >= 4:
+        if len(saved_filenames) >= MAX_PRODUCT_IMAGES:
             break
     return saved_filenames
+
+
+def _sync_product_gallery(product, image_filenames):
+    """Persist the cover image and extra gallery images for a product."""
+    normalized_filenames = []
+    for filename in image_filenames:
+        if filename and filename not in normalized_filenames:
+            normalized_filenames.append(filename)
+        if len(normalized_filenames) >= MAX_PRODUCT_IMAGES:
+            break
+
+    previous_filenames = product.gallery_filenames
+    product.image_filename = normalized_filenames[0] if normalized_filenames else None
+    product.images.delete()
+    db.session.flush()
+
+    for index, image_filename in enumerate(normalized_filenames[1:], start=1):
+        db.session.add(ProductImage(
+            product_id=product.id,
+            image_filename=image_filename,
+            sort_order=index
+        ))
+
+    return [filename for filename in previous_filenames if filename and filename not in normalized_filenames]
 
 def delete_merch_file(filename, subfolder='merch'):
     """Delete a stored merch file safely (best-effort)."""
@@ -719,7 +750,7 @@ def admin_create():
         contact_link = (request.form.get('contact_link') or '').strip()
         physical_quantity = request.form.get('physical_quantity', type=int, default=0)
         files = request.files.getlist('files')
-        uploaded_images = request.files.getlist('images')
+        uploaded_images = _uploaded_product_images(request.files.getlist('images'))
         
         if not name:
             flash('Product name is required', 'error')
@@ -751,25 +782,31 @@ def admin_create():
                 return redirect(url_for('merch.admin_create'))
         
         try:
-            if len([img for img in uploaded_images if img and img.filename]) > 4:
-                flash('You can upload up to 4 product photos.', 'error')
+            if len(uploaded_images) < MIN_PRODUCT_IMAGES:
+                flash('Add 1 to 3 product photos. The first photo becomes the store cover.', 'error')
+                return redirect(url_for('merch.admin_create'))
+
+            if len(uploaded_images) > MAX_PRODUCT_IMAGES:
+                flash('You can upload up to 3 product photos.', 'error')
                 return redirect(url_for('merch.admin_create'))
 
             # Save product gallery if provided
             image_filenames = []
-            if uploaded_images:
-                try:
-                    image_filenames = _save_product_gallery_images(uploaded_images, 'merch')
-                except ValueError as exc:
-                    flash(str(exc), 'error')
-                    return redirect(url_for('merch.admin_create'))
+            try:
+                image_filenames = _save_product_gallery_images(uploaded_images, 'merch')
+            except ValueError as exc:
+                flash(str(exc), 'error')
+                return redirect(url_for('merch.admin_create'))
+
+            if len(image_filenames) < MIN_PRODUCT_IMAGES:
+                flash('At least one valid product photo is required.', 'error')
+                return redirect(url_for('merch.admin_create'))
             
             # Create product
             product = Product(
                 name=name,
                 description=description,
                 price=price,
-                image_filename=image_filenames[0] if image_filenames else None,
                 product_type=product_type,
                 contact_link=contact_link if product_type == 'physical' else None,
                 physical_quantity=physical_quantity if product_type == 'physical' else 0,
@@ -777,13 +814,7 @@ def admin_create():
             )
             db.session.add(product)
             db.session.flush()  # Get product ID
-
-            for index, image_filename in enumerate(image_filenames[1:], start=1):
-                db.session.add(ProductImage(
-                    product_id=product.id,
-                    image_filename=image_filename,
-                    sort_order=index
-                ))
+            _sync_product_gallery(product, image_filenames)
             
             saved_files = 0
             if product_type == 'digital':
@@ -871,35 +902,25 @@ def admin_edit(product_id):
                 product.physical_quantity = physical_quantity
         
         # Handle gallery upload
-        uploaded_images = request.files.getlist('images')
-        if len([img for img in uploaded_images if img and img.filename]) > 4:
-            flash('You can upload up to 4 product photos at once.', 'error')
+        uploaded_images = _uploaded_product_images(request.files.getlist('images'))
+        if len(uploaded_images) > MAX_PRODUCT_IMAGES:
+            flash('You can upload up to 3 product photos.', 'error')
             return redirect(url_for('merch.admin_edit', product_id=product.id))
 
-        if uploaded_images and uploaded_images[0].filename:
+        gallery_files_to_delete = []
+        if uploaded_images:
             try:
-                existing_gallery = product.gallery_filenames
                 new_filenames = _save_product_gallery_images(uploaded_images, 'merch')
-                combined_filenames = []
-                for filename in existing_gallery + new_filenames:
-                    if filename and filename not in combined_filenames:
-                        combined_filenames.append(filename)
-                if len(combined_filenames) > 4:
-                    flash('A product can show up to 4 photos total.', 'error')
+                if len(new_filenames) < MIN_PRODUCT_IMAGES:
+                    flash('Add at least one valid product photo.', 'error')
                     return redirect(url_for('merch.admin_edit', product_id=product.id))
-                if combined_filenames:
-                    product.image_filename = combined_filenames[0]
-                    product.images.delete()
-                    db.session.flush()
-                    for index, image_filename in enumerate(combined_filenames[1:], start=1):
-                        db.session.add(ProductImage(
-                            product_id=product.id,
-                            image_filename=image_filename,
-                            sort_order=index
-                        ))
+                gallery_files_to_delete = _sync_product_gallery(product, new_filenames)
             except ValueError as exc:
                 flash(str(exc), 'error')
                 return redirect(url_for('merch.admin_edit', product_id=product.id))
+        elif not product.gallery_filenames:
+            flash('Add 1 to 3 product photos so the product has a store cover.', 'error')
+            return redirect(url_for('merch.admin_edit', product_id=product.id))
         
         # Add more files
         if product.product_type != 'physical':
@@ -924,6 +945,8 @@ def admin_edit(product_id):
         product.is_active = 'is_active' in request.form
         
         db.session.commit()
+        for filename in gallery_files_to_delete:
+            delete_merch_file(filename, 'merch')
         flash('Product updated successfully!', 'success')
         return redirect(url_for('merch.admin_products'))
     
