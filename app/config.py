@@ -78,15 +78,21 @@ def _build_engine_options(database_uri: str):
 
     parsed = urlparse(database_uri)
     if parsed.scheme.startswith('postgresql'):
+        hostname = (parsed.hostname or '').lower()
+        is_neon_pooler = 'pooler' in hostname and ('neon.tech' in hostname or 'neon.com' in hostname)
+        include_startup_options = _bool_env('DB_INCLUDE_STARTUP_OPTIONS', not is_neon_pooler)
+
         ssl_mode = os.environ.get('DB_SSL_MODE') or ('require' if os.environ.get('RENDER') else 'prefer')
-        options['connect_args'] = {
+        connect_args = {
             'sslmode': ssl_mode,
             'connect_timeout': connect_timeout,
-            'options': (
+        }
+        if include_startup_options:
+            connect_args['options'] = (
                 f'-c statement_timeout={statement_timeout_ms} '
                 f'-c idle_in_transaction_session_timeout={idle_tx_timeout_ms}'
-            ),
-        }
+            )
+        options['connect_args'] = connect_args
     return options
 
 
