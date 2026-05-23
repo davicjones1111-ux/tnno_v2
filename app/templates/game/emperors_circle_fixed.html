@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emperor's Circle - RetroQuest Games</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -33,7 +33,7 @@
         }
 
         body {
-            font-family: 'VT323', monospace;
+            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
@@ -43,6 +43,16 @@
                 radial-gradient(ellipse at bottom, #0f0f1a 0%, transparent 50%),
                 linear-gradient(180deg, #0a0a12 0%, #0f0f1a 50%, #0a0a12 100%);
             background-attachment: fixed;
+        }
+
+        body,
+        body * {
+            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+        }
+
+        code,
+        pre {
+            font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace !important;
         }
 
         body::before {

@@ -84,10 +84,10 @@
     --px-transition: 0.15s ease;
 
     /* Fonts */
-    --px-font-body: 'VT323', 'Courier New', monospace;
-    --px-font-heading: 'Press Start 2P', cursive;
-    --px-font-pixel: 'Press Start 2P', cursive;
-    --px-font-mono: 'VT323', 'Courier New', monospace;
+    --px-font-body: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-heading: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-pixel: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
 }
 
 /* ==================== Base Styles ==================== */
@@ -102,7 +102,7 @@ html {
 
 body {
     font-family: var(--px-font-body);
-    font-size: 1.2rem;
+    font-size: 1rem;
     line-height: 1.65;
     background: var(--px-bg-dark);
     color: var(--px-text);
@@ -120,10 +120,10 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--px-font-heading);
     color: var(--px-text);
     margin: 0 0 var(--px-md) 0;
-    line-height: 1.6;
+    line-height: 1.3;
     text-transform: none;
-    letter-spacing: 0.08em;
-    font-weight: 400;
+    letter-spacing: 0.01em;
+    font-weight: 700;
 }
 
 h1 { font-size: 1.5rem; }
@@ -185,13 +185,13 @@ a:hover {
 }
 
 .px-panel-title {
-    font-family: var(--px-font-pixel);
-    font-size: 0.56rem;
+    font-family: var(--px-font-heading);
+    font-size: 0.875rem;
     margin: 0;
     color: var(--px-cyan-dark);
-    letter-spacing: 0.08em;
-    line-height: 1.5;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    text-transform: none;
 }
 
 /* ==================== Pixel Card ==================== */
@@ -220,13 +220,13 @@ a:hover {
 }
 
 .px-card-title {
-    font-family: var(--px-font-pixel);
-    font-size: 0.56rem;
+    font-family: var(--px-font-heading);
+    font-size: 0.875rem;
     margin: 0;
     color: var(--px-text);
-    letter-spacing: 0.08em;
-    line-height: 1.5;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    text-transform: none;
 }
 
 .px-card-icon {
@@ -241,23 +241,23 @@ a:hover {
 
 /* ==================== Pixel Buttons ==================== */
 .px-btn {
-    font-family: var(--px-font-pixel);
-    font-size: 0.625rem;
+    font-family: var(--px-font-heading);
+    font-size: 0.95rem;
     padding: var(--px-md) var(--px-lg);
     border: none;
     cursor: pointer;
-    text-transform: uppercase;
+    text-transform: none;
     transition: var(--px-transition);
     position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--px-sm);
-    min-height: 46px;
-    line-height: 1.45;
-    letter-spacing: 0.08em;
-    white-space: nowrap;
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+    min-height: 44px;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    white-space: normal;
+    text-shadow: none;
 }
 
 .px-btn-primary {
@@ -317,13 +317,13 @@ a:hover {
 
 .px-btn-sm {
     padding: var(--px-sm) var(--px-md);
-    font-size: 0.5rem;
+    font-size: 0.85rem;
     min-height: 34px;
 }
 
 .px-btn-lg {
     padding: var(--px-lg) var(--px-xl);
-    font-size: 0.75rem;
+    font-size: 1rem;
     min-height: 56px;
 }
 
@@ -333,22 +333,22 @@ a:hover {
 }
 
 .px-label {
-    font-family: var(--px-font-pixel);
-    font-size: 0.5rem;
-    font-weight: 400;
+    font-family: var(--px-font-heading);
+    font-size: 0.85rem;
+    font-weight: 600;
     color: var(--px-text-muted);
     display: block;
     margin-bottom: var(--px-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    line-height: 1.6;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
 }
 
 .px-input,
 .px-textarea,
 .px-select {
     font-family: var(--px-font-body);
-    font-size: 1.2rem;
+    font-size: 1rem;
     line-height: 1.5;
     width: 100%;
     padding: var(--px-md);
@@ -356,7 +356,7 @@ a:hover {
     border: 2px solid var(--px-border);
     color: var(--px-text);
     transition: var(--px-transition);
-    letter-spacing: 0.03em;
+    letter-spacing: 0;
 }
 
 .px-input:focus,
@@ -398,7 +398,7 @@ a:hover {
 }
 
 .px-nav-brand {
-    font-family: var(--px-font-pixel);
+    font-family: var(--px-font-heading);
     font-size: 0.875rem;
     color: var(--px-text);
     text-decoration: none;
@@ -409,31 +409,17 @@ a:hover {
 
 .px-nav-brand-wordmark {
     display: inline-block;
-    font-family: var(--px-font-pixel);
-    font-size: 0.92rem;
+    font-family: var(--px-font-heading);
+    font-size: 1rem;
     line-height: 1;
-    letter-spacing: 0.14em;
-    color: var(--px-coin-gold);
-    text-shadow:
-        2px 2px 0 #c7d2e3,
-        4px 4px 0 rgba(95, 117, 163, 0.18),
-        0 0 14px rgba(212, 175, 55, 0.2);
+    letter-spacing: 0.03em;
+    color: var(--px-cyan-dark);
+    font-weight: 700;
+    text-shadow: none;
 }
 
 .px-nav-brand-wordmark::after {
-    content: '';
-    display: block;
-    width: calc(100% - 2px);
-    height: 3px;
-    margin-top: 5px;
-    background:
-        repeating-linear-gradient(
-            90deg,
-            var(--px-cyan-dark),
-            var(--px-cyan-dark) 6px,
-            transparent 6px,
-            transparent 9px
-        );
+    content: none;
 }
 
 .px-nav-brand:hover {
@@ -452,10 +438,10 @@ a:hover {
 }
 
 .px-nav-link {
-    font-family: var(--px-font-pixel);
-    font-size: 0.52rem;
-    font-weight: 400;
-    letter-spacing: 0.08em;
+    font-family: var(--px-font-heading);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     color: var(--px-text);
     padding: var(--px-sm) var(--px-md);
     border: 2px solid transparent;
@@ -463,8 +449,8 @@ a:hover {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    text-transform: uppercase;
-    line-height: 1.4;
+    text-transform: none;
+    line-height: 1.2;
 }
 
 .px-nav-icon {
@@ -500,8 +486,8 @@ a:hover {
 }
 
 .px-nav-coins {
-    font-family: var(--px-font-pixel);
-    font-size: 0.56rem;
+    font-family: var(--px-font-heading);
+    font-size: 0.85rem;
     color: var(--px-gold-dark);
     display: flex;
     align-items: center;
@@ -696,14 +682,14 @@ a:hover {
 }
 
 .px-table th {
-    font-family: var(--px-font-pixel);
-    font-size: 0.48rem;
-    font-weight: 400;
-    letter-spacing: 0.08em;
+    font-family: var(--px-font-heading);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
     color: var(--px-cyan-dark);
     background: var(--px-bg-secondary);
-    text-transform: uppercase;
-    line-height: 1.5;
+    text-transform: none;
+    line-height: 1.3;
 }
 
 .px-table tr:hover td {
@@ -1208,7 +1194,7 @@ a:hover {
 /* ==================== Normal Text Override ==================== */
 body {
     font-family: var(--px-font-body);
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 
 body,
@@ -1342,7 +1328,7 @@ code, pre, .px-code-inline, .px-code-block {
     }
 
     .px-nav-brand-wordmark {
-        font-size: 0.68rem;
+        font-size: 0.8rem;
     }
 
     .px-nav-user {
@@ -1485,12 +1471,12 @@ code, pre, .px-code-inline, .px-code-block {
     }
 
     .px-mobile-tab-label {
-        font-family: var(--px-font-pixel);
-        font-size: 0.42rem;
-        font-weight: 400;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        line-height: 1.45;
+        font-family: var(--px-font-heading);
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        text-transform: none;
+        line-height: 1.25;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1621,15 +1607,12 @@ code, pre, .px-code-inline, .px-code-block {
 }
 
 .logo-text {
-    font-family: var(--px-font-pixel);
+    font-family: var(--px-font-heading);
     font-size: 3rem;
-    color: var(--px-coin-gold);
-    text-shadow:
-        2px 2px 0 #c7d2e3,
-        4px 4px 0 rgba(95, 117, 163, 0.18),
-        0 0 12px rgba(212, 175, 55, 0.35);
-    animation: logoGlow 2s ease-in-out infinite alternate;
-    letter-spacing: 0.18em;
+    color: var(--px-cyan-dark);
+    text-shadow: none;
+    animation: none;
+    letter-spacing: 0.06em;
     display: inline-block;
     transform: scale(1);
     transition: transform 0.3s ease;
@@ -2070,4 +2053,64 @@ code, pre, .px-code-inline, .px-code-block {
     .px-btn:active {
         transform: translateY(1px);
     }
+}
+
+/* ==================== Formal Typography Override ==================== */
+body.page-app,
+body.page-app input,
+body.page-app textarea,
+body.page-app select,
+body.page-app option,
+body.page-app p,
+body.page-app span,
+body.page-app label,
+body.page-app li,
+body.page-app td,
+body.page-app th,
+body.page-app a,
+body.page-app button {
+    font-family: var(--px-font-body) !important;
+}
+
+body.page-app h1,
+body.page-app h2,
+body.page-app h3,
+body.page-app h4,
+body.page-app h5,
+body.page-app h6,
+body.page-app .px-btn,
+body.page-app .px-btn *,
+body.page-app .pixel-btn,
+body.page-app .pixel-btn *,
+body.page-app .px-panel-title,
+body.page-app .px-card-title,
+body.page-app .px-label,
+body.page-app .px-nav-brand,
+body.page-app .px-nav-brand-wordmark,
+body.page-app .px-nav-link,
+body.page-app .px-nav-coins,
+body.page-app .px-badge,
+body.page-app .px-status,
+body.page-app .px-progress-text,
+body.page-app .px-stat-value,
+body.page-app .px-stat-label,
+body.page-app .pixel-title,
+body.page-app .logo-text,
+body.page-app .pixel-coin-line,
+body.page-app .px-mobile-tab-label {
+    font-family: var(--px-font-heading) !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+    text-shadow: none !important;
+}
+
+body.page-app code,
+body.page-app pre,
+body.page-app .px-code-inline,
+body.page-app .px-code-block {
+    font-family: var(--px-font-mono) !important;
+}
+
+body.page-app .px-nav-brand-wordmark::after {
+    content: none !important;
 }
