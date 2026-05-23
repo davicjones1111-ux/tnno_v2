@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="px-mb-lg">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div class="merch-products-topbar">
         <h1>🛒 {% if current_user.is_admin() %}Merch Products{% else %}My Store{% endif %}</h1>
         <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary">
             + Add Product
@@ -94,17 +94,19 @@
                     {% endif %}
                 </td>
                 <td data-label="Actions">
-                    <div style="display: flex; gap: 8px;">
+                    <div class="merch-product-actions">
                         <a href="{{ url_for('merch.admin_edit', product_id=product.id) }}" 
                            class="px-btn px-btn-sm px-btn-secondary">
                             Edit
                         </a>
-                        <form method="POST" action="{{ url_for('merch.admin_hide', product_id=product.id) }}" style="display: inline;">
+                        <form method="POST" action="{{ url_for('merch.admin_hide', product_id=product.id) }}" class="merch-product-action-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="px-btn px-btn-sm {{ 'px-btn-secondary' if product.is_active else 'px-btn-success' }}">
                                 {{ 'Hide' if product.is_active else 'Show' }}
                             </button>
                         </form>
-                        <form method="POST" action="{{ url_for('merch.admin_delete', product_id=product.id) }}" style="display: inline;">
+                        <form method="POST" action="{{ url_for('merch.admin_delete', product_id=product.id) }}" class="merch-product-action-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="px-btn px-btn-sm px-btn-danger"
                                     onclick="return confirm('Delete this product and its files? This cannot be undone.')">
                                 Delete
@@ -130,6 +132,24 @@
 </div>
 
 <style>
+.merch-products-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.merch-product-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.merch-product-action-form {
+    display: inline-flex;
+}
+
 .merch-thumb {
     width: 60px;
     height: 60px;
@@ -150,13 +170,13 @@
 }
 
 @media (max-width: 768px) {
-    .px-mb-lg > div[style*="justify-content: space-between"] {
+    .merch-products-topbar {
         flex-direction: column;
-        align-items: stretch !important;
+        align-items: stretch;
         gap: 10px;
     }
 
-    .px-mb-lg > div[style*="justify-content: space-between"] .px-btn,
+    .merch-products-topbar .px-btn,
     .px-panel form[method="GET"] .px-btn,
     .px-pagination .px-btn {
         width: 100%;
@@ -214,22 +234,23 @@
         height: 48px !important;
     }
 
-    .merch-products-table td [style*="display: flex; gap: 8px"] {
-        flex-wrap: wrap;
+    .merch-product-actions {
+        display: grid;
+        gap: 8px;
     }
 
-    .merch-products-table td [style*="display: flex; gap: 8px"] .px-btn,
-    .merch-products-table td [style*="display: flex; gap: 8px"] form,
-    .merch-products-table td [style*="display: flex; gap: 8px"] form .px-btn {
+    .merch-product-actions .px-btn,
+    .merch-product-actions .merch-product-action-form,
+    .merch-product-actions .merch-product-action-form .px-btn {
         width: 100%;
     }
 }
 
 @media (max-width: 480px) {
-    .px-mb-lg > div[style*="justify-content: space-between"] .px-btn,
+    .merch-products-topbar .px-btn,
     .px-panel form[method="GET"] .px-btn,
     .px-pagination .px-btn,
-    .merch-products-table td [style*="display: flex; gap: 8px"] .px-btn {
+    .merch-product-actions .px-btn {
         min-height: 36px;
         padding: 9px 10px;
         font-size: 0.48rem;

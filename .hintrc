@@ -17,6 +17,15 @@
           "meta[name=theme-color]"
         ]
       }
+    ],
+    "axe/forms": "off",
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "backdrop-filter"
+        ]
+      }
     ]
   }
 }

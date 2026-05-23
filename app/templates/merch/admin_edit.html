@@ -3,16 +3,16 @@
 {% block title %}Edit Product{% if current_user.is_admin() %} - Admin{% endif %}{% endblock %}
 
 {% block content %}
-<div class="px-mb-lg">
-    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-sm" style="margin-bottom: 20px; display: inline-block;">
+<div class="px-mb-lg merch-edit-page">
+    <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-sm merch-edit-backlink">
         ← Back to Products
     </a>
-    
-    <h1 class="px-mb-lg"> Edit Product</h1>
-    
-    <div class="px-grid" style="grid-template-columns: 1fr 1fr; gap: 40px;">
+
+    <h1 class="px-mb-lg merch-edit-title">Edit Product</h1>
+
+    <div class="px-grid merch-edit-layout">
         <!-- Edit Form -->
-        <div class="px-panel">
+        <div class="px-panel merch-edit-panel">
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="px-form-group">
@@ -105,38 +105,41 @@
                         <span>Show in Store</span>
                     </label>
                 </div>
-                
-                <div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+
+                <div class="merch-edit-actions">
                     <button type="submit" class="px-btn px-btn-primary">
-                         Save Changes
+                        Save Changes
                     </button>
                     <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">
                         Cancel
                     </a>
-                    <button type="submit"
-                            class="px-btn px-btn-danger"
-                            formaction="{{ url_for('merch.admin_delete', product_id=product.id) }}"
-                            formmethod="POST"
-                            formnovalidate
-                            onclick="return confirm('Delete this product?');">
-                        Delete Product
-                    </button>
                 </div>
             </form>
+
+            <div class="merch-edit-danger">
+                <h3 class="merch-edit-danger-title">Danger Zone</h3>
+                <p class="px-text-sm px-text-muted">Delete removes the product from your store. If buyers already exist, the system may hide it safely instead of hard deleting it.</p>
+                <form method="POST" action="{{ url_for('merch.admin_delete', product_id=product.id) }}" class="merch-delete-form" onsubmit="return confirm('Delete this product?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="px-btn px-btn-danger">
+                        Delete Product
+                    </button>
+                </form>
+            </div>
         </div>
-        
+
         <!-- Product Info -->
-        <div>
+        <div class="merch-edit-side">
             {% if product.product_type != 'physical' %}
-            <div class="px-panel" style="margin-bottom: 20px;">
-                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+            <div class="px-panel merch-edit-panel merch-edit-info-panel">
+                <h3 class="merch-edit-section-title">
                     Current Files ({{ product.total_files }})
                 </h3>
                 
-                <div style="max-height: 300px; overflow-y: auto;">
+                <div class="merch-current-files">
                     {% for file in product.files.all() %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: var(--px-bg-dark); margin-bottom: 4px; border: 1px solid var(--px-border);">
-                        <span class="px-text-sm" style="flex: 1; overflow: hidden; text-overflow: ellipsis;">
+                    <div class="merch-current-file-row">
+                        <span class="px-text-sm merch-current-file-name">
                             {{ file.original_name or file.file_filename }}
                         </span>
                         {% if file.is_sold %}
@@ -151,22 +154,22 @@
             {% endif %}
             
             {% if product.gallery_filenames %}
-            <div class="px-panel" style="margin-bottom: 20px;">
-                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+            <div class="px-panel merch-edit-panel merch-edit-info-panel">
+                <h3 class="merch-edit-section-title">
                     Product Photos
                 </h3>
-                <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                <div class="merch-edit-gallery-preview">
                     {% for image_filename in product.gallery_filenames %}
-                    <div style="background: var(--px-bg-dark); border: 3px solid var(--px-border); padding: 10px; aspect-ratio: 1 / 1; position: relative;">
+                    <div class="merch-edit-gallery-card">
                         {% if loop.first %}
-                        <span style="position: absolute; top: 8px; left: 8px; z-index: 1; padding: 4px 8px; background: rgba(255,255,255,0.92); border: 1px solid rgba(93, 132, 214, 0.24); color: var(--px-blue); font-size: 0.68rem; font-weight: 700;">
+                        <span class="merch-edit-cover-tag">
                             Cover
                         </span>
                         {% endif %}
                         <img
                             src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
                             alt="{{ product.name }}"
-                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                            class="merch-edit-gallery-image"
                         >
                     </div>
                     {% endfor %}
@@ -174,25 +177,25 @@
             </div>
             {% endif %}
 
-            <div class="px-panel" style="background: var(--px-bg-dark);">
-                <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; margin-bottom: 12px;">
+            <div class="px-panel merch-edit-panel merch-edit-stock-panel">
+                <h3 class="merch-edit-section-title">
                     Stock Summary
                 </h3>
                 {% if product.product_type != 'physical' %}
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--px-border);">
+                <div class="merch-edit-stock-row">
                     <span>Total Files:</span>
-                    <span style="font-family: 'Press Start 2P', cursive;">{{ product.total_files }}</span>
+                    <span class="merch-edit-stock-value">{{ product.total_files }}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--px-border);">
+                <div class="merch-edit-stock-row">
                     <span>Sold:</span>
-                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-red);">
+                    <span class="merch-edit-stock-value merch-edit-stock-value--sold">
                         {{ product.total_files - product.quantity }}
                     </span>
                 </div>
                 {% endif %}
-                <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                <div class="merch-edit-stock-row">
                     <span>Available:</span>
-                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-green);">
+                    <span class="merch-edit-stock-value merch-edit-stock-value--available">
                         {{ product.quantity }}
                     </span>
                 </div>
@@ -202,6 +205,30 @@
 </div>
 
 <style>
+.merch-edit-page {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.merch-edit-backlink {
+    margin-bottom: 18px;
+    display: inline-flex;
+}
+
+.merch-edit-title {
+    margin-bottom: 18px;
+}
+
+.merch-edit-layout {
+    grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.merch-edit-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239,244,252,0.96));
+}
+
 .merch-photo-slots {
     display: grid;
     gap: 12px;
@@ -240,6 +267,177 @@
     gap: 8px;
     margin-bottom: 10px;
     color: var(--px-text-muted);
+}
+
+.merch-edit-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.merch-edit-danger {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(63, 88, 138, 0.16);
+}
+
+.merch-edit-danger-title {
+    margin: 0 0 8px;
+    color: var(--px-red);
+}
+
+.merch-delete-form {
+    margin-top: 12px;
+}
+
+.merch-edit-side {
+    display: grid;
+    gap: 18px;
+}
+
+.merch-edit-info-panel,
+.merch-edit-stock-panel {
+    margin-bottom: 0;
+}
+
+.merch-edit-section-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.6rem;
+    margin-bottom: 12px;
+}
+
+.merch-current-files {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.merch-current-file-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: var(--px-bg-dark);
+    margin-bottom: 4px;
+    border: 1px solid var(--px-border);
+}
+
+.merch-current-file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.merch-edit-gallery-preview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.merch-edit-gallery-card {
+    background: var(--px-bg-dark);
+    border: 3px solid var(--px-border);
+    padding: 10px;
+    aspect-ratio: 1 / 1;
+    position: relative;
+}
+
+.merch-edit-cover-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(93, 132, 214, 0.24);
+    color: var(--px-blue);
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.merch-edit-gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.merch-edit-stock-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--px-border);
+}
+
+.merch-edit-stock-row:last-child {
+    border-bottom: 0;
+}
+
+.merch-edit-stock-value {
+    font-family: 'Press Start 2P', cursive;
+}
+
+.merch-edit-stock-value--sold {
+    color: var(--px-red);
+}
+
+.merch-edit-stock-value--available {
+    color: var(--px-green);
+}
+
+@media (max-width: 920px) {
+    .merch-edit-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .merch-edit-backlink {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .merch-edit-title {
+        font-size: 1.2rem;
+        margin-bottom: 14px;
+    }
+
+    .merch-edit-panel {
+        padding: 14px;
+    }
+
+    .merch-current-file-row,
+    .merch-edit-stock-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .merch-edit-gallery-preview {
+        grid-template-columns: 1fr;
+    }
+
+    .merch-photo-slot-preview {
+        width: 100%;
+        max-width: 180px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    .merch-edit-actions,
+    .merch-delete-form {
+        display: grid;
+        gap: 10px;
+    }
+
+    .merch-edit-actions .px-btn,
+    .merch-delete-form .px-btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 42px;
+    }
 }
 </style>
 {% endblock %}
