@@ -12,6 +12,7 @@ from app.datetime_utils import utc_now
 from app.services.history_service import HistoryService
 from app.services.wallet_service import WalletService
 from app.route_modules.admin_finance import register_admin_finance_routes
+from app.validators import ValidationError
 from sqlalchemy import func
 from datetime import datetime
 
@@ -363,9 +364,28 @@ def edit_user(user_id):
         seller_flag = request.form.get('seller') == 'on'
         commission_rate = request.form.get('commission_rate', 3.0, type=float) if seller_flag else 0.0
         commission_rate = max(0.0, min(commission_rate, 100.0))
-        
-        user.coins = coins
-        user.role = 'user'  # Always keep role as 'user', never admin
+        current_balance = int(user.coins or 0)
+        target_balance = max(coins or 0, 0)
+
+        if target_balance > current_balance:
+            WalletService.credit_user(
+                user_id=user.id,
+                amount=target_balance - current_balance,
+                transaction_type='admin_balance_set_increase',
+                reference_type='admin_user',
+                reference_id=current_user.id,
+                details=f'Balance set by admin {current_user.username} to {target_balance} TNNO',
+            )
+        elif target_balance < current_balance:
+            WalletService.debit_user(
+                user_id=user.id,
+                amount=current_balance - target_balance,
+                transaction_type='admin_balance_set_decrease',
+                reference_type='admin_user',
+                reference_id=current_user.id,
+                details=f'Balance set by admin {current_user.username} to {target_balance} TNNO',
+            )
+
         user.is_seller = seller_flag
         if seller_flag:
             user.seller_commission_rate = commission_rate / 100  # Convert percentage to decimal
@@ -403,6 +423,36 @@ def edit_user(user_id):
         seller_orders_month=int(monthly_orders or 0),
         sales_month_label=start_of_month.strftime('%B %Y')
     )
+
+
+@admin_bp.route('/users/<int:user_id>/grant-coins', methods=['POST'])
+@login_required
+def grant_user_coins(user_id):
+    """Grant TNNO to a user without overwriting the existing balance."""
+    if not admin_required():
+        flash('Access denied', 'error')
+        return redirect(url_for('missions.index'))
+
+    user = User.query.get_or_404(user_id)
+    amount = request.form.get('grant_amount', type=int)
+    reason = (request.form.get('grant_reason') or '').strip()
+
+    try:
+        WalletService.credit_user(
+            user_id=user.id,
+            amount=amount,
+            transaction_type='admin_coin_grant',
+            reference_type='admin_user',
+            reference_id=current_user.id,
+            details=f'Granted by admin {current_user.username}' + (f': {reason}' if reason else ''),
+            commit=True,
+        )
+    except ValidationError as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('admin.edit_user', user_id=user.id) + '#wallet-grant')
+
+    flash(f'Added {amount} TNNO to {user.username}. New balance: {int(user.coins or 0)} TNNO.', 'success')
+    return redirect(url_for('admin.edit_user', user_id=user.id) + '#wallet-grant')
 
 
 @admin_bp.route('/users/<int:user_id>/seller', methods=['POST'])
