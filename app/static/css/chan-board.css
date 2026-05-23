@@ -44,7 +44,7 @@
 
 /* ==================== Base Styles ==================== */
 body {
-    font-family: var(--px-font-body, 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif);
+    font-family: var(--px-font-body, 'VT323', 'Courier New', monospace);
     font-size: 15px;
     line-height: 1.55;
     background-color: var(--chan-bg);

@@ -109,13 +109,21 @@ def create_deposit():
         flash('Internal server error while creating deposit.', 'error')
         return redirect(url_for('deposit.index'))
 
-    if _is_json_request():
-        return jsonify({'status': 'success', 'payment_url': payment_url}), 200
-
     if not _is_allowed_payment_redirect(payment_url):
         current_app.logger.error('Blocked unexpected NowPayments redirect host: %s', payment_url)
-        flash('Payment provider returned an invalid redirect URL.', 'error')
+        message = 'Payment provider returned an invalid redirect URL.'
+        if _is_json_request():
+            return _json_error(message, 502)
+        flash(message, 'error')
         return redirect(url_for('deposit.index'))
+
+    if _is_json_request():
+        return jsonify({
+            'status': 'success',
+            'deposit_id': deposit.id,
+            'payment_id': deposit.payment_id,
+            'payment_url': payment_url,
+        }), 200
 
     return redirect(payment_url, code=303)
 
@@ -209,6 +217,7 @@ def index():
     return render_template(
         'deposit/index.html',
         deposits=deposits,
+        min_deposit=current_app.config.get('MIN_DEPOSIT_USDT', 5),
     )
 
 

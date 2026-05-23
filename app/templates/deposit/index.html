@@ -15,7 +15,8 @@ Deposit - RetroQuest
             <h2 class="px-panel-title">Create Deposit</h2>
         </div>
 
-        <form method="POST" action="/create-deposit" id="depositForm" data-turbo="false" target="_top">
+        <form method="POST" action="{{ url_for('nowpayments.create_deposit') }}" id="depositForm" data-turbo="false" target="_top">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="px-form-group">
                 <label class="px-label" for="amount">Amount (USDT)</label>
                 <input
@@ -25,7 +26,7 @@ Deposit - RetroQuest
                     class="px-input"
                     placeholder="Enter amount"
                     step="0.01"
-                    min="1"
+                    min="{{ min_deposit }}"
                     required
                 >
             </div>
@@ -41,17 +42,86 @@ Deposit - RetroQuest
             <p class="px-text-muted px-text-sm" style="color: #f5d442; margin-top: 12px;">
                 ⚠️ Send only using the selected network. Wrong network may result in permanent loss.
             </p>
+            <p class="px-text-muted px-text-sm" style="margin-top: 8px;">
+                Minimum deposit: {{ min_deposit }} USDT
+            </p>
 
             <button type="submit" class="px-btn px-btn-primary px-btn-lg" style="width: 100%; margin-top: 16px;">Create Deposit</button>
         </form>
 
+        <div id="depositFeedback" class="px-alert px-mt-md" style="display: none;"></div>
+
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            function initDepositForm() {
                 const depositForm = document.getElementById('depositForm');
-                if (!depositForm) return;
+                const feedback = document.getElementById('depositFeedback');
+                if (!depositForm || depositForm.dataset.nowpaymentsReady === '1') return;
+
+                depositForm.dataset.nowpaymentsReady = '1';
                 depositForm.setAttribute('data-turbo', 'false');
                 depositForm.setAttribute('target', '_top');
-            });
+
+                const submitButton = depositForm.querySelector('button[type="submit"]');
+                const defaultButtonText = submitButton ? submitButton.textContent : 'Create Deposit';
+
+                function showFeedback(message, level) {
+                    if (!feedback) return;
+                    feedback.className = `px-alert px-mt-md px-alert-${level}`;
+                    feedback.innerHTML = message;
+                    feedback.style.display = 'block';
+                }
+
+                depositForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Creating...';
+                    }
+                    showFeedback('Creating your NowPayments checkout...', 'info');
+
+                    try {
+                        const response = await csrfFetch(depositForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: new FormData(depositForm),
+                        });
+
+                        let data = {};
+                        try {
+                            data = await response.json();
+                        } catch (_error) {
+                            data = {};
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Unable to create deposit.');
+                        }
+
+                        if (!data.payment_url) {
+                            throw new Error('NowPayments did not return a checkout URL.');
+                        }
+
+                        showFeedback(
+                            `Opening NowPayments checkout... If nothing happens, <a href="${data.payment_url}" target="_top" rel="noopener">open the payment page manually</a>.`,
+                            'success'
+                        );
+                        window.top.location.href = data.payment_url;
+                    } catch (error) {
+                        showFeedback(error.message || 'Unable to create deposit.', 'error');
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = defaultButtonText;
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', initDepositForm);
+            document.addEventListener('turbo:load', initDepositForm);
         </script>
 
         <div class="px-panel" style="background: var(--px-bg-dark); margin-top: 16px;">

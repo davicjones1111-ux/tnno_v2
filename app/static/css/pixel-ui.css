@@ -84,8 +84,8 @@
     --px-transition: 0.15s ease;
 
     /* Fonts */
-    --px-font-body: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    --px-font-heading: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --px-font-body: 'VT323', 'Courier New', monospace;
+    --px-font-heading: 'Press Start 2P', cursive;
     --px-font-pixel: 'Press Start 2P', cursive;
     --px-font-mono: 'VT323', 'Courier New', monospace;
 }
@@ -102,7 +102,7 @@ html {
 
 body {
     font-family: var(--px-font-body);
-    font-size: 1rem;
+    font-size: 1.2rem;
     line-height: 1.65;
     background: var(--px-bg-dark);
     color: var(--px-text);
@@ -120,10 +120,10 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--px-font-heading);
     color: var(--px-text);
     margin: 0 0 var(--px-md) 0;
-    line-height: 1.25;
+    line-height: 1.6;
     text-transform: none;
-    letter-spacing: 0.01em;
-    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-weight: 400;
 }
 
 h1 { font-size: 1.5rem; }
@@ -185,9 +185,13 @@ a:hover {
 }
 
 .px-panel-title {
-    font-size: 0.875rem;
+    font-family: var(--px-font-pixel);
+    font-size: 0.56rem;
     margin: 0;
     color: var(--px-cyan-dark);
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    text-transform: uppercase;
 }
 
 /* ==================== Pixel Card ==================== */
@@ -216,9 +220,13 @@ a:hover {
 }
 
 .px-card-title {
-    font-size: 0.875rem;
+    font-family: var(--px-font-pixel);
+    font-size: 0.56rem;
     margin: 0;
     color: var(--px-text);
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    text-transform: uppercase;
 }
 
 .px-card-icon {
@@ -233,7 +241,7 @@ a:hover {
 
 /* ==================== Pixel Buttons ==================== */
 .px-btn {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--px-font-pixel);
     font-size: 0.625rem;
     padding: var(--px-md) var(--px-lg);
     border: none;
@@ -245,6 +253,11 @@ a:hover {
     align-items: center;
     justify-content: center;
     gap: var(--px-sm);
+    min-height: 46px;
+    line-height: 1.45;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .px-btn-primary {
@@ -305,11 +318,13 @@ a:hover {
 .px-btn-sm {
     padding: var(--px-sm) var(--px-md);
     font-size: 0.5rem;
+    min-height: 34px;
 }
 
 .px-btn-lg {
     padding: var(--px-lg) var(--px-xl);
     font-size: 0.75rem;
+    min-height: 56px;
 }
 
 /* ==================== Pixel Form Elements ==================== */
@@ -318,21 +333,22 @@ a:hover {
 }
 
 .px-label {
-    font-family: var(--px-font-body);
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-family: var(--px-font-pixel);
+    font-size: 0.5rem;
+    font-weight: 400;
     color: var(--px-text-muted);
     display: block;
     margin-bottom: var(--px-sm);
-    text-transform: none;
-    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.6;
 }
 
 .px-input,
 .px-textarea,
 .px-select {
     font-family: var(--px-font-body);
-    font-size: 1rem;
+    font-size: 1.2rem;
     line-height: 1.5;
     width: 100%;
     padding: var(--px-md);
@@ -340,6 +356,7 @@ a:hover {
     border: 2px solid var(--px-border);
     color: var(--px-text);
     transition: var(--px-transition);
+    letter-spacing: 0.03em;
 }
 
 .px-input:focus,
@@ -381,18 +398,51 @@ a:hover {
 }
 
 .px-nav-brand {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--px-font-pixel);
     font-size: 0.875rem;
     color: var(--px-text);
     text-decoration: none;
     display: flex;
     align-items: center;
-    gap: var(--px-sm);
+    gap: 10px;
+}
+
+.px-nav-brand-wordmark {
+    display: inline-block;
+    font-family: var(--px-font-pixel);
+    font-size: 0.92rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    color: var(--px-coin-gold);
+    text-shadow:
+        2px 2px 0 #c7d2e3,
+        4px 4px 0 rgba(95, 117, 163, 0.18),
+        0 0 14px rgba(212, 175, 55, 0.2);
+}
+
+.px-nav-brand-wordmark::after {
+    content: '';
+    display: block;
+    width: calc(100% - 2px);
+    height: 3px;
+    margin-top: 5px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            var(--px-cyan-dark),
+            var(--px-cyan-dark) 6px,
+            transparent 6px,
+            transparent 9px
+        );
 }
 
 .px-nav-brand:hover {
     color: var(--px-cyan);
     text-shadow: none;
+}
+
+.px-nav-brand:hover .px-nav-brand-wordmark {
+    color: var(--px-cyan-dark);
 }
 
 .px-nav-menu {
@@ -402,10 +452,10 @@ a:hover {
 }
 
 .px-nav-link {
-    font-family: var(--px-font-body);
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-family: var(--px-font-pixel);
+    font-size: 0.52rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
     color: var(--px-text);
     padding: var(--px-sm) var(--px-md);
     border: 2px solid transparent;
@@ -413,6 +463,8 @@ a:hover {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    text-transform: uppercase;
+    line-height: 1.4;
 }
 
 .px-nav-icon {
@@ -421,7 +473,7 @@ a:hover {
 }
 
 .px-nav-text {
-    line-height: 1;
+    line-height: 1.35;
 }
 
 .px-nav-link:hover,
@@ -448,8 +500,8 @@ a:hover {
 }
 
 .px-nav-coins {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.625rem;
+    font-family: var(--px-font-pixel);
+    font-size: 0.56rem;
     color: var(--px-gold-dark);
     display: flex;
     align-items: center;
@@ -644,13 +696,14 @@ a:hover {
 }
 
 .px-table th {
-    font-family: var(--px-font-body);
-    font-size: 0.78rem;
-    font-weight: 700;
+    font-family: var(--px-font-pixel);
+    font-size: 0.48rem;
+    font-weight: 400;
     letter-spacing: 0.08em;
     color: var(--px-cyan-dark);
     background: var(--px-bg-secondary);
     text-transform: uppercase;
+    line-height: 1.5;
 }
 
 .px-table tr:hover td {
@@ -1155,7 +1208,7 @@ a:hover {
 /* ==================== Normal Text Override ==================== */
 body {
     font-family: var(--px-font-body);
-    font-size: 1rem;
+    font-size: 1.2rem;
 }
 
 body,
@@ -1286,6 +1339,10 @@ code, pre, .px-code-inline, .px-code-block {
 
     .px-nav-brand {
         font-size: 0.65rem;
+    }
+
+    .px-nav-brand-wordmark {
+        font-size: 0.68rem;
     }
 
     .px-nav-user {
@@ -1428,11 +1485,12 @@ code, pre, .px-code-inline, .px-code-block {
     }
 
     .px-mobile-tab-label {
-        font-family: var(--px-font-body);
-        font-size: 0.62rem;
-        font-weight: 700;
+        font-family: var(--px-font-pixel);
+        font-size: 0.42rem;
+        font-weight: 400;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+        line-height: 1.45;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1563,14 +1621,15 @@ code, pre, .px-code-inline, .px-code-block {
 }
 
 .logo-text {
-    font-family: 'Press Start 2P', cursive;
+    font-family: var(--px-font-pixel);
     font-size: 3rem;
     color: var(--px-coin-gold);
     text-shadow:
         2px 2px 0 #c7d2e3,
+        4px 4px 0 rgba(95, 117, 163, 0.18),
         0 0 12px rgba(212, 175, 55, 0.35);
     animation: logoGlow 2s ease-in-out infinite alternate;
-    letter-spacing: 8px;
+    letter-spacing: 0.18em;
     display: inline-block;
     transform: scale(1);
     transition: transform 0.3s ease;

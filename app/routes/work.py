@@ -389,5 +389,6 @@ def finance():
         'work/finance.html',
         deposits=deposits,
         withdrawals=withdrawals_list,
-        request_fee=get_work_request_fee()
+        request_fee=get_work_request_fee(),
+        min_deposit=current_app.config.get('MIN_DEPOSIT_USDT', 5),
     )

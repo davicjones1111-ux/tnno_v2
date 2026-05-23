@@ -27,8 +27,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <!-- Fonts - optimized loading with swap -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Press+Start+2P&family=VT323&display=swap">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
 
     <!-- Pixel UI CSS -->
     <link rel="preload" as="style" href="{{ asset_url('css/pixel-ui.css') }}">
@@ -327,14 +327,14 @@
     {% if current_user.is_authenticated %}
     <nav class="px-nav">
         <div class="px-nav-container">
-            <a href="{{ url_for('missions.index') }}" class="px-nav-brand" data-turbo-preload="true"> 
+            <a href="{{ url_for('missions.index') }}" class="px-nav-brand" data-turbo-preload="true">
                 <div class="coin-3d-wrapper">
                     <div class="coin-3d">
                         <div class="coin-3d-front"></div>
                         <div class="coin-3d-back"></div>
                     </div>
                 </div>
-                TNNO
+                <span class="px-nav-brand-wordmark">TNNO</span>
             </a>
 
             <div class="px-nav-menu" id="mobile-nav-menu">
