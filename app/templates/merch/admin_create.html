@@ -123,19 +123,19 @@
                 </div>
             </div>
 
-            <div id="physical-fields" style="display: none;">
-                <div class="px-form-group">
-                    <label class="px-label">Physical Quantity *</label>
-                    <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
+                <div id="physical-fields" style="display: none;">
+                    <div class="px-form-group">
+                        <label class="px-label">Physical Quantity *</label>
+                        <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
+                    </div>
+                    <div class="px-form-group">
+                        <label class="px-label">Contact Link *</label>
+                        <input type="text" name="contact_link" id="contact-link" class="px-input" placeholder="https://t.me/yourname or facebook.com/yourpage">
+                        <p class="px-text-sm px-text-muted px-mt-sm">
+                        Buyers will see this link for questions about delivery. Physical products do not need uploaded product files.
+                        </p>
+                    </div>
                 </div>
-                <div class="px-form-group">
-                    <label class="px-label">Contact Link *</label>
-                    <input type="text" name="contact_link" id="contact-link" class="px-input" placeholder="Telegram/Facebook link">
-                    <p class="px-text-sm px-text-muted px-mt-sm">
-                        Buyers will see this link for questions about delivery.
-                    </p>
-                </div>
-            </div>
 
 
             
@@ -233,9 +233,18 @@ function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
-    if (fileInput) fileInput.required = !isPhysical;
-    if (physicalQuantity) physicalQuantity.required = isPhysical;
-    if (contactLink) contactLink.required = isPhysical;
+    if (fileInput) {
+        fileInput.required = !isPhysical;
+        fileInput.disabled = isPhysical;
+    }
+    if (physicalQuantity) {
+        physicalQuantity.required = isPhysical;
+        physicalQuantity.disabled = !isPhysical;
+    }
+    if (contactLink) {
+        contactLink.required = isPhysical;
+        contactLink.disabled = !isPhysical;
+    }
 }
 
 if (typeSelect) {

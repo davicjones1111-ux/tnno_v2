@@ -69,13 +69,17 @@ class User(db.Model, UserMixin):
 
     @property
     def seller_active(self):
-        """Return True if seller subscription is active."""
+        """Return True if seller access is active.
+
+        Sellers approved manually by admin may not have an expiration date; treat
+        a missing expiry as active seller access.
+        """
         if self.is_admin():
             return True
         if not self.is_seller:
             return False
         if not self.seller_expires_at:
-            return False
+            return True
         return self.seller_expires_at >= utc_now()
 
     @property

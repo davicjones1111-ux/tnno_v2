@@ -71,6 +71,14 @@ def _save_product_gallery_image(uploaded_image, subfolder='merch'):
     return image_path.split('/')[-1] if image_path else None
 
 
+def _normalize_contact_link(value):
+    """Accept bare domains like t.me/name by prefixing https:// before validation."""
+    raw = (value or '').strip()
+    if raw and '://' not in raw and '.' in raw and ' ' not in raw:
+        return f'https://{raw}'
+    return raw
+
+
 def _save_product_gallery_images(uploaded_images, subfolder='merch'):
     """Save up to three uploaded product images and return stored filenames."""
     saved_filenames = []
@@ -101,7 +109,7 @@ def _sync_product_gallery(product, image_filenames):
 
     previous_filenames = product.gallery_filenames
     product.image_filename = normalized_filenames[0] if normalized_filenames else None
-    product.images.delete()
+    ProductImage.query.filter_by(product_id=product.id).delete(synchronize_session=False)
     db.session.flush()
 
     for index, image_filename in enumerate(normalized_filenames[1:], start=1):
@@ -309,7 +317,10 @@ def index():
     seller_active_filter = or_(
         Product.seller_id.is_(None),
         User.role == 'admin',
-        and_(User.is_seller.is_(True), User.seller_expires_at.isnot(None), User.seller_expires_at >= utc_now())
+        and_(
+            User.is_seller.is_(True),
+            or_(User.seller_expires_at.is_(None), User.seller_expires_at >= utc_now())
+        )
     )
 
     query = Product.query.outerjoin(User, User.id == Product.seller_id)\
@@ -373,7 +384,10 @@ def api_products():
     seller_active_filter = or_(
         Product.seller_id.is_(None),
         User.role == 'admin',
-        and_(User.is_seller.is_(True), User.seller_expires_at.isnot(None), User.seller_expires_at >= utc_now())
+        and_(
+            User.is_seller.is_(True),
+            or_(User.seller_expires_at.is_(None), User.seller_expires_at >= utc_now())
+        )
     )
 
     query = Product.query.outerjoin(User, User.id == Product.seller_id)\
@@ -792,6 +806,7 @@ def admin_create():
             if physical_quantity < 1:
                 flash('Physical quantity must be at least 1', 'error')
                 return redirect(url_for('merch.admin_create'))
+            contact_link = _normalize_contact_link(contact_link)
             if not contact_link:
                 flash('Contact link is required for physical products', 'error')
                 return redirect(url_for('merch.admin_create'))
@@ -910,7 +925,7 @@ def admin_edit(product_id):
             product.price = new_price
 
         if product.product_type == 'physical':
-            contact_link = (request.form.get('contact_link') or '').strip()
+            contact_link = _normalize_contact_link(request.form.get('contact_link'))
             physical_quantity = request.form.get('physical_quantity', type=int)
             if contact_link:
                 try:
