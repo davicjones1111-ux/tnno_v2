@@ -18,7 +18,11 @@ class EmailService:
     def send_email(to_email: str, subject: str, *, html: str, text: str | None = None) -> bool:
         api_key = current_app.config.get('RESEND_API_KEY')
         if not api_key or not to_email:
-            current_app.logger.warning('Email sending skipped because RESEND_API_KEY or recipient is missing')
+            current_app.logger.warning(
+                'Email sending skipped because RESEND_API_KEY or recipient is missing (to=%s, configured=%s)',
+                to_email,
+                bool(api_key),
+            )
             return False
 
         payload = {
@@ -43,11 +47,22 @@ class EmailService:
                 json=payload,
                 timeout=10,
             )
-            response.raise_for_status()
-            return True
         except Exception as exc:
-            current_app.logger.warning('Failed to send email via Resend: %s', exc)
+            current_app.logger.warning('Failed to reach Resend API: %s', exc)
             return False
+
+        if response.ok:
+            return True
+
+        response_preview = (response.text or '')[:500]
+        current_app.logger.warning(
+            'Resend rejected email send status=%s to=%s from=%s body=%r',
+            response.status_code,
+            to_email,
+            payload.get('from'),
+            response_preview,
+        )
+        return False
 
     @staticmethod
     def send_otp_email(to_email: str, otp_code: str, *, purpose_label: str, expires_minutes: int) -> bool:

@@ -151,8 +151,19 @@ def signup():
                 try:
                     OTPService.create_otp(user=user, purpose=OTPService.PURPOSE_EMAIL_VERIFY)
                     flash('Registration successful! Please login. We also sent an email verification code.', 'success')
-                except ValueError:
+                except ValueError as exc:
+                    current_app.logger.warning(
+                        'Signup verification email could not be sent for user=%s email=%s: %s',
+                        user.username,
+                        user.email,
+                        exc,
+                    )
                     flash('Registration successful! Please login.', 'success')
+                    flash(
+                        f'We could not send the email verification code yet: {exc}. '
+                        'You can add or verify your email later from Settings.',
+                        'warning',
+                    )
             else:
                 flash('Registration successful! Please login.', 'success')
             SessionService.record_auth_event('signup_success', user=user, status='success')

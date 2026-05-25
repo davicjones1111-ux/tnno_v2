@@ -16,6 +16,7 @@ from flask_login import login_required, current_user
 
 from app.datetime_utils import utc_now
 from app.extensions import db
+from app.security import get_safe_redirect_target
 from app.services import DepositService
 from app.services.history_service import HistoryService
 
@@ -54,6 +55,11 @@ def _json_error(message: str, status: int = 400):
     return jsonify({'error': message}), status
 
 
+def _deposit_return_url() -> str:
+    target = (request.form.get('return_to') or request.args.get('return_to') or request.referrer or '').strip()
+    return get_safe_redirect_target(target, 'deposit.index')
+
+
 def _is_allowed_payment_redirect(target: str) -> bool:
     parsed = urlsplit(target or '')
     if parsed.scheme != 'https' or not parsed.netloc:
@@ -75,14 +81,14 @@ def create_deposit():
         if _is_json_request():
             return _json_error(message, 400)
         flash(message, 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
 
     if not network:
         message = 'Missing deposit network selection.'
         if _is_json_request():
             return _json_error(message, 400)
         flash(message, 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
 
     try:
         deposit, payment_url = DepositService.create_nowpayments_deposit(
@@ -95,19 +101,19 @@ def create_deposit():
         if _is_json_request():
             return _json_error(message, 400)
         flash(message, 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
     except RuntimeError as exc:
         message = str(exc) or 'Unable to create deposit.'
         if _is_json_request():
             return _json_error(message, 502)
         flash(message, 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
     except Exception as exc:
         current_app.logger.exception('Unexpected deposit creation failure')
         if _is_json_request():
             return _json_error('Internal server error while creating deposit.', 500)
         flash('Internal server error while creating deposit.', 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
 
     if not _is_allowed_payment_redirect(payment_url):
         current_app.logger.error('Blocked unexpected NowPayments redirect host: %s', payment_url)
@@ -115,7 +121,7 @@ def create_deposit():
         if _is_json_request():
             return _json_error(message, 502)
         flash(message, 'error')
-        return redirect(url_for('deposit.index'))
+        return redirect(_deposit_return_url())
 
     if _is_json_request():
         return jsonify({
