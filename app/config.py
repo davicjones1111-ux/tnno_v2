@@ -48,12 +48,13 @@ def _default_csp():
         'base-uri': ["'self'"],
         'form-action': ["'self'"],
         'frame-ancestors': ["'self'"],
-        'img-src': ["'self'", 'data:', 'https:'],
-        'font-src': ["'self'", 'data:', 'https:'],
-        'media-src': ["'self'", 'https:'],
+        'frame-src': ["'self'"],
+        'img-src': ["'self'", 'data:', 'blob:', 'https:'],
+        'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
+        'media-src': ["'self'", 'blob:', 'https:'],
         'connect-src': ["'self'", 'https:', 'wss:', 'ws:'],
-        'script-src': ["'self'", "'unsafe-inline'"],
-        'style-src': ["'self'", "'unsafe-inline'"],
+        'script-src': ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         'object-src': ["'none'"],
     }
 
@@ -168,6 +169,9 @@ class Config:
     TRUSTED_PROXY_HOPS = int(os.environ.get('TRUSTED_PROXY_HOPS') or '1')
     LOGIN_SESSION_PROTECTION = os.environ.get('LOGIN_SESSION_PROTECTION') or 'basic'
     BCRYPT_LOG_ROUNDS = int(os.environ.get('BCRYPT_LOG_ROUNDS') or '13')
+    SESSION_INACTIVITY_TIMEOUT_MINUTES = int(os.environ.get('SESSION_INACTIVITY_TIMEOUT_MINUTES') or '720')
+    SESSION_ABSOLUTE_TIMEOUT_DAYS = int(os.environ.get('SESSION_ABSOLUTE_TIMEOUT_DAYS') or '30')
+    SESSION_ACTIVITY_GRACE_SECONDS = int(os.environ.get('SESSION_ACTIVITY_GRACE_SECONDS') or '60')
 
     # CSRF Protection (enabled by default)
     CSRF_ENABLED = _bool_env('CSRF_ENABLED', True)
@@ -188,6 +192,12 @@ class Config:
     SUSPICIOUS_REQUEST_WINDOW_SECONDS = int(os.environ.get('SUSPICIOUS_REQUEST_WINDOW_SECONDS') or '600')
     SUSPICIOUS_REQUEST_LIMIT = int(os.environ.get('SUSPICIOUS_REQUEST_LIMIT') or '6')
     SUSPICIOUS_REQUEST_LOCKOUT_SECONDS = int(os.environ.get('SUSPICIOUS_REQUEST_LOCKOUT_SECONDS') or '1800')
+    OTP_EXPIRATION_MINUTES = int(os.environ.get('OTP_EXPIRATION_MINUTES') or '10')
+    OTP_RESEND_COOLDOWN_SECONDS = int(os.environ.get('OTP_RESEND_COOLDOWN_SECONDS') or '60')
+    OTP_MAX_ATTEMPTS = int(os.environ.get('OTP_MAX_ATTEMPTS') or '5')
+    OTP_RETENTION_HOURS = int(os.environ.get('OTP_RETENTION_HOURS') or '24')
+    AUTH_EVENT_RETENTION_DAYS = int(os.environ.get('AUTH_EVENT_RETENTION_DAYS') or '60')
+    SESSION_RETENTION_DAYS = int(os.environ.get('SESSION_RETENTION_DAYS') or '45')
 
     # Optional server-side session storage (recommended for large clusters)
     ENABLE_SERVER_SIDE_SESSIONS = _bool_env('ENABLE_SERVER_SIDE_SESSIONS', False)
@@ -219,6 +229,10 @@ class Config:
     # Admin Configuration
     ADMIN_USER = os.environ.get('ADMIN_USER') or 'admin'
     ADMIN_PASS = os.environ.get('ADMIN_PASS') or ''
+    RESEND_API_KEY = _env('RESEND_API_KEY')
+    RESEND_FROM_EMAIL = _env('RESEND_FROM_EMAIL') or 'TNNO Security <security@resend.dev>'
+    RESEND_REPLY_TO = _env('RESEND_REPLY_TO')
+    RESEND_API_BASE_URL = _env('RESEND_API_BASE_URL') or 'https://api.resend.com/emails'
 
     # Game Configuration
     GAME_PORT = int(os.environ.get('GAME_PORT') or '3000')
@@ -250,6 +264,9 @@ class Config:
     # JSON settings for faster encoding
     JSON_SORT_KEYS = False
     JSONIFY_PRETTYPRINT_REGULAR = False
+    PASSWORD_MIN_LENGTH = int(os.environ.get('PASSWORD_MIN_LENGTH') or '8')
+    PASSWORD_HISTORY_COUNT = int(os.environ.get('PASSWORD_HISTORY_COUNT') or '5')
+    CLIENT_ERROR_LOGGING_ENABLED = _bool_env('CLIENT_ERROR_LOGGING_ENABLED', True)
 
     # Security headers
     CONTENT_SECURITY_POLICY = _default_csp()

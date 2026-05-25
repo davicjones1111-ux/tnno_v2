@@ -100,6 +100,7 @@ def init_extensions(app):
             strict_transport_security_include_subdomains=True,
             strict_transport_security_preload=True,
             content_security_policy=app.config.get('CONTENT_SECURITY_POLICY'),
+            content_security_policy_nonce_in=['script-src'],
             content_security_policy_report_only=app.config.get(
                 'TALISMAN_CONTENT_SECURITY_POLICY_REPORT_ONLY', False
             ),

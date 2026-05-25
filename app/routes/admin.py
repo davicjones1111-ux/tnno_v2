@@ -5,16 +5,17 @@ Admin panel for system management
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
 from app.extensions import db
-from app.models import User, Mission, UserMission, Deposit, WithdrawRequest, WorkRequest, ServiceOrder, Product, MerchOrder, SellerRequest, SellerReport, UserNotification
+from app.models import User, Mission, UserMission, Deposit, WithdrawRequest, WorkRequest, ServiceOrder, Product, MerchOrder, SellerRequest, SellerReport, UserNotification, AuthEvent, AdminAuditLog
 from app.services.seller_service import SellerService
 from app.services import MissionService, DepositService
 from app.datetime_utils import utc_now
 from app.services.history_service import HistoryService
+from app.services.session_service import SessionService
 from app.services.wallet_service import WalletService
 from app.route_modules.admin_finance import register_admin_finance_routes
 from app.validators import ValidationError
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timedelta
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -24,6 +25,20 @@ def admin_required():
     if not current_user.is_authenticated:
         return False
     return current_user.is_admin()
+
+
+def _log_admin_action(action, *, target_type=None, target_id=None, details=None):
+    try:
+        SessionService.log_admin_action(
+            admin_user=current_user,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            details=details,
+        )
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.warning('Admin audit log failed for action=%s: %s', action, exc)
 
 
 @admin_bp.route('/')
@@ -48,6 +63,12 @@ def index():
     pending_seller_reports = SellerReport.query.filter_by(status='pending').count()
     pending_notifications = UserNotification.query.filter(UserNotification.read_at.is_(None)).count()
     total_site_coins = db.session.query(func.coalesce(func.sum(User.coins), 0)).scalar() or 0
+    last_24h = utc_now() - timedelta(hours=24)
+    suspicious_events_count = AuthEvent.query.filter(
+        AuthEvent.created_at >= last_24h,
+        AuthEvent.status.in_(('warning', 'error'))
+    ).count()
+    audit_actions_count = AdminAuditLog.query.filter(AdminAuditLog.created_at >= last_24h).count()
 
     # Recent activity
     recent_deposits = Deposit.query.order_by(Deposit.created_at.desc()).limit(10).all()
@@ -67,8 +88,64 @@ def index():
                          pending_seller_reports=pending_seller_reports,
                          pending_notifications=pending_notifications,
                          total_site_coins=total_site_coins,
+                         suspicious_events_count=suspicious_events_count,
+                         audit_actions_count=audit_actions_count,
                          recent_deposits=recent_deposits,
                          recent_withdraws=recent_withdraws)
+
+
+@admin_bp.route('/security')
+@login_required
+def security():
+    """Review suspicious authentication activity and admin audit history."""
+    if not admin_required():
+        flash('Access denied', 'error')
+        return redirect(url_for('missions.index'))
+
+    status = (request.args.get('status') or 'all').strip().lower()
+    hours = request.args.get('hours', 24, type=int)
+    hours = min(max(hours, 1), 168)
+    since = utc_now() - timedelta(hours=hours)
+
+    auth_query = AuthEvent.query.filter(AuthEvent.created_at >= since)
+    if status in {'warning', 'error', 'success', 'info'}:
+        auth_query = auth_query.filter(AuthEvent.status == status)
+
+    auth_events = auth_query.order_by(AuthEvent.created_at.desc()).limit(100).all()
+    audit_logs = AdminAuditLog.query.filter(AdminAuditLog.created_at >= since)\
+        .order_by(AdminAuditLog.created_at.desc())\
+        .limit(100)\
+        .all()
+
+    summary = {
+        'failed_logins': AuthEvent.query.filter(
+            AuthEvent.created_at >= since,
+            AuthEvent.event_type.in_(('login_failure', 'login_throttled', 'login_rate_limited'))
+        ).count(),
+        'otp_failures': AuthEvent.query.filter(
+            AuthEvent.created_at >= since,
+            AuthEvent.event_type == 'otp_failure'
+        ).count(),
+        'new_device_logins': AuthEvent.query.filter(
+            AuthEvent.created_at >= since,
+            AuthEvent.event_type == 'login_success',
+            AuthEvent.details == 'new_device'
+        ).count(),
+        'warning_events': AuthEvent.query.filter(
+            AuthEvent.created_at >= since,
+            AuthEvent.status.in_(('warning', 'error'))
+        ).count(),
+        'admin_actions': AdminAuditLog.query.filter(AdminAuditLog.created_at >= since).count(),
+    }
+
+    return render_template(
+        'admin/security.html',
+        auth_events=auth_events,
+        audit_logs=audit_logs,
+        summary=summary,
+        selected_status=status,
+        selected_hours=hours,
+    )
 
 
 @admin_bp.route('/seller-reports')
@@ -103,6 +180,7 @@ def review_seller_report(report_id):
         report.reviewed_at = utc_now()
         report.reviewed_by = current_user.id
         db.session.commit()
+        _log_admin_action('seller_report_reviewed', target_type='seller_report', target_id=report.id, details=f'seller_id={report.seller_id}')
 
     flash('Report marked as reviewed.', 'success')
     return redirect(url_for('admin.seller_reports'))
@@ -162,6 +240,7 @@ def notifications():
         )
         db.session.add(notif)
         db.session.commit()
+        _log_admin_action('user_notification_sent', target_type='user', target_id=user.id, details=f'notification_id={notif.id}')
         flash('Notification sent.', 'success')
         return redirect(url_for('admin.notifications'))
 
@@ -319,6 +398,7 @@ def approve_seller_request(req_id):
                 )
                 user.seller_reminder_sent_at = None
         db.session.commit()
+        _log_admin_action('seller_request_approved', target_type='seller_request', target_id=req.id, details=f'user_id={req.user_id}')
 
     flash('Seller request approved.', 'success')
     return redirect(url_for('admin.seller_requests'))
@@ -343,6 +423,7 @@ def reject_seller_request(req_id):
             if user and req.plan_cost:
                 user.coins += int(req.plan_cost)
         db.session.commit()
+        _log_admin_action('seller_request_rejected', target_type='seller_request', target_id=req.id, details=f'user_id={req.user_id}')
 
     flash('Seller request rejected.', 'success')
     return redirect(url_for('admin.seller_requests'))
@@ -392,6 +473,12 @@ def edit_user(user_id):
         else:
             user.seller_commission_rate = 0.0
         db.session.commit()
+        _log_admin_action(
+            'user_updated',
+            target_type='user',
+            target_id=user.id,
+            details=f'seller={user.is_seller},coins={int(user.coins or 0)},commission_rate={user.seller_commission_rate}',
+        )
         
         flash('User updated successfully!', 'success')
         return redirect(url_for('admin.users'))
@@ -451,6 +538,12 @@ def grant_user_coins(user_id):
         flash(str(exc), 'error')
         return redirect(url_for('admin.edit_user', user_id=user.id) + '#wallet-grant')
 
+    _log_admin_action(
+        'user_coin_grant',
+        target_type='user',
+        target_id=user.id,
+        details=f'amount={amount},reason={reason or ""}',
+    )
     flash(f'Added {amount} TNNO to {user.username}. New balance: {int(user.coins or 0)} TNNO.', 'success')
     return redirect(url_for('admin.edit_user', user_id=user.id) + '#wallet-grant')
 
@@ -473,6 +566,12 @@ def toggle_user_seller(user_id):
     if make_seller and user.seller_expires_at is None:
         user.seller_reminder_sent_at = None
     db.session.commit()
+    _log_admin_action(
+        'seller_toggle',
+        target_type='user',
+        target_id=user.id,
+        details=f'make_seller={make_seller},commission_rate={commission_rate}',
+    )
 
     flash(
         f'{user.username} is now {"a seller" if make_seller else "a regular user"}.',
@@ -497,9 +596,10 @@ def delete_user(user_id):
         return redirect(url_for('admin.edit_user', user_id=user_id))
     
     username = user.username
+    _log_admin_action('user_delete_requested', target_type='user', target_id=user.id, details=f'username={username}')
     db.session.delete(user)
     db.session.commit()
-    
+
     flash(f'User "{username}" deleted successfully!', 'success')
     return redirect(url_for('admin.users'))
 
@@ -559,6 +659,8 @@ def approve_submission(submission_id):
         return redirect(url_for('missions.index'))
     
     success, message = MissionService.approve_submission(submission_id, current_user.id)
+    if success:
+        _log_admin_action('mission_submission_approved', target_type='user_mission', target_id=submission_id)
     flash(message, 'success' if success else 'error')
     
     return redirect(url_for('admin.submissions'))
@@ -573,6 +675,8 @@ def reject_submission(submission_id):
         return redirect(url_for('missions.index'))
     
     success, message = MissionService.reject_submission(submission_id)
+    if success:
+        _log_admin_action('mission_submission_rejected', target_type='user_mission', target_id=submission_id)
     flash(message, 'success' if success else 'error')
     
     return redirect(url_for('admin.submissions'))

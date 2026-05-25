@@ -1,22 +1,16 @@
-(function() {
+(function(global) {
+    'use strict';
+
+    const app = global.TNNOApp || {};
     let chatPollTimer = null;
     let activeConversationId = 0;
 
     function clearChatPolling() {
         if (chatPollTimer) {
-            window.clearInterval(chatPollTimer);
+            global.clearInterval(chatPollTimer);
             chatPollTimer = null;
         }
         activeConversationId = 0;
-    }
-
-    function escapeHtml(value) {
-        return String(value || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
     }
 
     function formatTime(value) {
@@ -42,41 +36,90 @@
         return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
-    function normalizeImageUrl(imagePath) {
-        if (!imagePath) return '';
-        if (/^https?:\/\//i.test(String(imagePath))) {
-            return String(imagePath);
-        }
-        const normalized = String(imagePath).replace(/^\/+/, '').replace(/^uploads\//, '');
-        return `/static/uploads/${normalized}`;
+    function normalizeAttachmentUrl(value) {
+        const raw = app.toText(value).trim();
+        if (!raw) return '';
+        if (raw.startsWith('blob:')) return raw;
+        return app.mediaUrl(raw);
     }
 
     function getAttachmentName(message) {
-        if (message.attachment_name) return String(message.attachment_name);
+        if (message.attachment_name) return app.toText(message.attachment_name);
         const imagePath = message.image_path || '';
         if (!imagePath) return 'attachment';
-        const cleanPath = String(imagePath).split('?')[0].replace(/\/+$/, '');
+        const cleanPath = app.toText(imagePath).split('?')[0].replace(/\/+$/, '');
         const parts = cleanPath.split('/');
         return parts[parts.length - 1] || 'attachment';
     }
 
-    function buildAttachmentMarkup(message) {
-        if (!message.image_path) return '';
+    function createLoadOlderIndicator(isVisible) {
+        const indicator = app.createElement('div', {
+            className: `chat-load-older${isVisible ? '' : ' hidden'}`,
+            attrs: { id: 'chatLoadOlder' },
+            text: 'Loading older messages...'
+        });
+        return indicator;
+    }
+
+    function createDateSeparator(text) {
+        return app.createElement('div', {
+            className: 'chat-date-separator',
+            text
+        });
+    }
+
+    function createUnreadSeparator() {
+        return app.createElement('div', {
+            className: 'chat-unread-separator',
+            dataset: { unreadSeparator: 'true' },
+            text: 'New messages'
+        });
+    }
+
+    function createEmptyState() {
+        const empty = app.createElement('div', {
+            className: 'chat-empty',
+            attrs: { id: 'chatEmptyState' }
+        });
+        empty.appendChild(app.createElement('div', { className: 'chat-empty-icon', text: '✉️' }));
+        empty.appendChild(app.createElement('p', { text: 'No messages yet. Start the chat.' }));
+        return empty;
+    }
+
+    function buildAttachmentNode(message) {
+        if (!message.image_path) return null;
+        const attachmentUrl = normalizeAttachmentUrl(message.image_path);
+        if (!attachmentUrl) return null;
         if (message.message_type === 'image') {
-            return `<img src="${normalizeImageUrl(message.image_path)}" alt="Chat image" class="chat-image">`;
+            return app.createElement('img', {
+                className: 'chat-image',
+                attrs: {
+                    src: attachmentUrl,
+                    alt: 'Chat image'
+                }
+            });
         }
         if (message.message_type === 'file') {
-            return `
-                <a href="${normalizeImageUrl(message.image_path)}" class="chat-file-chip" target="_blank" rel="noopener" download>
-                    <span class="chat-file-icon">FILE</span>
-                    <span class="chat-file-meta">
-                        <strong>${escapeHtml(getAttachmentName(message))}</strong>
-                        <small>Open attachment</small>
-                    </span>
-                </a>
-            `;
+            const link = app.createElement('a', {
+                className: 'chat-file-chip',
+                attrs: {
+                    href: attachmentUrl,
+                    target: '_blank',
+                    rel: 'noopener',
+                    download: ''
+                }
+            });
+            link.appendChild(app.createElement('span', {
+                className: 'chat-file-icon',
+                text: 'FILE'
+            }));
+            const meta = app.createElement('span', { className: 'chat-file-meta' });
+            meta.appendChild(app.createElement('strong', { text: getAttachmentName(message) }));
+            meta.appendChild(app.createElement('small', { text: 'Open attachment' }));
+            link.appendChild(meta);
+            return link;
         }
-        return '';
+        return null;
     }
 
     function createPendingId() {
@@ -89,7 +132,6 @@
             clearChatPolling();
             return;
         }
-
         if (chatPage.dataset.chatInitialized === 'true') {
             return;
         }
@@ -110,7 +152,6 @@
         let unreadMarkerId = Number(chatPage.dataset.initialUnreadMarkerId || 0);
 
         const chatMessages = document.getElementById('chatMessages');
-        const loadOlderIndicator = document.getElementById('chatLoadOlder');
         const chatForm = document.getElementById('chatForm');
         const imageInput = document.getElementById('imageInput');
         const fileInput = document.getElementById('fileInput');
@@ -141,34 +182,56 @@
             }
         }
 
-        function buildMessageMarkup(message, extraClass) {
+        function buildMessageElement(message, extraClass) {
             const ownClass = message.sender_id === currentUserId ? 'is-own' : 'is-other';
-            const attachmentHtml = buildAttachmentMarkup(message);
-            const textHtml = message.content ? `<p class="chat-text">${escapeHtml(message.content)}</p>` : '';
-            const retryHtml = extraClass === 'is-failed'
-                ? '<button type="button" class="chat-retry-btn" data-chat-retry="true">Retry</button>'
-                : '';
-            return `
-                <article class="chat-bubble ${ownClass} ${extraClass || ''}" data-message-id="${message.id || ''}" data-pending-id="${message.pending_id || ''}">
-                    <div class="chat-bubble-inner">
-                        ${attachmentHtml}
-                        ${textHtml}
-                    </div>
-                    <div class="chat-meta">
-                        <span>${formatTime(message.created_at)}</span>
-                        ${message.meta_label ? `<span class="chat-meta-status">${escapeHtml(message.meta_label)}</span>` : ''}
-                        ${retryHtml}
-                    </div>
-                </article>
-            `;
+            const article = app.createElement('article', {
+                className: `chat-bubble ${ownClass}${extraClass ? ` ${extraClass}` : ''}`,
+                dataset: {
+                    messageId: message.id || '',
+                    pendingId: message.pending_id || ''
+                }
+            });
+
+            const bubbleInner = app.createElement('div', { className: 'chat-bubble-inner' });
+            const attachmentNode = buildAttachmentNode(message);
+            if (attachmentNode) {
+                bubbleInner.appendChild(attachmentNode);
+            }
+            if (message.content) {
+                bubbleInner.appendChild(app.createElement('p', {
+                    className: 'chat-text',
+                    text: message.content
+                }));
+            }
+
+            const meta = app.createElement('div', { className: 'chat-meta' });
+            meta.appendChild(app.createElement('span', {
+                text: formatTime(message.created_at)
+            }));
+            if (message.meta_label) {
+                meta.appendChild(app.createElement('span', {
+                    className: 'chat-meta-status',
+                    text: message.meta_label
+                }));
+            }
+            if (extraClass === 'is-failed') {
+                meta.appendChild(app.createElement('button', {
+                    className: 'chat-retry-btn',
+                    text: 'Retry',
+                    attrs: {
+                        type: 'button',
+                        'data-chat-retry': 'true'
+                    }
+                }));
+            }
+
+            article.appendChild(bubbleInner);
+            article.appendChild(meta);
+            return article;
         }
 
         function sortMessages(messages) {
-            return [...messages].sort((a, b) => {
-                const aId = Number(a.id || 0);
-                const bId = Number(b.id || 0);
-                return aId - bId;
-            });
+            return [...messages].sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
         }
 
         function mergeMessages(messages) {
@@ -177,50 +240,6 @@
                 byId.set(Number(message.id), message);
             });
             loadedMessages = sortMessages(Array.from(byId.values()));
-        }
-
-        function renderMessages(messages, forceScroll) {
-            if (!chatMessages) return;
-            const mergedMessages = sortMessages(messages);
-
-            const pendingMarkup = pendingMessages.map((message) => (
-                buildMessageMarkup(message, message.failed ? 'is-failed' : 'is-pending')
-            )).join('');
-
-            if (!mergedMessages.length && !pendingMarkup) {
-                chatMessages.innerHTML = '<div class="chat-empty" id="chatEmptyState"><div class="chat-empty-icon">✉️</div><p>No messages yet. Start the chat.</p></div>';
-                latestMessageId = 0;
-                return;
-            }
-
-            const olderMarkup = loadOlderIndicator ? loadOlderIndicator.outerHTML : '<div class="chat-load-older hidden" id="chatLoadOlder">Loading older messages...</div>';
-            let unreadInserted = false;
-            let lastDateLabel = '';
-            const messageMarkup = mergedMessages.map((message) => {
-                const currentDateLabel = formatDateLabel(message.created_at);
-                let dateSeparator = '';
-                if (currentDateLabel && currentDateLabel !== lastDateLabel) {
-                    dateSeparator = `<div class="chat-date-separator">${escapeHtml(currentDateLabel)}</div>`;
-                    lastDateLabel = currentDateLabel;
-                }
-                let separator = '';
-                if (!unreadInserted && unreadMarkerId && Number(message.id) === Number(unreadMarkerId)) {
-                    separator = '<div class="chat-unread-separator" data-unread-separator="true">New messages</div>';
-                    unreadInserted = true;
-                }
-                return dateSeparator + separator + buildMessageMarkup(message, '');
-            }).join('');
-            chatMessages.innerHTML = olderMarkup + messageMarkup + pendingMarkup;
-            bindRetryButtons();
-            bindImageLightbox();
-
-            const refreshedLoadOlder = document.getElementById('chatLoadOlder');
-            if (refreshedLoadOlder) {
-                refreshedLoadOlder.classList.toggle('hidden', !loadingOlder);
-            }
-            latestMessageId = mergedMessages.length ? mergedMessages[mergedMessages.length - 1].id || 0 : 0;
-            updateSeenState(mergedMessages);
-            scrollToBottom(Boolean(forceScroll));
         }
 
         function updateSeenState(messages) {
@@ -234,11 +253,48 @@
             const bubble = chatMessages.querySelector(`[data-message-id="${lastOwn.id}"]`);
             const meta = bubble ? bubble.querySelector('.chat-meta') : null;
             if (!meta) return;
-            const status = document.createElement('span');
-            status.className = 'chat-meta-status';
-            status.dataset.readStatus = 'true';
-            status.textContent = lastOwn.is_read ? 'Seen' : 'Sent';
-            meta.appendChild(status);
+            meta.appendChild(app.createElement('span', {
+                className: 'chat-meta-status',
+                dataset: { readStatus: 'true' },
+                text: lastOwn.is_read ? 'Seen' : 'Sent'
+            }));
+        }
+
+        function renderMessages(messages, forceScroll) {
+            if (!chatMessages) return;
+            const mergedMessages = sortMessages(messages);
+            app.clearChildren(chatMessages);
+
+            if (!mergedMessages.length && !pendingMessages.length) {
+                chatMessages.appendChild(createEmptyState());
+                latestMessageId = 0;
+                return;
+            }
+
+            chatMessages.appendChild(createLoadOlderIndicator(loadingOlder));
+            let unreadInserted = false;
+            let lastDateLabel = '';
+
+            mergedMessages.forEach((message) => {
+                const currentDateLabel = formatDateLabel(message.created_at);
+                if (currentDateLabel && currentDateLabel !== lastDateLabel) {
+                    chatMessages.appendChild(createDateSeparator(currentDateLabel));
+                    lastDateLabel = currentDateLabel;
+                }
+                if (!unreadInserted && unreadMarkerId && Number(message.id) === Number(unreadMarkerId)) {
+                    chatMessages.appendChild(createUnreadSeparator());
+                    unreadInserted = true;
+                }
+                chatMessages.appendChild(buildMessageElement(message, ''));
+            });
+
+            pendingMessages.forEach((message) => {
+                chatMessages.appendChild(buildMessageElement(message, message.failed ? 'is-failed' : 'is-pending'));
+            });
+
+            latestMessageId = mergedMessages.length ? mergedMessages[mergedMessages.length - 1].id || 0 : 0;
+            updateSeenState(mergedMessages);
+            scrollToBottom(Boolean(forceScroll));
         }
 
         function setTypingIndicator(isTyping) {
@@ -271,101 +327,53 @@
                 sendTypingState(true);
             }
             if (typingTimer) {
-                window.clearTimeout(typingTimer);
+                global.clearTimeout(typingTimer);
             }
-            typingTimer = window.setTimeout(() => {
+            typingTimer = global.setTimeout(() => {
                 typingSent = false;
                 sendTypingState(false);
             }, 2500);
         }
 
-        function appendMessage(message) {
-            if (!chatMessages || !message) return;
-
-            const emptyState = document.getElementById('chatEmptyState');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const article = document.createElement('article');
-            article.className = `chat-bubble ${message.sender_id === currentUserId ? 'is-own' : 'is-other'}`;
-            article.dataset.messageId = message.id || '';
-
-            const bubbleInner = document.createElement('div');
-            bubbleInner.className = 'chat-bubble-inner';
-
-            bubbleInner.innerHTML = buildAttachmentMarkup(message);
-
-            if (message.content) {
-                const p = document.createElement('p');
-                p.className = 'chat-text';
-                p.textContent = message.content;
-                bubbleInner.appendChild(p);
-            }
-
-            const meta = document.createElement('div');
-            meta.className = 'chat-meta';
-            meta.innerHTML = `<span>${formatTime(message.created_at)}</span>`;
-
-            article.appendChild(bubbleInner);
-            article.appendChild(meta);
-            chatMessages.appendChild(article);
-            bindImageLightbox();
-            latestMessageId = Math.max(latestMessageId, Number(message.id || 0));
-            scrollToBottom(true);
-        }
-
-        function bindImageLightbox() {
-            if (!chatMessages || !imageLightbox || !imageLightboxImg) return;
-            chatMessages.querySelectorAll('.chat-image').forEach((img) => {
-                img.onclick = function() {
-                    imageLightboxImg.src = img.src;
-                    imageLightbox.classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-                };
-            });
-        }
-
-        function findPendingNode(pendingId) {
-            if (!chatMessages || !pendingId) return null;
-            return chatMessages.querySelector(`[data-pending-id="${pendingId}"]`);
-        }
-
-        function addPendingMessage({ content, previewUrl, attachmentType, attachmentName, formData }) {
+        function addPendingMessage(payload) {
             const pendingMessage = {
                 pending_id: createPendingId(),
                 id: '',
                 sender_id: currentUserId,
-                content: content || '',
-                image_path: previewUrl || '',
-                attachment_name: attachmentName || '',
-                message_type: attachmentType || 'text',
+                content: payload.content || '',
+                image_path: payload.previewUrl || '',
+                attachment_name: payload.attachmentName || '',
+                message_type: payload.attachmentType || 'text',
                 created_at: new Date().toISOString(),
                 meta_label: 'Sending...',
                 failed: false,
                 progress: 0,
-                retryFormData: formData,
+                retryFormData: payload.formData,
+                object_url: payload.previewUrl || ''
             };
             pendingMessages.push(pendingMessage);
-            const emptyState = document.getElementById('chatEmptyState');
-            if (emptyState) {
-                emptyState.remove();
-            }
-            chatMessages.insertAdjacentHTML('beforeend', buildMessageMarkup(pendingMessage, 'is-pending'));
-            bindRetryButtons();
-            scrollToBottom(true);
+            renderMessages(loadedMessages, true);
             return pendingMessage.pending_id;
         }
 
+        function revokePreviewUrl(item) {
+            if (item && item.object_url && item.object_url.startsWith('blob:')) {
+                try {
+                    global.URL.revokeObjectURL(item.object_url);
+                } catch (_error) {
+                    // Ignore revoke failures for already-released URLs.
+                }
+            }
+        }
+
         function resolvePendingMessage(pendingId, savedMessage) {
+            const resolved = pendingMessages.find((item) => item.pending_id === pendingId);
+            revokePreviewUrl(resolved);
             pendingMessages = pendingMessages.filter((item) => item.pending_id !== pendingId);
-            const pendingNode = findPendingNode(pendingId);
-            if (pendingNode) {
-                pendingNode.remove();
-            }
             if (savedMessage) {
-                appendMessage(savedMessage);
+                mergeMessages([savedMessage]);
             }
+            renderMessages(loadedMessages, true);
         }
 
         function markPendingFailed(pendingId, errorMessage) {
@@ -374,13 +382,7 @@
                     ? { ...item, failed: true, meta_label: errorMessage || 'Failed to send' }
                     : item
             ));
-            const pending = pendingMessages.find((item) => item.pending_id === pendingId);
-            const node = findPendingNode(pendingId);
-            if (pending && node) {
-                node.outerHTML = buildMessageMarkup(pending, 'is-failed');
-                bindRetryButtons();
-                scrollToBottom(true);
-            }
+            renderMessages(loadedMessages, true);
         }
 
         function updatePendingProgress(pendingId, progressPercent) {
@@ -392,12 +394,7 @@
                     }
                     : item
             ));
-            const pending = pendingMessages.find((item) => item.pending_id === pendingId);
-            const node = findPendingNode(pendingId);
-            if (pending && node) {
-                node.outerHTML = buildMessageMarkup(pending, pending.failed ? 'is-failed' : 'is-pending');
-                bindRetryButtons();
-            }
+            renderMessages(loadedMessages, false);
         }
 
         function sendMessageRequest(formData, pendingId) {
@@ -438,32 +435,25 @@
             });
         }
 
-        function bindRetryButtons() {
-            if (!chatMessages) return;
-            chatMessages.querySelectorAll('[data-chat-retry="true"]').forEach((button) => {
-                button.onclick = async function() {
-                    const bubble = button.closest('[data-pending-id]');
-                    const pendingId = bubble ? bubble.dataset.pendingId : '';
-                    const pending = pendingMessages.find((item) => item.pending_id === pendingId);
-                    if (!pending || !pending.retryFormData || isSending) return;
+        async function retryPendingMessage(pendingId) {
+            const pending = pendingMessages.find((item) => item.pending_id === pendingId);
+            if (!pending || !pending.retryFormData || isSending) return;
 
-                    try {
-                        isSending = true;
-                        pending.failed = false;
-                        pending.meta_label = 'Sending...';
-                        renderMessages(loadedMessages, true);
-                        if (liveStatus) liveStatus.textContent = 'Sending...';
-                        await sendMessageRequest(pending.retryFormData, pending.pending_id);
-                        if (liveStatus) liveStatus.textContent = 'Live';
-                    } catch (error) {
-                        console.error(error);
-                        markPendingFailed(pending.pending_id, error.message || 'Failed to send');
-                        if (liveStatus) liveStatus.textContent = 'Send failed';
-                    } finally {
-                        isSending = false;
-                    }
-                };
-            });
+            try {
+                isSending = true;
+                pending.failed = false;
+                pending.meta_label = 'Sending...';
+                renderMessages(loadedMessages, true);
+                if (liveStatus) liveStatus.textContent = 'Sending...';
+                await sendMessageRequest(pending.retryFormData, pending.pending_id);
+                if (liveStatus) liveStatus.textContent = 'Live';
+            } catch (error) {
+                console.error(error);
+                markPendingFailed(pending.pending_id, error.message || 'Failed to send');
+                if (liveStatus) liveStatus.textContent = 'Send failed';
+            } finally {
+                isSending = false;
+            }
         }
 
         async function fetchMessages(silent) {
@@ -529,8 +519,18 @@
 
         function clearAttachmentPreview() {
             if (!attachmentPreview) return;
-            attachmentPreview.innerHTML = '';
+            app.clearChildren(attachmentPreview);
             attachmentPreview.classList.add('hidden');
+        }
+
+        function buildPreviewRemoveButton(onClick) {
+            const removeBtn = app.createElement('button', {
+                className: 'chat-preview-remove',
+                text: 'Remove',
+                attrs: { type: 'button' }
+            });
+            removeBtn.addEventListener('click', onClick);
+            return removeBtn;
         }
 
         function previewSelectedAttachment(file, kind) {
@@ -540,53 +540,53 @@
                 return;
             }
 
+            app.clearChildren(attachmentPreview);
+            attachmentPreview.classList.remove('hidden');
+
             if (kind === 'image') {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    attachmentPreview.innerHTML = `<img src="${e.target.result}" alt="Preview"><span class="chat-preview-remove" id="removeChatAttachment">Remove</span>`;
-                    attachmentPreview.classList.remove('hidden');
-                    const removeBtn = document.getElementById('removeChatAttachment');
-                    if (removeBtn) {
-                        removeBtn.addEventListener('click', function() {
-                            if (imageInput) imageInput.value = '';
-                            clearAttachmentPreview();
-                        });
-                    }
+                reader.onload = function(event) {
+                    app.clearChildren(attachmentPreview);
+                    attachmentPreview.appendChild(app.createElement('img', {
+                        attrs: {
+                            src: app.toText(event.target && event.target.result),
+                            alt: 'Preview'
+                        }
+                    }));
+                    attachmentPreview.appendChild(buildPreviewRemoveButton(() => {
+                        if (imageInput) imageInput.value = '';
+                        clearAttachmentPreview();
+                    }));
                 };
                 reader.readAsDataURL(file);
                 return;
             }
 
-            attachmentPreview.innerHTML = `
-                <div class="chat-preview-file">
-                    <span class="chat-file-icon">FILE</span>
-                    <span class="chat-preview-file-name">${escapeHtml(file.name || 'attachment')}</span>
-                </div>
-                <span class="chat-preview-remove" id="removeChatAttachment">Remove</span>
-            `;
-            attachmentPreview.classList.remove('hidden');
-            const removeBtn = document.getElementById('removeChatAttachment');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function() {
-                    if (fileInput) fileInput.value = '';
-                    clearAttachmentPreview();
-                });
-            }
+            const filePreview = app.createElement('div', { className: 'chat-preview-file' });
+            filePreview.appendChild(app.createElement('span', {
+                className: 'chat-file-icon',
+                text: 'FILE'
+            }));
+            filePreview.appendChild(app.createElement('span', {
+                className: 'chat-preview-file-name',
+                text: file.name || 'attachment'
+            }));
+            attachmentPreview.appendChild(filePreview);
+            attachmentPreview.appendChild(buildPreviewRemoveButton(() => {
+                if (fileInput) fileInput.value = '';
+                clearAttachmentPreview();
+            }));
         }
 
         imageInput?.addEventListener('change', function() {
             const selectedFile = this.files && this.files[0] ? this.files[0] : null;
-            if (selectedFile && fileInput) {
-                fileInput.value = '';
-            }
+            if (selectedFile && fileInput) fileInput.value = '';
             previewSelectedAttachment(selectedFile, 'image');
         });
 
         fileInput?.addEventListener('change', function() {
             const selectedFile = this.files && this.files[0] ? this.files[0] : null;
-            if (selectedFile && imageInput) {
-                imageInput.value = '';
-            }
+            if (selectedFile && imageInput) imageInput.value = '';
             previewSelectedAttachment(selectedFile, 'file');
         });
 
@@ -609,7 +609,7 @@
                     }
                 }
             });
-            window.setTimeout(() => {
+            global.setTimeout(() => {
                 if (document.body.contains(messageInput)) {
                     messageInput.focus();
                 }
@@ -622,12 +622,30 @@
             chatForm.noValidate = true;
         }
 
+        chatMessages?.addEventListener('click', (event) => {
+            const retryBtn = event.target.closest('[data-chat-retry="true"]');
+            if (retryBtn) {
+                const bubble = retryBtn.closest('[data-pending-id]');
+                const pendingId = bubble ? bubble.dataset.pendingId : '';
+                retryPendingMessage(pendingId);
+                return;
+            }
+
+            const image = event.target.closest('.chat-image');
+            if (image && imageLightbox && imageLightboxImg) {
+                imageLightboxImg.src = image.getAttribute('src') || '';
+                imageLightbox.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+
         chatForm?.addEventListener('submit', async function(event) {
             event.preventDefault();
             event.stopPropagation();
             if (isSending) return;
+
             const formData = new FormData(chatForm);
-            const messageText = (formData.get('message') || '').toString().trim();
+            const messageText = app.toText(formData.get('message')).trim();
             const imageFile = formData.get('image');
             const attachmentFile = formData.get('attachment');
             const hasImage = Boolean(imageFile && imageFile.name);
@@ -644,10 +662,11 @@
                     sendButton.textContent = 'Sending...';
                 }
                 if (liveStatus) liveStatus.textContent = 'Sending...';
+
                 const requestFormData = new FormData(chatForm);
                 const previewUrl = hasImage
-                    ? URL.createObjectURL(imageFile)
-                    : (hasAttachment ? URL.createObjectURL(attachmentFile) : '');
+                    ? global.URL.createObjectURL(imageFile)
+                    : (hasAttachment ? global.URL.createObjectURL(attachmentFile) : '');
                 const pendingId = addPendingMessage({
                     content: messageText,
                     previewUrl,
@@ -683,29 +702,30 @@
                 }
             }
         });
+
         fetchMessages(false);
-        chatMessages?.addEventListener('scroll', function() {
+        chatMessages?.addEventListener('scroll', () => {
             if (chatMessages.scrollTop < 80) {
                 loadOlderMessages();
             }
         });
-        imageLightboxClose?.addEventListener('click', function() {
+        imageLightboxClose?.addEventListener('click', () => {
             imageLightbox.classList.add('hidden');
             imageLightboxImg.src = '';
             document.body.style.overflow = '';
         });
-        imageLightbox?.addEventListener('click', function(event) {
+        imageLightbox?.addEventListener('click', (event) => {
             if (event.target === imageLightbox) {
                 imageLightbox.classList.add('hidden');
                 imageLightboxImg.src = '';
                 document.body.style.overflow = '';
             }
         });
-        chatPollTimer = window.setInterval(function() {
+        chatPollTimer = global.setInterval(() => {
             fetchMessages(true);
         }, 2500);
 
-        window.addEventListener('beforeunload', function() {
+        global.addEventListener('beforeunload', () => {
             if (typingSent) {
                 sendTypingState(false);
             }
@@ -714,7 +734,7 @@
 
     document.addEventListener('DOMContentLoaded', initChatPage);
     document.addEventListener('turbo:load', initChatPage);
-    document.addEventListener('turbo:before-cache', function() {
+    document.addEventListener('turbo:before-cache', () => {
         const chatPage = document.querySelector('.chat-page');
         if (chatPage) {
             delete chatPage.dataset.chatInitialized;
@@ -724,4 +744,4 @@
     if (document.readyState !== 'loading') {
         initChatPage();
     }
-})();
+})(window);

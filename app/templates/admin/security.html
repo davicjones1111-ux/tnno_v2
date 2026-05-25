@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Security Center - RetroQuest Admin{% endblock %}
+
+{% block content %}
+<div class="px-flex px-justify-between px-items-center px-mb-lg security-header-row">
+    <div>
+        <h1>Security Center</h1>
+        <p class="px-text-muted">Suspicious login activity, OTP failures, and admin audit history.</p>
+    </div>
+    <a href="{{ url_for('admin.index') }}" class="px-btn px-btn-secondary">Back to Admin</a>
+</div>
+
+<div class="px-stats-grid security-summary-grid px-mb-lg">
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ summary.failed_logins }}</div>
+        <div class="px-stat-label">Failed Logins</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ summary.otp_failures }}</div>
+        <div class="px-stat-label">OTP Failures</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ summary.new_device_logins }}</div>
+        <div class="px-stat-label">New Device Logins</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ summary.warning_events }}</div>
+        <div class="px-stat-label">Warnings</div>
+    </div>
+    <div class="px-stat-card">
+        <div class="px-stat-value">{{ summary.admin_actions }}</div>
+        <div class="px-stat-label">Admin Actions</div>
+    </div>
+</div>
+
+<div class="px-panel security-filter-panel px-mb-lg">
+    <form method="GET" class="security-filter-form">
+        <label class="px-form-label" for="hours">Window</label>
+        <select id="hours" name="hours" class="px-input">
+            <option value="24" {% if selected_hours == 24 %}selected{% endif %}>Last 24 hours</option>
+            <option value="48" {% if selected_hours == 48 %}selected{% endif %}>Last 48 hours</option>
+            <option value="72" {% if selected_hours == 72 %}selected{% endif %}>Last 72 hours</option>
+            <option value="168" {% if selected_hours == 168 %}selected{% endif %}>Last 7 days</option>
+        </select>
+
+        <label class="px-form-label" for="status">Status</label>
+        <select id="status" name="status" class="px-input">
+            <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+            <option value="warning" {% if selected_status == 'warning' %}selected{% endif %}>Warning</option>
+            <option value="error" {% if selected_status == 'error' %}selected{% endif %}>Error</option>
+            <option value="success" {% if selected_status == 'success' %}selected{% endif %}>Success</option>
+            <option value="info" {% if selected_status == 'info' %}selected{% endif %}>Info</option>
+        </select>
+
+        <button type="submit" class="px-btn px-btn-primary">Apply</button>
+    </form>
+</div>
+
+<div class="px-grid security-grid">
+    <div class="px-panel security-surface">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Authentication Events</h2>
+        </div>
+
+        {% if auth_events %}
+        <div class="security-list">
+            {% for event in auth_events %}
+            <div class="security-row">
+                <div>
+                    <strong>{{ event.event_type.replace('_', ' ')|title }}</strong>
+                    <p class="px-text-sm px-text-muted">
+                        {% if event.username %}@{{ event.username }}{% endif %}
+                        {% if event.ip_address %}• {{ event.ip_address }}{% endif %}
+                        {% if event.location_hint %}• {{ event.location_hint }}{% endif %}
+                    </p>
+                    <p class="px-text-sm px-text-muted">
+                        {{ event.browser or 'Unknown Browser' }} • {{ event.operating_system or 'Unknown OS' }}
+                    </p>
+                    {% if event.details %}
+                    <p class="px-text-sm px-text-muted">{{ event.details }}</p>
+                    {% endif %}
+                </div>
+                <div class="security-meta">
+                    <span class="px-badge {% if event.status == 'success' %}px-badge-user{% else %}px-badge-admin{% endif %}">
+                        {{ event.status|title }}
+                    </span>
+                    <span class="px-text-sm px-text-muted">{{ event.created_at.strftime('%Y-%m-%d %H:%M') if event.created_at else '-' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="px-text-muted">No authentication events found for this window.</p>
+        {% endif %}
+    </div>
+
+    <div class="px-panel security-surface">
+        <div class="px-panel-header">
+            <h2 class="px-panel-title">Admin Audit History</h2>
+        </div>
+
+        {% if audit_logs %}
+        <div class="security-list">
+            {% for log in audit_logs %}
+            <div class="security-row">
+                <div>
+                    <strong>{{ log.action.replace('_', ' ')|title }}</strong>
+                    <p class="px-text-sm px-text-muted">
+                        Admin ID {{ log.admin_user_id }}
+                        {% if log.target_type %}• {{ log.target_type|replace('_', ' ')|title }}{% endif %}
+                        {% if log.target_id %}#{{ log.target_id }}{% endif %}
+                    </p>
+                    {% if log.ip_address %}
+                    <p class="px-text-sm px-text-muted">IP: {{ log.ip_address }}</p>
+                    {% endif %}
+                    {% if log.details %}
+                    <p class="px-text-sm px-text-muted">{{ log.details }}</p>
+                    {% endif %}
+                </div>
+                <div class="security-meta">
+                    <span class="px-badge px-badge-user">Audit</span>
+                    <span class="px-text-sm px-text-muted">{{ log.created_at.strftime('%Y-%m-%d %H:%M') if log.created_at else '-' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="px-text-muted">No admin audit actions found for this window.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.security-summary-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.security-filter-panel,
+.security-surface {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
+    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
+}
+
+.security-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+}
+
+.security-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.security-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.px-badge-user {
+    background: #5d84d6;
+    color: #fff;
+}
+
+.px-badge-admin {
+    background: #d05c4c;
+    color: #fff;
+}
+
+.security-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid rgba(63, 88, 138, 0.16);
+    background: rgba(255,255,255,0.72);
+}
+
+.security-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 120px;
+}
+
+@media (max-width: 1100px) {
+    .security-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .security-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .security-header-row,
+    .security-row,
+    .security-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .security-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

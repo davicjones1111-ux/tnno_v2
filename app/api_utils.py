@@ -3,20 +3,20 @@ Shared JSON response helpers for API endpoints.
 """
 from __future__ import annotations
 
-from flask import jsonify
+from flask import g, jsonify
 
 from app.services.pagination_service import PaginationService
 
 
 def ok(payload=None, status: int = 200):
-    data = {'success': True}
+    data = {'success': True, 'request_id': getattr(g, 'request_id', '')}
     if payload:
         data.update(payload)
     return jsonify(data), status
 
 
 def error(message: str, status: int = 400, **extra):
-    data = {'success': False, 'error': message}
+    data = {'success': False, 'error': message, 'request_id': getattr(g, 'request_id', '')}
     if extra:
         data.update(extra)
     return jsonify(data), status

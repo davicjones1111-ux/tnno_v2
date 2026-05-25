@@ -3,9 +3,12 @@ Flask Application Factory
 Create and configure the Flask application with all blueprints and extensions
 """
 import os
+import secrets
 import time
 from flask import Flask, make_response, jsonify, flash, request, redirect, url_for, g
 from sqlalchemy import text, func
+from flask_wtf.csrf import CSRFError
+from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from app.config import config
 from app.extensions import init_extensions, verify_database_connection, db, login_manager, cache
@@ -90,8 +93,21 @@ def create_app(config_name=None):
     @app.before_request
     def _security_request_guards():
         g.request_started_at = time.perf_counter()
+        g.request_id = request.headers.get('X-Request-ID') or secrets.token_hex(8)
         enforce_request_guards()
         enforce_rate_limit()
+        from app.services.session_service import SessionService
+        SessionService.enforce_current_session()
+
+        if cache.get('security_maintenance_lock') != '1':
+            try:
+                from app.services.otp_service import OTPService
+                SessionService.cleanup_security_records()
+                OTPService.cleanup_expired()
+            except Exception as exc:
+                app.logger.warning('Security maintenance skipped: %s', exc)
+            finally:
+                cache.set('security_maintenance_lock', '1', timeout=900)
 
     @app.get('/healthz')
     def healthz():
@@ -129,6 +145,7 @@ def create_app(config_name=None):
             response.headers['Cache-Control'] = 'no-store, private, must-revalidate'
 
         response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Request-ID'] = getattr(g, 'request_id', '')
 
         if app.config.get('ENABLE_ACCESS_LOGS', True) and request.endpoint != 'static':
             started = getattr(g, 'request_started_at', None)
@@ -251,32 +268,79 @@ def register_blueprints(app):
 def register_error_handlers(app):
     """Register error handlers"""
     from flask import render_template
+    from app.api_utils import error as json_error_helper
+
+    def wants_json_error():
+        return (
+            request.path.startswith('/api/')
+            or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.accept_mimetypes['application/json'] >= request.accept_mimetypes['text/html']
+        )
+
+    def json_error(message, status):
+        return json_error_helper(message, status, request_id=getattr(g, 'request_id', ''))
 
     @app.errorhandler(404)
     def not_found_error(error):
+        if wants_json_error():
+            return json_error('Resource not found', 404)
         return render_template('errors/404.html'), 404
-
-    @app.errorhandler(500)
-    def internal_error(error):
-        app.logger.exception('Unhandled internal server error: %s', error)
-        db.session.rollback()
-        return render_template('errors/500.html'), 500
 
     @app.errorhandler(403)
     def forbidden_error(error):
+        if wants_json_error():
+            return json_error('Access denied', 403)
         return render_template('errors/403.html'), 403
 
     @app.errorhandler(400)
     def bad_request_error(error):
+        if wants_json_error():
+            return json_error('Bad request', 400)
         return render_template('errors/400.html'), 400
 
     @app.errorhandler(413)
     def request_entity_too_large(error):
-        return render_template('errors/400.html'), 413
+        if wants_json_error():
+            return json_error('Uploaded file is too large', 413)
+        flash('Uploaded file is too large.', 'error')
+        return redirect(request.referrer or url_for('missions.index'))
 
     @app.errorhandler(429)
     def rate_limited_error(error):
+        if wants_json_error():
+            return json_error('Too many requests. Please slow down.', 429)
         return render_template('errors/429.html'), 429
+
+    @app.errorhandler(CSRFError)
+    def csrf_error(error):
+        app.logger.warning(
+            'CSRF validation failed request_id=%s path=%s reason=%s',
+            getattr(g, 'request_id', '-'),
+            request.path,
+            error.description,
+        )
+        if wants_json_error():
+            return json_error('Security check failed. Please refresh and try again.', 400)
+        flash('Security check failed. Please refresh and try again.', 'error')
+        return redirect(request.referrer or url_for('auth.login'))
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.exception('Unhandled internal server error request_id=%s: %s', getattr(g, 'request_id', '-'), error)
+        db.session.rollback()
+        if wants_json_error():
+            return json_error('Internal server error', 500)
+        return render_template('errors/500.html'), 500
+
+    @app.errorhandler(Exception)
+    def unhandled_exception(error):
+        if isinstance(error, HTTPException):
+            return error
+        app.logger.exception('Unhandled exception request_id=%s path=%s', getattr(g, 'request_id', '-'), request.path)
+        db.session.rollback()
+        if wants_json_error():
+            return json_error('Internal server error', 500)
+        return render_template('errors/500.html'), 500
 
 
 def register_context_processors(app):
@@ -531,8 +595,15 @@ def register_filters(app):
 
 
 def register_background_tasks(app):
-    """No background startup tasks are required for NowPayments-only deploys."""
-    app.logger.info('No background startup tasks configured')
+    """Run lightweight startup maintenance without changing app behavior."""
+    try:
+        from app.services.otp_service import OTPService
+        from app.services.session_service import SessionService
+        OTPService.cleanup_expired()
+        SessionService.cleanup_security_records()
+    except Exception as exc:
+        app.logger.warning('Startup security maintenance skipped: %s', exc)
+    app.logger.info('Background maintenance bootstrap complete')
 
 
 def ensure_runtime_indexes():
@@ -553,6 +624,12 @@ def ensure_runtime_indexes():
     db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_seller_notifications_seller_read_created ON seller_notifications (seller_id, is_read, created_at)'))
     db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_seller_chat_messages_conversation_created ON seller_chat_messages (conversation_id, created_at)'))
     db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_wallet_transactions_user_created ON wallet_transactions (user_id, created_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_user_sessions_user_activity ON user_sessions (user_id, last_activity_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_user_sessions_user_revoked ON user_sessions (user_id, revoked_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_auth_events_user_created ON auth_events (user_id, created_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_auth_events_type_created ON auth_events (event_type, created_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_email_otps_email_purpose_created ON email_otps (email, purpose, created_at)'))
+    db.session.execute(text('CREATE INDEX IF NOT EXISTS ix_admin_audit_action_created ON admin_audit_logs (action, created_at)'))
     db.session.commit()
 
 

@@ -29,7 +29,7 @@
         <div><strong>Order Range:</strong> {{ min_order_qty|format_number }} to {{ max_order_qty|format_number }} units</div>
     </div>
 
-    <form method="POST" class="px-form" id="service-order-form">
+    <form method="POST" class="px-form" id="service-order-form" data-service-catalog="{{ service_catalog|tojson|forceescape }}" data-premium-services="{{ premium_services|tojson|forceescape }}" data-premium-price="{{ premium_price_tnno }}" data-engagement-price="{{ engagement_price_tnno }}" data-min-qty="{{ min_order_qty }}" data-max-qty="{{ max_order_qty }}">
         <div class="px-form-group">
             <label for="category" class="px-form-label">Platform *</label>
             <select id="category" name="category" class="px-input" required>
@@ -105,69 +105,6 @@
     </form>
 </div>
 
-<script>
-const serviceCatalog = {{ service_catalog|tojson }};
-const premiumServices = new Set({{ premium_services|tojson }});
-const premiumPrice = {{ premium_price_tnno }};
-const engagementPrice = {{ engagement_price_tnno }};
-const minQty = {{ min_order_qty }};
-const maxQty = {{ max_order_qty }};
-
-const categoryInput = document.getElementById('category');
-const serviceInput = document.getElementById('service');
-const quantityInput = document.getElementById('quantity');
-const chargeInput = document.getElementById('charge');
-
-function getUnitPrice(serviceName) {
-    return premiumServices.has(serviceName) ? premiumPrice : engagementPrice;
-}
-
-function clampQuantity() {
-    let qty = parseInt(quantityInput.value || minQty, 10);
-    if (Number.isNaN(qty)) qty = minQty;
-    if (qty < minQty) qty = minQty;
-    if (qty > maxQty) qty = maxQty;
-    quantityInput.value = qty;
-    return qty;
-}
-
-function refillServices() {
-    const selectedCategory = categoryInput.value;
-    const services = serviceCatalog[selectedCategory] || [];
-    const previous = serviceInput.value;
-
-    serviceInput.innerHTML = '';
-    services.forEach((name) => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        serviceInput.appendChild(opt);
-    });
-
-    if (services.includes(previous)) {
-        serviceInput.value = previous;
-    }
-}
-
-function updateCharge() {
-    const qty = clampQuantity();
-    const selectedService = serviceInput.value;
-    const unitPrice = getUnitPrice(selectedService);
-    chargeInput.value = qty * unitPrice;
-}
-
-categoryInput.addEventListener('change', () => {
-    refillServices();
-    updateCharge();
-});
-
-serviceInput.addEventListener('change', updateCharge);
-quantityInput.addEventListener('input', updateCharge);
-
-refillServices();
-updateCharge();
-</script>
-
 <style>
 .px-form-group {
     margin-bottom: 1.5rem;
@@ -227,4 +164,8 @@ updateCharge();
     border: 1px solid #f5c6cb;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ asset_url('js/work-service-order.js') }}"></script>
 {% endblock %}

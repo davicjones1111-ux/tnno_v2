@@ -1,4 +1,7 @@
-(function() {
+(function(global) {
+    'use strict';
+
+    const app = global.TNNOApp || {};
     const storePage = document.querySelector('.store-page');
     if (!storePage) return;
 
@@ -27,12 +30,12 @@
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
+            global.clearTimeout(timeout);
+            timeout = global.setTimeout(() => func.apply(this, args), wait);
         };
     }
 
-    function buildApiUrl(page, overrideParams = {}) {
+    function buildApiUrl(page, overrideParams) {
         const params = new URLSearchParams({
             page,
             limit,
@@ -43,7 +46,7 @@
         if (searchQuery) params.set('search', searchQuery);
         if (sellerQuery) params.set('seller', sellerQuery);
 
-        Object.entries(overrideParams).forEach(([key, value]) => {
+        Object.entries(overrideParams || {}).forEach(([key, value]) => {
             if (value === undefined || value === null || value === '') {
                 params.delete(key);
             } else {
@@ -54,14 +57,14 @@
         return `${apiBaseUrl}?${params.toString()}`;
     }
 
-    function buildPageUrl(overrideParams = {}) {
+    function buildPageUrl(overrideParams) {
         const params = new URLSearchParams();
         if (searchQuery) params.set('search', searchQuery);
         if (sellerQuery) params.set('seller', sellerQuery);
         if (typeFilter) params.set('type', typeFilter);
         if (sortBy && sortBy !== 'latest') params.set('sort', sortBy);
 
-        Object.entries(overrideParams).forEach(([key, value]) => {
+        Object.entries(overrideParams || {}).forEach(([key, value]) => {
             if (value === undefined || value === null || value === '') {
                 params.delete(key);
             } else {
@@ -71,6 +74,143 @@
 
         const qs = params.toString();
         return qs ? `${pageBaseUrl}?${qs}` : pageBaseUrl;
+    }
+
+    function createFeedbackChip(text) {
+        return app.createElement('span', {
+            className: 'feedback-chip',
+            text
+        });
+    }
+
+    function buildSellerNode(product) {
+        if (product.seller_username) {
+            const sellerLink = app.createElement('a', {
+                className: 'seller-link',
+                attrs: { href: `/store/seller/${encodeURIComponent(product.seller_id)}` }
+            });
+            sellerLink.appendChild(app.createElement('span', {
+                className: 'seller-avatar',
+                text: app.toText(product.seller_username).charAt(0).toUpperCase()
+            }));
+            sellerLink.appendChild(document.createTextNode(app.toText(product.seller_username)));
+            return sellerLink;
+        }
+
+        return app.createElement('span', {
+            className: 'seller-link',
+            text: 'Sold by: Admin'
+        });
+    }
+
+    function buildProductCard(product) {
+        const card = app.createElement('div', {
+            className: 'product-card',
+            dataset: { productId: product.id }
+        });
+
+        const productType = product.product_type || 'digital';
+        const imageContainer = app.createElement('div', { className: 'product-image-container' });
+        if (product.image_filename) {
+            imageContainer.appendChild(app.createElement('img', {
+                className: 'product-image',
+                attrs: {
+                    src: app.mediaUrl(`uploads/merch/${product.image_filename}`),
+                    alt: app.toText(product.name),
+                    loading: 'lazy'
+                }
+            }));
+        } else {
+            const placeholder = app.createElement('div', { className: 'product-image-placeholder' });
+            placeholder.appendChild(app.createElement('span', { text: '🎁' }));
+            imageContainer.appendChild(placeholder);
+        }
+
+        imageContainer.appendChild(app.createElement('div', {
+            className: `product-type-badge ${productType}`,
+            text: productType
+        }));
+
+        if (Number(product.quantity || 0) === 0) {
+            imageContainer.appendChild(app.createElement('div', {
+                className: 'sold-out-badge',
+                text: 'Sold Out'
+            }));
+        } else if (Number(product.quantity || 0) <= 3) {
+            imageContainer.appendChild(app.createElement('div', {
+                className: 'low-stock-badge',
+                text: `Only ${product.quantity} left!`
+            }));
+        }
+
+        const content = app.createElement('div', { className: 'product-content' });
+        content.appendChild(app.createElement('h3', {
+            className: 'product-title',
+            text: product.name
+        }));
+
+        const description = product.description ? app.toText(product.description).substring(0, 80) : '';
+        const descSuffix = product.description && product.description.length > 80 ? '...' : '';
+        content.appendChild(app.createElement('p', {
+            className: 'product-description',
+            text: `${description}${descSuffix}`
+        }));
+
+        const sellerWrap = app.createElement('div', { className: 'product-seller' });
+        sellerWrap.appendChild(buildSellerNode(product));
+        content.appendChild(sellerWrap);
+
+        const feedbackMeta = app.createElement('div', { className: 'product-feedback-meta' });
+        const feedback = product.feedback || {};
+        const roundedStars = Math.round(Number(feedback.avg_rating || 0));
+        let stars = '';
+        for (let i = 1; i <= 5; i += 1) {
+            stars += i <= roundedStars ? '★' : '☆';
+        }
+        feedbackMeta.appendChild(createFeedbackChip(`${stars} ${Number(feedback.rating_count || 0)}`));
+        feedbackMeta.appendChild(createFeedbackChip(`Review ${Number(feedback.review_count || 0)}`));
+        feedbackMeta.appendChild(createFeedbackChip(`Like ${Number(feedback.like_count || 0)}`));
+        feedbackMeta.appendChild(createFeedbackChip(`Dislike ${Number(feedback.dislike_count || 0)}`));
+        content.appendChild(feedbackMeta);
+
+        const footer = app.createElement('div', { className: 'product-footer' });
+        const price = app.createElement('div', { className: 'product-price' });
+        price.appendChild(app.createElement('span', { className: 'px-coin' }));
+        price.appendChild(app.createElement('span', {
+            className: 'price-value',
+            text: product.price
+        }));
+        footer.appendChild(price);
+
+        if (Number(product.quantity || 0) > 0) {
+            footer.appendChild(app.createElement('a', {
+                className: 'px-btn px-btn-primary px-btn-sm',
+                text: 'Buy Now',
+                attrs: { href: `/store/product/${product.id}` }
+            }));
+        } else {
+            footer.appendChild(app.createElement('button', {
+                className: 'px-btn px-btn-secondary px-btn-sm',
+                text: 'Sold Out',
+                attrs: { type: 'button', disabled: true }
+            }));
+        }
+
+        content.appendChild(footer);
+        card.appendChild(imageContainer);
+        card.appendChild(content);
+        return card;
+    }
+
+    function renderEmptyState() {
+        const empty = app.createElement('div', { className: 'empty-state' });
+        empty.appendChild(app.createElement('div', { className: 'empty-icon', text: '🔍' }));
+        empty.appendChild(app.createElement('h3', { text: 'No Results' }));
+        empty.appendChild(app.createElement('p', {
+            className: 'px-text-muted',
+            text: 'No products match your search.'
+        }));
+        feed.appendChild(empty);
     }
 
     async function loadProducts() {
@@ -90,9 +230,7 @@
                 renderProducts(data.products);
                 currentPage = data.page;
                 hasMore = data.has_next;
-                if (!hasMore && endMessage) {
-                    endMessage.style.display = 'block';
-                }
+                if (!hasMore && endMessage) endMessage.style.display = 'block';
             } else {
                 hasMore = false;
                 if (endMessage) endMessage.style.display = 'block';
@@ -108,71 +246,7 @@
 
     function renderProducts(products) {
         if (!feed) return;
-
-        products.forEach((product) => {
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.dataset.productId = product.id;
-
-            const productType = product.product_type || 'digital';
-            const typeBadge = `<div class="product-type-badge ${productType}">${productType}</div>`;
-            const stockBadge = product.quantity === 0
-                ? '<div class="sold-out-badge">Sold Out</div>'
-                : product.quantity <= 3
-                    ? `<div class="low-stock-badge">Only ${product.quantity} left!</div>`
-                    : '';
-
-            const sellerHtml = product.seller_username
-                ? `<a href="/store/seller/${product.seller_id}" class="seller-link">
-                    <span class="seller-avatar">${product.seller_username[0].toUpperCase()}</span>
-                    ${product.seller_username}
-                </a>`
-                : '<span class="seller-link">Sold by: Admin</span>';
-
-            const feedback = product.feedback || {};
-            const roundedStars = Math.round(Number(feedback.avg_rating || 0));
-            let starsHtml = '';
-            for (let i = 1; i <= 5; i += 1) {
-                starsHtml += i <= roundedStars ? '★' : '☆';
-            }
-
-            const actionBtn = product.quantity > 0
-                ? `<a href="/store/product/${product.id}" class="px-btn px-btn-primary px-btn-sm">Buy Now</a>`
-                : '<button class="px-btn px-btn-secondary px-btn-sm" disabled>Sold Out</button>';
-
-            const description = product.description ? product.description.substring(0, 80) : '';
-            const descSuffix = product.description && product.description.length > 80 ? '...' : '';
-
-            card.innerHTML = `
-                <div class="product-image-container">
-                    ${product.image_filename
-                        ? `<img src="/static/uploads/merch/${product.image_filename}" alt="${product.name}" class="product-image" loading="lazy">`
-                        : '<div class="product-image-placeholder"><span>🎁</span></div>'}
-                    ${typeBadge}
-                    ${stockBadge}
-                </div>
-                <div class="product-content">
-                    <h3 class="product-title">${product.name}</h3>
-                    <p class="product-description">${description}${descSuffix}</p>
-                    <div class="product-seller">${sellerHtml}</div>
-                    <div class="product-feedback-meta">
-                        <span class="feedback-chip">${starsHtml} ${Number(feedback.rating_count || 0)}</span>
-                        <span class="feedback-chip">Review ${Number(feedback.review_count || 0)}</span>
-                        <span class="feedback-chip">Like ${Number(feedback.like_count || 0)}</span>
-                        <span class="feedback-chip">Dislike ${Number(feedback.dislike_count || 0)}</span>
-                    </div>
-                    <div class="product-footer">
-                        <div class="product-price">
-                            <span class="px-coin"></span>
-                            <span class="price-value">${product.price}</span>
-                        </div>
-                        ${actionBtn}
-                    </div>
-                </div>
-            `;
-
-            feed.appendChild(card);
-        });
+        products.forEach((product) => feed.appendChild(buildProductCard(product)));
     }
 
     async function reloadProducts() {
@@ -197,18 +271,9 @@
                 renderProducts(data.products);
                 currentPage = data.page;
                 hasMore = data.has_next;
-                if (!hasMore && endMessage) {
-                    endMessage.style.display = 'block';
-                }
+                if (!hasMore && endMessage) endMessage.style.display = 'block';
             } else if (feed) {
-                const empty = document.createElement('div');
-                empty.className = 'empty-state';
-                empty.innerHTML = `
-                    <div class="empty-icon">🔍</div>
-                    <h3>No Results</h3>
-                    <p class="px-text-muted">No products match your search.</p>
-                `;
-                feed.appendChild(empty);
+                renderEmptyState();
             }
         } catch (error) {
             console.error('Error:', error);
@@ -217,15 +282,15 @@
         }
     }
 
-    const handleProductSearch = debounce(function(query) {
+    const handleProductSearch = debounce((query) => {
         searchQuery = query;
-        window.history.pushState({}, '', buildPageUrl({ search: query || undefined, page: undefined }));
+        global.history.pushState({}, '', buildPageUrl({ search: query || undefined, page: undefined }));
         reloadProducts();
     }, 400);
 
-    const handleSellerSearch = debounce(function(query) {
+    const handleSellerSearch = debounce((query) => {
         sellerQuery = query;
-        window.history.pushState({}, '', buildPageUrl({ seller: query || undefined, page: undefined }));
+        global.history.pushState({}, '', buildPageUrl({ seller: query || undefined, page: undefined }));
         reloadProducts();
     }, 400);
 
@@ -240,16 +305,14 @@
     function updateSort() {
         if (!sortSelect) return;
         sortBy = sortSelect.value;
-        window.history.pushState({}, '', buildPageUrl({ page: undefined }));
+        global.history.pushState({}, '', buildPageUrl({ page: undefined }));
         reloadProducts();
     }
 
     function clearSearch() {
-        if (productSearch) {
-            productSearch.value = '';
-        }
+        if (productSearch) productSearch.value = '';
         searchQuery = '';
-        window.history.pushState({}, '', buildPageUrl({ search: undefined, page: undefined }));
+        global.history.pushState({}, '', buildPageUrl({ search: undefined, page: undefined }));
         reloadProducts();
     }
 
@@ -262,9 +325,7 @@
         }
     }, { rootMargin: '150px' });
 
-    if (endMessage) {
-        observer.observe(endMessage);
-    }
+    if (endMessage) observer.observe(endMessage);
 
     loadMoreBtn?.addEventListener('click', function() {
         this.disabled = true;
@@ -278,4 +339,4 @@
     if (!hasMore && endMessage) {
         endMessage.style.display = 'block';
     }
-})();
+})(window);

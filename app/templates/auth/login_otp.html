@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Login Security Check - RetroQuest{% endblock %}
+
+{% block content %}
+<div class="pixel-auth-container">
+    <div class="falling-coins">
+        <div class="coin coin1">&#8383;</div>
+        <div class="coin coin2">&#8383;</div>
+        <div class="coin coin3">&#8383;</div>
+        <div class="coin coin4">&#8383;</div>
+        <div class="coin coin5">&#8383;</div>
+        <div class="coin coin6">&#8383;</div>
+        <div class="coin coin7">&#8383;</div>
+        <div class="coin coin8">&#8383;</div>
+        <div class="coin coin9">&#8383;</div>
+        <div class="coin coin10">&#8383;</div>
+        <div class="coin coin11">&#8383;</div>
+        <div class="coin coin12">&#8383;</div>
+    </div>
+
+    <div class="pixel-auth-frame">
+        <div class="pixel-logo">
+            <span class="logo-text">TNNO</span>
+        </div>
+
+        <h1 class="pixel-title">SECURITY CODE<span>.</span></h1>
+        <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
+            Enter the 6-digit code sent to {{ pending_user.email or 'your email' }}.
+        </p>
+
+        <form method="POST" action="{{ url_for('auth.login_otp') }}" data-turbo="false">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input
+                type="text"
+                id="otp_code"
+                name="otp_code"
+                class="pixel-input"
+                placeholder="000000"
+                maxlength="6"
+                inputmode="numeric"
+                pattern="[0-9]{6}"
+                required
+            >
+
+            <button type="submit" class="pixel-btn pixel-btn-primary">
+                VERIFY &amp; CONTINUE
+            </button>
+        </form>
+
+        <form method="POST" action="{{ url_for('auth.login_otp') }}" data-turbo="false" class="pixel-mt-md">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="resend">
+            <button type="submit" class="pixel-btn pixel-btn-secondary">
+                RESEND CODE
+            </button>
+        </form>
+
+        <div class="pixel-text-center pixel-mt-md">
+            <p class="pixel-text pixel-text-muted">
+                WRONG ACCOUNT?
+                <a href="{{ url_for('auth.login') }}" class="pixel-link">BACK TO LOGIN</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

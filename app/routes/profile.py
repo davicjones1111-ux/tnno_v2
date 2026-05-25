@@ -8,8 +8,10 @@ from flask_login import login_required, current_user
 from sqlalchemy import or_, func
 from app.extensions import db, cache
 from app.models import User, SellerRequest, SellerRating, Product, MerchOrder, UserNotification, SellerNotification, SellerChatConversation, SellerChatMessage
-from app.security import clear_auth_cookies, get_safe_redirect_target, rotate_session_identifier
+from app.security import clear_auth_cookies, consume_action_quota, get_safe_redirect_target, rotate_session_identifier
 from app.services import UserService
+from app.services.otp_service import OTPService
+from app.services.session_service import SessionService
 from app.services.seller_service import SellerService, SELLER_PLANS
 from app.services.pagination_service import PaginationService
 from app.services.wallet_service import WalletService
@@ -24,6 +26,20 @@ def _latest_seller_request_for_current_user():
     return SellerRequest.query.filter_by(user_id=current_user.id)\
         .order_by(SellerRequest.created_at.desc())\
         .first()
+
+
+def _settings_context():
+    tracked_session = SessionService.get_current_session()
+    return {
+        'active_sessions': SessionService.list_user_sessions(current_user, limit=20),
+        'recent_auth_events': SessionService.list_recent_auth_events(current_user, limit=20),
+        'current_session_id': tracked_session.id if tracked_session else None,
+        'email_delivery_enabled': bool(current_app.config.get('RESEND_API_KEY')),
+    }
+
+
+def _render_settings(status_code: int = 200):
+    return render_template('profile/settings.html', **_settings_context()), status_code
 
 
 @profile_bp.route('/')
@@ -239,82 +255,245 @@ def edit():
 def settings():
     """User settings"""
     if request.method == 'POST':
+        action = (request.form.get('action') or '').strip()
+
         # Change password
         current_password = request.form.get('current_password', '')
         new_password = request.form.get('new_password', '')
         confirm_password = request.form.get('confirm_password', '')
-        
-        if any([current_password, new_password, confirm_password]):
+
+        if action == 'change_password' or any([current_password, new_password, confirm_password]):
             if not all([current_password, new_password, confirm_password]):
                 flash('Please complete all password fields', 'error')
-                return render_template('profile/settings.html')
+                return _render_settings()
             if not current_user.check_password(current_password):
                 flash('Current password is incorrect', 'error')
-                return render_template('profile/settings.html')
-            
+                return _render_settings()
+
             if new_password != confirm_password:
                 flash('New passwords do not match', 'error')
-                return render_template('profile/settings.html')
+                return _render_settings()
 
             try:
                 validate_password(new_password)
             except ValidationError as exc:
                 flash(str(exc), 'error')
-                return render_template('profile/settings.html')
-            
+                return _render_settings()
+
+            if UserService.is_password_reused(current_user, new_password):
+                flash('Please choose a password you have not used recently.', 'error')
+                return _render_settings()
+
             current_user.set_password(new_password)
+            current_user.password_changed_at = utc_now()
+            UserService.record_password_history(current_user)
+            revoked_count = SessionService.revoke_other_sessions(current_user)
+            SessionService.record_auth_event(
+                'password_changed',
+                user=current_user,
+                status='success',
+                details=f'other_sessions_revoked={revoked_count}',
+            )
             db.session.commit()
             rotate_session_identifier()
-            flash('Password changed successfully!', 'success')
-        
-        # Update email
+            message = 'Password changed successfully!'
+            if revoked_count:
+                message += f' Signed out {revoked_count} other device{"s" if revoked_count != 1 else ""}.'
+            flash(message, 'success')
+            return redirect(url_for('profile.settings'))
+
+        # Update account details
         email = request.form.get('email', '').strip()
+        username = request.form.get('username', '').strip()
+        email_changed = False
+        username_changed = False
+
         if email:
             try:
                 email = validate_email(email)
             except ValidationError as exc:
                 flash(str(exc), 'error')
-                return render_template('profile/settings.html')
+                return _render_settings()
 
             existing = User.query.filter(func.lower(User.email) == email.lower()).first()
             if existing and existing.id != current_user.id:
                 flash('Email already in use', 'error')
-            else:
-                current_user.email = email
-                db.session.commit()
-                flash('Email updated successfully!', 'success')
-        
-        # Update username
-        username = request.form.get('username', '').strip()
+                return _render_settings()
+
         if username:
             try:
                 username = validate_username(username)
             except ValidationError as exc:
                 flash(str(exc), 'error')
-                return render_template('profile/settings.html')
+                return _render_settings()
 
             existing = User.query.filter(func.lower(User.username) == username.lower()).first()
             if existing and existing.id != current_user.id:
                 flash('Username already taken', 'error')
-            elif username.lower() == current_user.username.lower():
-                flash('Username is the same as current', 'info')
-            else:
-                # Invalidate old cache
-                cache.delete(f'profile_view_{current_user.username}')
-                cache.delete(f'profile_index_{current_user.id}')
-                
-                current_user.username = username
-                db.session.commit()
-                
-                # Cache with new username
-                cache.delete(f'profile_view_{username}')
-                cache.delete(f'profile_index_{current_user.id}')
-                
+                return _render_settings()
+
+        if email and email.lower() != (current_user.email or '').lower():
+            current_user.email = email
+            current_user.email_verified_at = None
+            if current_user.two_factor_enabled:
+                current_user.two_factor_enabled = False
+                flash('Two-factor login was disabled until the new email is verified.', 'info')
+            email_changed = True
+
+        if username and username.lower() != current_user.username.lower():
+            cache.delete(f'profile_view_{current_user.username}')
+            username_changed = True
+            current_user.username = username
+
+        if email_changed or username_changed:
+            SessionService.record_auth_event(
+                'account_settings_updated',
+                user=current_user,
+                status='info',
+                details=f'email_changed={email_changed},username_changed={username_changed}',
+            )
+            db.session.commit()
+
+            cache.delete(f'profile_view_{current_user.username}')
+            cache.delete(f'profile_index_{current_user.id}')
+
+            if email_changed and current_user.email:
+                try:
+                    OTPService.create_otp(user=current_user, purpose=OTPService.PURPOSE_EMAIL_VERIFY)
+                    flash('Email updated. We sent a new verification code.', 'success')
+                except ValueError as exc:
+                    flash(f'Email updated, but verification email could not be sent yet: {exc}', 'warning')
+            elif username_changed:
                 flash('Username updated successfully!', 'success')
-        
+            else:
+                flash('Account updated successfully!', 'success')
+        else:
+            flash('No account changes were made.', 'info')
+
         return redirect(url_for('profile.settings'))
 
-    return render_template('profile/settings.html')
+    return _render_settings()
+
+
+@profile_bp.route('/settings/security/preferences', methods=['POST'])
+@login_required
+def update_security_preferences():
+    """Update account security preferences."""
+    wants_2fa = request.form.get('two_factor_enabled') == 'on'
+    wants_alerts = request.form.get('security_alerts_enabled') == 'on'
+
+    if wants_2fa and (not current_user.email or not current_user.email_verified_at):
+        flash('Verify your email address before enabling login security codes.', 'error')
+        return redirect(url_for('profile.settings'))
+
+    current_user.two_factor_enabled = wants_2fa
+    current_user.security_alerts_enabled = wants_alerts
+    SessionService.record_auth_event(
+        'security_preferences_updated',
+        user=current_user,
+        status='info',
+        details=f'two_factor={wants_2fa},alerts={wants_alerts}',
+    )
+    db.session.commit()
+    flash('Security preferences updated.', 'success')
+    return redirect(url_for('profile.settings') + '#security-preferences')
+
+
+@profile_bp.route('/settings/security/email/send', methods=['POST'])
+@login_required
+def send_email_verification():
+    """Send a verification code to the current account email."""
+    if not current_user.email:
+        flash('Add an email address first.', 'error')
+        return redirect(url_for('profile.settings'))
+    if current_user.email_verified_at:
+        flash('Your email is already verified.', 'info')
+        return redirect(url_for('profile.settings'))
+
+    allowed, retry_after = consume_action_quota(
+        'email_verify_send',
+        limit=3,
+        window_seconds=600,
+        subject=current_user.email,
+    )
+    if not allowed:
+        flash(f'Please wait about {retry_after} seconds before requesting another verification code.', 'error')
+        return redirect(url_for('profile.settings') + '#email-verification')
+
+    try:
+        OTPService.create_otp(user=current_user, purpose=OTPService.PURPOSE_EMAIL_VERIFY)
+        SessionService.record_auth_event('email_verification_sent', user=current_user, status='info')
+        db.session.commit()
+        flash('Verification code sent to your email.', 'success')
+    except ValueError as exc:
+        flash(str(exc), 'error')
+    return redirect(url_for('profile.settings') + '#email-verification')
+
+
+@profile_bp.route('/settings/security/email/verify', methods=['POST'])
+@login_required
+def verify_email_otp():
+    """Verify the current user's email with an OTP code."""
+    if not current_user.email:
+        flash('Add an email address first.', 'error')
+        return redirect(url_for('profile.settings'))
+
+    allowed, retry_after = consume_action_quota(
+        'email_verify_check',
+        limit=6,
+        window_seconds=900,
+        subject=current_user.email,
+    )
+    if not allowed:
+        flash(f'Too many verification attempts. Please wait about {retry_after} seconds and try again.', 'error')
+        return redirect(url_for('profile.settings') + '#email-verification')
+
+    otp_code = (request.form.get('otp_code') or '').strip()
+    verified, message = OTPService.verify_otp(
+        user=current_user,
+        purpose=OTPService.PURPOSE_EMAIL_VERIFY,
+        code=otp_code,
+    )
+    if not verified:
+        SessionService.record_auth_event('otp_failure', user=current_user, status='warning', details='email_verify')
+        db.session.commit()
+        flash(message, 'error')
+        return redirect(url_for('profile.settings') + '#email-verification')
+
+    current_user.email_verified_at = utc_now()
+    SessionService.record_auth_event('email_verified', user=current_user, status='success')
+    db.session.commit()
+    flash('Email verified successfully.', 'success')
+    return redirect(url_for('profile.settings') + '#email-verification')
+
+
+@profile_bp.route('/settings/security/sessions/<int:session_id>/revoke', methods=['POST'])
+@login_required
+def revoke_session(session_id):
+    """Revoke one of the current user's other sessions."""
+    current_session = SessionService.get_current_session()
+    if current_session and current_session.id == session_id:
+        flash('Use the normal logout button to sign out this device.', 'info')
+        return redirect(url_for('profile.settings') + '#active-sessions')
+
+    if not SessionService.revoke_user_session(current_user, session_id):
+        flash('That session could not be revoked.', 'error')
+        return redirect(url_for('profile.settings') + '#active-sessions')
+
+    flash('Session revoked successfully.', 'success')
+    return redirect(url_for('profile.settings') + '#active-sessions')
+
+
+@profile_bp.route('/settings/security/sessions/logout-others', methods=['POST'])
+@login_required
+def logout_other_devices():
+    """Logout all devices except the current one."""
+    count = SessionService.revoke_other_sessions(current_user)
+    if count:
+        flash(f'Signed out {count} other device{"s" if count != 1 else ""}.', 'success')
+    else:
+        flash('No other active devices were found.', 'info')
+    return redirect(url_for('profile.settings') + '#active-sessions')
 
 
 @profile_bp.route('/notifications')
@@ -507,6 +686,7 @@ def delete_account():
         return redirect(url_for('profile.settings'))
 
     # Delete user from database
+    SessionService.revoke_current_session(reason='account_deleted')
     db.session.delete(user)
     db.session.commit()
 

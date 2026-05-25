@@ -6,8 +6,8 @@ from flask import current_app
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from app.extensions import db
-from app.models import User, GameScore
+from app.extensions import bcrypt, db
+from app.models import User, GameScore, PasswordHistory
 from app.utils import generate_unique_6digit_id
 from app.validators import ValidationError, validate_email, validate_password, validate_username
 
@@ -51,6 +51,9 @@ class UserService:
         except IntegrityError:
             db.session.rollback()
             return None, "Unable to create account right now. Please try again."
+
+        UserService.record_password_history(user)
+        db.session.commit()
 
         return user, "User created successfully"
     
@@ -100,6 +103,30 @@ class UserService:
         
         db.session.commit()
         return user, "Profile updated"
+
+    @staticmethod
+    def record_password_history(user):
+        if not user or not user.id or not user.password_hash:
+            return
+        existing = PasswordHistory.query.filter_by(user_id=user.id, password_hash=user.password_hash).first()
+        if existing:
+            return
+        db.session.add(PasswordHistory(user_id=user.id, password_hash=user.password_hash))
+
+    @staticmethod
+    def is_password_reused(user, candidate_password):
+        if not user or not user.id:
+            return False
+        history_count = int(current_app.config.get('PASSWORD_HISTORY_COUNT', 5))
+        recent_hashes = PasswordHistory.query.filter_by(user_id=user.id)\
+            .order_by(PasswordHistory.created_at.desc())\
+            .limit(history_count)\
+            .all()
+        return any(
+            hash_row.password_hash and hash_row.password_hash.startswith(('$2a$', '$2b$', '$2y$'))
+            and bcrypt.check_password_hash(hash_row.password_hash, candidate_password)
+            for hash_row in recent_hashes
+        )
     
     @staticmethod
     def update_user_coins(user_id, amount):

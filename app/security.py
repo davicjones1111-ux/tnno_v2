@@ -245,6 +245,51 @@ def clear_auth_failures(username: str | None = None) -> None:
         _delete_key(key)
 
 
+def consume_action_quota(
+    action_key: str,
+    *,
+    limit: int,
+    window_seconds: int,
+    subject: str | None = None,
+    include_ip: bool = True,
+) -> tuple[bool, int]:
+    """Consume a short-lived quota bucket for sensitive actions.
+
+    Returns ``(allowed, retry_after_seconds)``.
+    """
+    if limit <= 0 or window_seconds <= 0:
+        return True, 0
+
+    bucket = int(time.time()) // max(1, window_seconds)
+    retry_after = max(1, window_seconds - (int(time.time()) % max(1, window_seconds)))
+    normalized_subject = _normalize_identity(subject)
+    counters = []
+
+    if include_ip:
+        ip = _get_client_ip()
+        if ip:
+            counters.append(('ip', ip))
+    if normalized_subject:
+        counters.append(('subject', normalized_subject))
+
+    if not counters:
+        counters.append(('global', action_key))
+
+    for kind, value in counters:
+        key = f'action:quota:{action_key}:{kind}:{value}:{bucket}'
+        if _incr_with_ttl(key, window_seconds) > limit:
+            log_security_event(
+                'action_quota_exceeded',
+                'Sensitive action quota exceeded',
+                action=action_key,
+                scope=kind,
+                subject=normalized_subject,
+            )
+            return False, retry_after
+
+    return True, 0
+
+
 def is_safe_redirect_target(target: str | None) -> bool:
     """Allow only relative URLs or same-origin redirects."""
     if not target:

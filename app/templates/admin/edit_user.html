@@ -123,6 +123,38 @@
             <p>{{ user.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
         </div>
 
+        <div class="px-info-group">
+            <label>Email Verification</label>
+            <p>
+                {% if user.email_verified_at %}
+                    Verified {{ user.email_verified_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                {% else %}
+                    <span class="px-text-muted">Not verified</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Login Security</label>
+            <p>
+                {% if user.two_factor_enabled %}Email OTP enabled{% else %}Email OTP disabled{% endif %}
+                <br>
+                {% if user.security_alerts_enabled %}New device alerts enabled{% else %}New device alerts disabled{% endif %}
+            </p>
+        </div>
+
+        <div class="px-info-group">
+            <label>Last Login</label>
+            <p>
+                {% if user.last_login_at %}
+                    {{ user.last_login_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                    {% if user.last_login_ip %}<br><span class="px-text-muted">{{ user.last_login_ip }}</span>{% endif %}
+                {% else %}
+                    <span class="px-text-muted">No login recorded yet</span>
+                {% endif %}
+            </p>
+        </div>
+
         <div class="px-info-group" style="border-top: 1px solid #ddd; padding-top: 12px;">
             <label>Seller Sales (All Time)</label>
             {% if user.is_seller %}
@@ -145,7 +177,12 @@
         <div class="px-mt-lg" style="border-top: 1px solid #ddd; padding-top: 16px;">
             <h3 style="color: var(--px-red); margin: 0 0 8px 0;">Danger Zone</h3>
             <p class="px-text-muted" style="margin: 0 0 12px 0; font-size: 0.9em;">Delete this user account and all associated data</p>
-            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete user &quot;{{ user.username }}&quot;? This action cannot be undone.');">
+            <form
+                method="POST"
+                action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                style="display: inline;"
+                data-confirm-message="Are you sure you want to delete user '{{ user.username }}'? This action cannot be undone."
+            >
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="px-btn px-btn-danger px-btn-block">
                     Delete User Account
@@ -207,15 +244,8 @@
     color: #6e5235;
 }
 </style>
+{% endblock %}
 
-<script>
-document.getElementById('seller').addEventListener('change', function() {
-    const commissionGroup = document.getElementById('commission-group');
-    if (this.checked) {
-        commissionGroup.style.display = 'block';
-    } else {
-        commissionGroup.style.display = 'none';
-    }
-});
-</script>
+{% block extra_js %}
+<script src="{{ asset_url('js/admin-edit-user.js') }}"></script>
 {% endblock %}

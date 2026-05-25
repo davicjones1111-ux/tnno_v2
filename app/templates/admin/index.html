@@ -104,7 +104,26 @@
             </span>
             {% endif %}
         </a>
+        <a href="{{ url_for('admin.security') }}" class="px-btn px-btn-secondary">
+            Security
+            {% if suspicious_events_count %}
+            <span class="px-notif-badge-inline" aria-label="{{ suspicious_events_count }} suspicious security events in the last 24 hours">
+                {{ suspicious_events_count }}
+            </span>
+            {% endif %}
+        </a>
         <a href="{{ url_for('history.admin_index') }}" class="px-btn px-btn-secondary">History Center</a>
+    </div>
+</div>
+
+<div class="px-grid admin-security-summary px-mb-lg">
+    <div class="px-panel admin-surface">
+        <div class="px-stat-value">{{ suspicious_events_count }}</div>
+        <div class="px-stat-label">Security Warnings (24h)</div>
+    </div>
+    <div class="px-panel admin-surface">
+        <div class="px-stat-value">{{ audit_actions_count }}</div>
+        <div class="px-stat-label">Admin Actions (24h)</div>
     </div>
 </div>
 
@@ -203,9 +222,18 @@
     font-weight: 700;
 }
 
+.admin-security-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
 @media (max-width: 900px) {
     .admin-activity-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    .admin-security-summary {
+        grid-template-columns: 1fr;
     }
 }
 </style>

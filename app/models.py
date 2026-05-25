@@ -29,6 +29,13 @@ class User(db.Model, UserMixin):
     seller_expires_at = db.Column(db.DateTime, nullable=True)
     seller_reminder_sent_at = db.Column(db.DateTime, nullable=True)
     seller_sales_seen_at = db.Column(db.DateTime, nullable=True)
+    email_verified_at = db.Column(db.DateTime, nullable=True)
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    security_alerts_enabled = db.Column(db.Boolean, default=True)
+    password_changed_at = db.Column(db.DateTime, default=utc_now)
+    last_login_at = db.Column(db.DateTime, nullable=True, index=True)
+    last_login_ip = db.Column(db.String(64), nullable=True)
+    last_login_user_agent = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=utc_now)
     updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now, index=True)
     
@@ -98,6 +105,8 @@ class User(db.Model, UserMixin):
             'profile_pic': self.profile_pic,
             'seller_cover_photo': self.seller_cover_photo,
             'role': self.role,
+            'email_verified': bool(self.email_verified_at),
+            'two_factor_enabled': bool(self.two_factor_enabled),
             'seller_expires_at': self.seller_expires_at.isoformat() if self.seller_expires_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
@@ -947,3 +956,140 @@ class WalletTransaction(db.Model):
 
     def __repr__(self):
         return f'<WalletTransaction user={self.user_id} type={self.transaction_type} amount={self.amount}>'
+
+
+class UserSession(db.Model):
+    """Tracked authenticated device/session for account security."""
+    __tablename__ = 'user_sessions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    token_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    session_label = db.Column(db.String(120), nullable=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    last_seen_ip = db.Column(db.String(64), nullable=True)
+    location_hint = db.Column(db.String(120), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    browser = db.Column(db.String(80), nullable=True)
+    operating_system = db.Column(db.String(80), nullable=True)
+    device_type = db.Column(db.String(32), nullable=True)
+    login_at = db.Column(db.DateTime, default=utc_now, index=True)
+    last_activity_at = db.Column(db.DateTime, default=utc_now, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    absolute_expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    revoked_at = db.Column(db.DateTime, nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    user = db.relationship('User', backref=db.backref('tracked_sessions', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('ix_user_sessions_user_activity', 'user_id', 'last_activity_at'),
+        db.Index('ix_user_sessions_user_revoked', 'user_id', 'revoked_at'),
+    )
+
+    @property
+    def is_active(self):
+        now = utc_now()
+        return self.revoked_at is None and self.expires_at >= now and self.absolute_expires_at >= now
+
+    def __repr__(self):
+        return f'<UserSession user={self.user_id} browser={self.browser} active={self.is_active}>'
+
+
+class AuthEvent(db.Model):
+    """Authentication and suspicious activity log."""
+    __tablename__ = 'auth_events'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    username = db.Column(db.String(80), nullable=True, index=True)
+    event_type = db.Column(db.String(40), nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default='info', index=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    location_hint = db.Column(db.String(120), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    browser = db.Column(db.String(80), nullable=True)
+    operating_system = db.Column(db.String(80), nullable=True)
+    details = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+
+    user = db.relationship('User', backref=db.backref('auth_events', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('ix_auth_events_user_created', 'user_id', 'created_at'),
+        db.Index('ix_auth_events_type_created', 'event_type', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f'<AuthEvent type={self.event_type} user={self.user_id} status={self.status}>'
+
+
+class EmailOTP(db.Model):
+    """One-time password stored hashed for verification, login 2FA, and reset flows."""
+    __tablename__ = 'email_otps'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    email = db.Column(db.String(120), nullable=False, index=True)
+    purpose = db.Column(db.String(40), nullable=False, index=True)
+    otp_hash = db.Column(db.String(64), nullable=False)
+    request_ip = db.Column(db.String(64), nullable=True)
+    attempt_count = db.Column(db.Integer, default=0)
+    max_attempts = db.Column(db.Integer, default=5)
+    expires_at = db.Column(db.DateTime, nullable=False, index=True)
+    cooldown_until = db.Column(db.DateTime, nullable=True)
+    consumed_at = db.Column(db.DateTime, nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+
+    user = db.relationship('User', backref=db.backref('email_otps', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('ix_email_otps_email_purpose_created', 'email', 'purpose', 'created_at'),
+        db.Index('ix_email_otps_user_purpose_created', 'user_id', 'purpose', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f'<EmailOTP purpose={self.purpose} email={self.email}>'
+
+
+class PasswordHistory(db.Model):
+    """Recent password hashes to prevent password reuse."""
+    __tablename__ = 'password_history'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+
+    user = db.relationship('User', backref=db.backref('password_history', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('ix_password_history_user_created', 'user_id', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f'<PasswordHistory user={self.user_id}>'
+
+
+class AdminAuditLog(db.Model):
+    """Immutable admin action log for moderation and finance changes."""
+    __tablename__ = 'admin_audit_logs'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    admin_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    action = db.Column(db.String(80), nullable=False, index=True)
+    target_type = db.Column(db.String(80), nullable=True, index=True)
+    target_id = db.Column(db.Integer, nullable=True, index=True)
+    ip_address = db.Column(db.String(64), nullable=True)
+    details = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=utc_now, index=True)
+
+    admin_user = db.relationship('User', backref=db.backref('admin_audit_logs', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.Index('ix_admin_audit_action_created', 'action', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f'<AdminAuditLog admin={self.admin_user_id} action={self.action}>'
