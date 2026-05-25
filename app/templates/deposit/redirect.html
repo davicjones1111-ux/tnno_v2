@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Opening Payment - RetroQuest{% endblock %}
+
+{% block extra_css %}
+<meta http-equiv="refresh" content="0;url={{ payment_url }}">
+{% endblock %}
+
+{% block content %}
+<div class="px-panel" style="max-width: 720px; margin: 40px auto;">
+    <div class="px-panel-header">
+        <h1 class="px-panel-title">Opening NowPayments</h1>
+    </div>
+
+    <p class="px-text-muted" style="margin-bottom: 12px;">
+        Your deposit was created successfully. We are sending you to the NowPayments checkout page now.
+    </p>
+
+    <p class="px-text-muted" style="margin-bottom: 16px;">
+        Deposit #{{ deposit.id }} | Payment ID: {{ deposit.payment_id }}
+    </p>
+
+    <a
+        href="{{ payment_url }}"
+        class="px-btn px-btn-primary px-btn-lg"
+        data-turbo="false"
+        target="_top"
+        rel="noopener noreferrer"
+        style="width: 100%; text-align: center;"
+    >
+        Open NowPayments
+    </a>
+
+    <p class="px-text-muted px-text-sm" style="margin-top: 14px;">
+        If the payment page does not open automatically, press the button above.
+    </p>
+</div>
+{% endblock %}

@@ -21,6 +21,10 @@ class DepositService:
     """Service for managing NowPayments-backed deposits."""
 
     @staticmethod
+    def _amount_to_string(value: Decimal) -> str:
+        return f'{value.quantize(AMOUNT_QUANT):f}'.rstrip('0').rstrip('.') or '0'
+
+    @staticmethod
     def ensure_deposit_schema():
         """Best-effort schema patching for existing databases without migrations."""
         inspector = inspect(db.engine)
@@ -167,7 +171,7 @@ class DepositService:
         }
 
         payload = {
-            'price_amount': float(amount),
+            'price_amount': DepositService._amount_to_string(amount),
             'price_currency': 'usd',
             'pay_currency': pay_currency,
             'order_id': f'deposit-{user_id}-{int(utc_now().timestamp())}',
@@ -178,14 +182,40 @@ class DepositService:
         }
 
         try:
+            current_app.logger.info(
+                'Creating NowPayments invoice user_id=%s network=%s amount=%s api_url=%s',
+                user_id,
+                network,
+                payload['price_amount'],
+                api_url,
+            )
             response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-            response.raise_for_status()
         except requests.RequestException as exc:
             raise RuntimeError(f'NowPayments request failed: {exc}')
+
+        response_text_preview = (response.text or '')[:1000]
+        if not response.ok:
+            current_app.logger.error(
+                'NowPayments invoice HTTP error status=%s body=%s',
+                response.status_code,
+                response_text_preview,
+            )
+            try:
+                error_payload = response.json()
+            except ValueError:
+                error_payload = None
+
+            if isinstance(error_payload, dict):
+                error_code = error_payload.get('code') or response.status_code
+                error_message = error_payload.get('message') or error_payload.get('error') or response.reason
+                raise RuntimeError(f'NowPayments API error: {error_code} - {error_message}')
+
+            raise RuntimeError(f'NowPayments API error: HTTP {response.status_code}.')
 
         try:
             data = response.json()
         except ValueError as exc:
+            current_app.logger.error('NowPayments returned invalid JSON body=%s', response_text_preview)
             raise RuntimeError(f'NowPayments returned invalid JSON: {exc}')
 
         # Check if the API returned an error status
@@ -209,7 +239,19 @@ class DepositService:
         )
 
         if not payment_id or not payment_url:
+            current_app.logger.error(
+                'NowPayments invoice response missing required fields keys=%s body=%s',
+                sorted(data.keys()),
+                response_text_preview,
+            )
             raise RuntimeError('NowPayments API response missing payment_id or payment_url.')
+
+        current_app.logger.info(
+            'NowPayments invoice created user_id=%s payment_id=%s payment_url=%s',
+            user_id,
+            payment_id,
+            payment_url,
+        )
 
         usdt_amount = float(amount)
         expected_amount = None

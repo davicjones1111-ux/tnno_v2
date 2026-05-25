@@ -75,6 +75,14 @@ def create_deposit():
     """Create a new NowPayments deposit and redirect the user to the payment URL."""
     amount = (request.form.get('amount') or '').strip()
     network = _normalize_network(request.form.get('network') or '')
+    current_app.logger.info(
+        'Deposit request received user_id=%s amount=%s network=%s json=%s referrer=%s',
+        current_user.id,
+        amount,
+        network,
+        _is_json_request(),
+        request.referrer,
+    )
 
     if not amount:
         message = 'Missing deposit amount.'
@@ -131,7 +139,14 @@ def create_deposit():
             'payment_url': payment_url,
         }), 200
 
-    return redirect(payment_url, code=303)
+    current_app.logger.info(
+        'Deposit redirect prepared user_id=%s deposit_id=%s payment_id=%s payment_url=%s',
+        current_user.id,
+        deposit.id,
+        deposit.payment_id,
+        payment_url,
+    )
+    return render_template('deposit/redirect.html', deposit=deposit, payment_url=payment_url)
 
 
 def _sort_object(obj):
