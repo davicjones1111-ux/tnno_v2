@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from flask import current_app, request, session
 from flask_login import current_user, logout_user
+from sqlalchemy import inspect, text
 
 from app.datetime_utils import utc_now
 from app.extensions import db
@@ -67,6 +68,129 @@ def _location_hint() -> str:
 
 
 class SessionService:
+    @staticmethod
+    def ensure_security_schema() -> None:
+        """Best-effort schema patching for auth/session/security tables and columns."""
+        inspector = inspect(db.engine)
+        table_names = set(inspector.get_table_names())
+        engine_url = str(db.engine.url).lower()
+        is_postgres = 'postgresql' in engine_url
+        id_column = 'SERIAL PRIMARY KEY' if is_postgres else 'INTEGER PRIMARY KEY AUTOINCREMENT'
+
+        alter_statements = []
+
+        if 'users' in table_names:
+            user_columns = {col['name'] for col in inspector.get_columns('users')}
+            if 'email_verified_at' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMP')
+            if 'two_factor_enabled' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE')
+            if 'security_alerts_enabled' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN security_alerts_enabled BOOLEAN DEFAULT TRUE')
+            if 'password_changed_at' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN password_changed_at TIMESTAMP')
+            if 'last_login_at' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN last_login_at TIMESTAMP')
+            if 'last_login_ip' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN last_login_ip VARCHAR(64)')
+            if 'last_login_user_agent' not in user_columns:
+                alter_statements.append('ALTER TABLE users ADD COLUMN last_login_user_agent VARCHAR(255)')
+
+        if 'user_sessions' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE user_sessions ('
+                f'id {id_column}, '
+                'user_id INTEGER NOT NULL, '
+                'token_hash VARCHAR(64) NOT NULL, '
+                'session_label VARCHAR(120), '
+                'ip_address VARCHAR(64), '
+                'last_seen_ip VARCHAR(64), '
+                'location_hint VARCHAR(120), '
+                'user_agent VARCHAR(255), '
+                'browser VARCHAR(80), '
+                'operating_system VARCHAR(80), '
+                'device_type VARCHAR(32), '
+                'login_at TIMESTAMP, '
+                'last_activity_at TIMESTAMP, '
+                'expires_at TIMESTAMP NOT NULL, '
+                'absolute_expires_at TIMESTAMP NOT NULL, '
+                'revoked_at TIMESTAMP, '
+                'created_at TIMESTAMP, '
+                'updated_at TIMESTAMP, '
+                'FOREIGN KEY(user_id) REFERENCES users (id)'
+                ')'
+            )
+
+        if 'auth_events' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE auth_events ('
+                f'id {id_column}, '
+                'user_id INTEGER, '
+                'username VARCHAR(80), '
+                'event_type VARCHAR(40) NOT NULL, '
+                'status VARCHAR(20) NOT NULL DEFAULT \'info\', '
+                'ip_address VARCHAR(64), '
+                'location_hint VARCHAR(120), '
+                'user_agent VARCHAR(255), '
+                'browser VARCHAR(80), '
+                'operating_system VARCHAR(80), '
+                'details TEXT, '
+                'created_at TIMESTAMP, '
+                'FOREIGN KEY(user_id) REFERENCES users (id)'
+                ')'
+            )
+
+        if 'email_otps' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE email_otps ('
+                f'id {id_column}, '
+                'user_id INTEGER, '
+                'email VARCHAR(120) NOT NULL, '
+                'purpose VARCHAR(40) NOT NULL, '
+                'otp_hash VARCHAR(64) NOT NULL, '
+                'request_ip VARCHAR(64), '
+                'attempt_count INTEGER DEFAULT 0, '
+                'max_attempts INTEGER DEFAULT 5, '
+                'expires_at TIMESTAMP NOT NULL, '
+                'cooldown_until TIMESTAMP, '
+                'consumed_at TIMESTAMP, '
+                'created_at TIMESTAMP, '
+                'FOREIGN KEY(user_id) REFERENCES users (id)'
+                ')'
+            )
+
+        if 'password_history' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE password_history ('
+                f'id {id_column}, '
+                'user_id INTEGER NOT NULL, '
+                'password_hash VARCHAR(255) NOT NULL, '
+                'created_at TIMESTAMP, '
+                'FOREIGN KEY(user_id) REFERENCES users (id)'
+                ')'
+            )
+
+        if 'admin_audit_logs' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE admin_audit_logs ('
+                f'id {id_column}, '
+                'admin_user_id INTEGER NOT NULL, '
+                'action VARCHAR(80) NOT NULL, '
+                'target_type VARCHAR(80), '
+                'target_id INTEGER, '
+                'ip_address VARCHAR(64), '
+                'details TEXT, '
+                'created_at TIMESTAMP, '
+                'FOREIGN KEY(admin_user_id) REFERENCES users (id)'
+                ')'
+            )
+
+        for statement in alter_statements:
+            db.session.execute(text(statement))
+
+        if alter_statements:
+            db.session.commit()
+
     @staticmethod
     def record_auth_event(
         event_type: str,

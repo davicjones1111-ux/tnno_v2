@@ -227,6 +227,7 @@ def create_app(config_name=None):
             safe_schema_step('NotificationService.ensure_notification_schema', lambda: __import__('app.services.notification_service', fromlist=['NotificationService']).NotificationService.ensure_notification_schema())
             safe_schema_step('MerchService.ensure_merch_schema', lambda: __import__('app.services.merch_service', fromlist=['MerchService']).MerchService.ensure_merch_schema())
             safe_schema_step('HistoryService.ensure_history_schema', lambda: __import__('app.services.history_service', fromlist=['HistoryService']).HistoryService.ensure_history_schema())
+            safe_schema_step('SessionService.ensure_security_schema', lambda: __import__('app.services.session_service', fromlist=['SessionService']).SessionService.ensure_security_schema())
             safe_schema_step('ensure_runtime_indexes', ensure_runtime_indexes)
             safe_schema_step('optimize_database', optimize_database)
 
@@ -597,10 +598,11 @@ def register_filters(app):
 def register_background_tasks(app):
     """Run lightweight startup maintenance without changing app behavior."""
     try:
-        from app.services.otp_service import OTPService
-        from app.services.session_service import SessionService
-        OTPService.cleanup_expired()
-        SessionService.cleanup_security_records()
+        with app.app_context():
+            from app.services.otp_service import OTPService
+            from app.services.session_service import SessionService
+            OTPService.cleanup_expired()
+            SessionService.cleanup_security_records()
     except Exception as exc:
         app.logger.warning('Startup security maintenance skipped: %s', exc)
     app.logger.info('Background maintenance bootstrap complete')
