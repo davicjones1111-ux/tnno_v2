@@ -949,40 +949,34 @@ def admin_create():
                 flash('Physical product created successfully!', 'success')
                 return redirect(url_for('merch.admin_products'))
 
-            row_indices = [value for value in request.form.getlist('digital_row_index') if value != '']
-            if not row_indices:
-                flash('Add at least one digital upload row.', 'error')
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            price = request.form.get('price', type=int, default=0)
+            digital_file = request.files.get('digital_file') or request.files.get('digital_files_1')
+            if not digital_file or not digital_file.filename:
+                flash('Digital file is required.', 'error')
                 return redirect(url_for('merch.admin_create'))
 
-            created_products = 0
-            for row_index in row_indices:
-                row_name = (request.form.get(f'digital_name_{row_index}') or '').strip()
-                row_description = (request.form.get(f'digital_description_{row_index}') or '').strip()
-                row_price = request.form.get(f'digital_price_{row_index}', type=int, default=0)
-                row_files = request.files.getlist(f'digital_files_{row_index}')
-                if not row_name and row_files:
-                    first_file = next((file for file in row_files if file and file.filename), None)
-                    if first_file and first_file.filename:
-                        base_name = first_file.filename.rsplit('/', 1)[-1]
-                        row_name = base_name.rsplit('.', 1)[0] if '.' in base_name else base_name
-                if not row_name:
-                    raise ValueError('Each digital product needs a name.')
-                if row_price < 1:
-                    raise ValueError(f'Price must be at least 1 TNNO for "{row_name}".')
-                if not row_files or not any(file and file.filename for file in row_files):
-                    raise ValueError(f'Upload at least one file for "{row_name}".')
+            if not name:
+                if digital_file and digital_file.filename:
+                    base_name = digital_file.filename.rsplit('/', 1)[-1]
+                    name = base_name.rsplit('.', 1)[0] if '.' in base_name else base_name
+            if not name:
+                flash('Product name is required.', 'error')
+                return redirect(url_for('merch.admin_create'))
+            if price < 1:
+                flash('Price must be at least 1 TNNO', 'error')
+                return redirect(url_for('merch.admin_create'))
 
-                product, _ = _create_digital_product_bundle(
-                    name=row_name,
-                    description=row_description,
-                    price=row_price,
-                    uploaded_files=row_files,
-                    seller_id=current_user.id if not current_user.is_admin() else None,
-                )
-                created_products += 1
-
+            product, _ = _create_digital_product_bundle(
+                name=name,
+                description=description,
+                price=price,
+                uploaded_files=[digital_file],
+                seller_id=current_user.id if not current_user.is_admin() else None,
+            )
             db.session.commit()
-            flash(f'{created_products} digital product(s) created successfully!', 'success')
+            flash('Digital product created successfully!', 'success')
             return redirect(url_for('merch.admin_products'))
         except Exception:
             db.session.rollback()

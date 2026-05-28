@@ -67,54 +67,18 @@
                         <option value="physical">Physical</option>
                     </select>
                     <p class="px-text-sm px-text-muted px-mt-sm">
-                        Choose Digital to show file upload fields below. Choose Physical to show stock and contact link fields below.
+                        Choose Digital to show the file upload field. Choose Physical to show stock and contact link fields.
                     </p>
                 </div>
             </div>
 
             <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none; margin-top: 18px;">
                 <div class="px-form-group" style="margin: 0;">
-                    <label class="px-label">Digital Uploads</label>
-                    <p class="px-text-sm px-text-muted">
-                        Each row below becomes one product. Upload one file or choose a folder, then add another row if needed.
+                    <label class="px-label">Digital File *</label>
+                    <input type="file" name="digital_file" id="digital-file" class="px-input" accept="image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Upload one file for this product. One file = one product.
                     </p>
-                </div>
-                <div id="digitalItems" class="digital-items">
-                    <div class="digital-item" data-row-index="1">
-                        <div class="digital-item-head">
-                            <div class="digital-item-title">Upload #1</div>
-                            <span class="digital-item-badge">One product</span>
-                            <button type="button" class="px-btn px-btn-sm px-btn-danger" data-remove-row>×</button>
-                        </div>
-                        <input type="hidden" name="digital_row_index" value="1">
-                        <div class="digital-item-grid">
-                            <div>
-                                <div class="px-form-group">
-                                    <label class="px-label">Product Name</label>
-                                    <input type="text" name="digital_name_1" class="px-input" placeholder="Product name" required>
-                                </div>
-                                <div class="px-form-group">
-                                    <label class="px-label">Description</label>
-                                    <textarea name="digital_description_1" class="px-input" rows="3" placeholder="Describe this product"></textarea>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="px-form-group">
-                                    <label class="px-label">Price *</label>
-                                    <input type="number" name="digital_price_1" class="px-input" min="1" value="100" required>
-                                </div>
-                                <div class="px-form-group">
-                                    <label class="px-label">File or Folder *</label>
-                                    <input type="file" name="digital_files_1" class="px-input" multiple webkitdirectory directory accept="image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov" required>
-                                    <div class="digital-file-summary is-empty" data-file-summary>No file selected yet.</div>
-                                </div>
-                                <p class="px-text-sm px-text-muted">One file or one folder = one product. Use the X button to remove this row.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="px-mt-md" style="display:flex; gap: 10px; flex-wrap: wrap;">
-                    <button type="button" class="px-btn px-btn-secondary" id="addDigitalRowBtn">+ Add Another Upload</button>
                 </div>
             </div>
 
@@ -169,7 +133,7 @@
 
 <style>
 .merch-create-page {
-    max-width: 1240px;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
@@ -187,112 +151,18 @@
     margin-bottom: 18px;
 }
 
-.merch-create-shell {
-    background: rgba(255,255,255,0.98);
-}
-
 .merch-photo-slots {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.merch-photo-slot {
-    padding: 14px;
-    background: transparent;
-    border: 1px solid rgba(63, 88, 138, 0.12);
-}
-
-.merch-photo-slot-label {
-    margin-bottom: 8px;
     display: block;
 }
 
-.digital-items {
-    display: grid;
-    gap: 12px;
-    margin-top: 14px;
-}
-
-.digital-item {
-    background: transparent;
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    padding: 14px;
-    border-radius: 8px;
-}
-
-.digital-item-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
+.merch-photo-slot {
     margin-bottom: 12px;
 }
 
-.digital-item-title {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.56rem;
-    color: var(--px-cyan-dark);
+.merch-photo-slot-label {
+    display: block;
+    margin-bottom: 6px;
 }
-
-.digital-item-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background: rgba(255,255,255,0.9);
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    color: var(--px-text-muted);
-    font-size: 0.72rem;
-    font-weight: 600;
-}
-
-.merch-digital-panel {
-    margin-top: 18px;
-    border-style: solid;
-    background: rgba(255,255,255,0.98);
-}
-
-.digital-item-grid {
-    display: grid;
-    grid-template-columns: 1fr 140px;
-    gap: 12px;
-}
-
-.digital-item .px-form-group {
-    margin-bottom: 10px;
-}
-
-.digital-item .px-input[type="file"] {
-    padding: 10px;
-}
-
-.digital-file-summary {
-    margin-top: 8px;
-    padding: 10px 12px;
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    background: rgba(255,255,255,0.92);
-    color: var(--px-text);
-    font-size: 0.78rem;
-    line-height: 1.45;
-    min-height: 42px;
-}
-
-.digital-file-summary.is-empty {
-    color: var(--px-text-muted);
-}
-
-@media (max-width: 720px) {
-    .digital-item-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .digital-item-head {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-}
-
 @media (max-width: 900px) {
     .merch-create-shell {
         padding: 14px;
@@ -310,203 +180,25 @@
         margin-bottom: 10px;
     }
 
-    .merch-create-sidecard {
-        padding: 14px;
-    }
-
-    .merch-photo-slot {
-        padding: 12px;
-    }
-
-    .digital-item {
-        padding: 12px;
-    }
-
-    .digital-item-head {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .digital-item-title {
-        font-size: 0.5rem;
-    }
-
-    .digital-item-badge,
-    .merch-digital-badge,
-    .merch-photo-chip {
-        font-size: 0.66rem;
-    }
-
-    .digital-file-summary {
-        min-height: 38px;
-        padding: 9px 10px;
-    }
 }
 </style>
 
 <script>
 const typeSelect = document.getElementById('product_type');
 const digitalFields = document.getElementById('digital-fields');
-const digitalItems = document.getElementById('digitalItems');
-const addDigitalRowBtn = document.getElementById('addDigitalRowBtn');
-const singleProductFields = document.getElementById('single-product-fields');
 const physicalFields = document.getElementById('physical-fields');
+const digitalFileInput = document.getElementById('digital-file');
 const physicalQuantity = document.getElementById('physical-quantity');
 const contactLink = document.getElementById('contact-link');
-const productNameInput = document.querySelector('input[name="name"]');
-const productDescriptionInput = document.querySelector('textarea[name="description"]');
-const productPriceInput = document.querySelector('input[name="price"]');
-const coverPhotoInput = document.getElementById('image_1');
-const extraPhotoInputs = [document.getElementById('image_2'), document.getElementById('image_3')];
-const fileTypesHint = 'image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov';
-let digitalRowCounter = 0;
-
-function bindDigitalRow(row) {
-    if (!row) return;
-    const rowIndex = Number(row.dataset.rowIndex || 0);
-    digitalRowCounter = Math.max(digitalRowCounter, rowIndex);
-    const summary = row.querySelector('[data-file-summary]');
-
-    function updateSummary(files) {
-        if (!summary) return;
-        const fileList = Array.from(files || []);
-        if (!fileList.length) {
-            summary.textContent = 'No file selected yet.';
-            summary.classList.add('is-empty');
-            return;
-        }
-        const names = fileList.slice(0, 3).map((file) => {
-            const relative = file.webkitRelativePath || file.name;
-            return relative;
-        });
-        const extraCount = fileList.length - names.length;
-        summary.innerHTML = `
-            <strong>${fileList.length}</strong> item(s) selected
-            <div>${names.map((name) => `• ${name}`).join('<br>')}</div>
-            ${extraCount > 0 ? `<div class="px-text-muted">+ ${extraCount} more</div>` : ''}
-        `;
-        summary.classList.remove('is-empty');
-    }
-
-    row.querySelector('[data-remove-row]')?.addEventListener('click', () => {
-        row.remove();
-        if (digitalItems && digitalItems.children.length === 0) {
-            createDigitalRow();
-        }
-    });
-    row.querySelector(`input[name="digital_files_${rowIndex}"]`)?.addEventListener('change', (event) => {
-        const input = event.currentTarget;
-        const files = Array.from(input.files || []);
-        const titleField = row.querySelector(`input[name="digital_name_${rowIndex}"]`);
-        updateSummary(files);
-        if (titleField && !titleField.value && files.length > 0) {
-            const first = files[0];
-            const relative = first.webkitRelativePath || first.name;
-            const folder = relative.includes('/') ? relative.split('/')[0] : '';
-            const base = folder || first.name.replace(/\.[^.]+$/, '');
-            titleField.value = base.replace(/[-_]+/g, ' ').trim();
-        }
-    });
-}
-
-function createDigitalRow() {
-    const rowIndex = digitalRowCounter += 1;
-    const row = document.createElement('div');
-    row.className = 'digital-item';
-    row.dataset.rowIndex = String(rowIndex);
-    row.innerHTML = `
-        <div class="digital-item-head">
-            <div class="digital-item-title">Upload #${rowIndex}</div>
-            <span class="digital-item-badge">One product</span>
-            <button type="button" class="px-btn px-btn-sm px-btn-danger" data-remove-row>×</button>
-        </div>
-        <input type="hidden" name="digital_row_index" value="${rowIndex}">
-        <div class="digital-item-grid">
-            <div>
-                <div class="px-form-group">
-                    <label class="px-label">Product Name</label>
-                    <input type="text" name="digital_name_${rowIndex}" class="px-input" placeholder="Product name" required>
-                </div>
-                <div class="px-form-group">
-                    <label class="px-label">Description</label>
-                    <textarea name="digital_description_${rowIndex}" class="px-input" rows="3" placeholder="Describe this product"></textarea>
-                </div>
-            </div>
-            <div>
-                <div class="px-form-group">
-                    <label class="px-label">Price *</label>
-                    <input type="number" name="digital_price_${rowIndex}" class="px-input" min="1" value="100" required>
-                </div>
-                <div class="px-form-group">
-                    <label class="px-label">File or Folder *</label>
-                    <input type="file" name="digital_files_${rowIndex}" class="px-input" multiple webkitdirectory directory accept="${fileTypesHint}" required>
-                    <div class="digital-file-summary is-empty" data-file-summary>No file selected yet.</div>
-                </div>
-                <p class="px-text-sm px-text-muted">One file or one folder = one product. Use the X button to remove this row.</p>
-            </div>
-        </div>
-    `;
-    bindDigitalRow(row);
-    digitalItems?.appendChild(row);
-}
-
-function setSectionEnabled(section, enabled) {
-    if (!section) return;
-    section.querySelectorAll('input, textarea, select').forEach((field) => {
-        if (field.id === 'product_type') return;
-        field.disabled = !enabled;
-        if (!enabled) {
-            field.required = false;
-        }
-    });
-}
-
-function setDigitalRowsEnabled(enabled) {
-    if (!digitalItems) return;
-    digitalItems.querySelectorAll('.digital-item').forEach((row) => {
-        row.querySelectorAll('input, textarea').forEach((field) => {
-            field.disabled = !enabled;
-            if (field.name?.startsWith('digital_name_') || field.name?.startsWith('digital_price_') || field.name?.startsWith('digital_files_')) {
-                field.required = enabled;
-            } else if (!enabled) {
-                field.required = false;
-            }
-        });
-    });
-}
 
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
-    if (singleProductFields) singleProductFields.style.display = isPhysical ? 'block' : 'none';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
-    if (!isPhysical && digitalItems && digitalItems.children.length === 0) {
-        createDigitalRow();
+    if (digitalFileInput) {
+        digitalFileInput.required = !isPhysical;
+        digitalFileInput.disabled = isPhysical;
     }
-    setSectionEnabled(singleProductFields, isPhysical);
-    setSectionEnabled(physicalFields, isPhysical);
-    setSectionEnabled(digitalFields, !isPhysical);
-    setDigitalRowsEnabled(!isPhysical);
-    if (productNameInput) {
-        productNameInput.required = isPhysical;
-        productNameInput.disabled = !isPhysical;
-    }
-    if (productDescriptionInput) {
-        productDescriptionInput.disabled = !isPhysical;
-    }
-    if (productPriceInput) {
-        productPriceInput.required = isPhysical;
-        productPriceInput.disabled = !isPhysical;
-    }
-    if (coverPhotoInput) {
-        coverPhotoInput.required = isPhysical;
-        coverPhotoInput.disabled = !isPhysical;
-    }
-    extraPhotoInputs.forEach((input) => {
-        if (input) {
-            input.disabled = !isPhysical;
-        }
-    });
     if (physicalQuantity) {
         physicalQuantity.required = isPhysical;
         physicalQuantity.disabled = !isPhysical;
@@ -521,8 +213,5 @@ if (typeSelect) {
     typeSelect.addEventListener('change', updateTypeFields);
     updateTypeFields();
 }
-
-digitalItems?.querySelectorAll('.digital-item').forEach((row) => bindDigitalRow(row));
-addDigitalRowBtn?.addEventListener('click', () => createDigitalRow());
 </script>
 {% endblock %}
