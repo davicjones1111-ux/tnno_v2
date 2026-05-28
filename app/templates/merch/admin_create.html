@@ -67,36 +67,12 @@
                         <option value="physical">Physical</option>
                     </select>
                     <p class="px-text-sm px-text-muted px-mt-sm">
-                        Digital shows file upload fields here. Physical shows stock and contact link fields here.
-                    </p>
-                </div>
-
-                <div class="px-form-group">
-                    <label class="px-label">Product Photos</label>
-                    <div class="merch-photo-slots">
-                        <div class="merch-photo-slot">
-                            <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
-                            <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
-                            <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
-                        </div>
-                        <div class="merch-photo-slot">
-                            <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
-                            <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
-                            <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                        </div>
-                        <div class="merch-photo-slot">
-                            <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
-                            <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
-                            <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                        </div>
-                    </div>
-                    <p class="px-text-sm px-text-muted px-mt-sm">
-                        Upload photos one by one. Limit: 3 photos total.
+                        Choose Digital to show file upload fields below. Choose Physical to show stock and contact link fields below.
                     </p>
                 </div>
             </div>
-            
-            <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none;">
+
+            <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none; margin-top: 18px;">
                 <div class="px-form-group" style="margin: 0;">
                     <label class="px-label">Digital Uploads</label>
                     <p class="px-text-sm px-text-muted">
@@ -142,7 +118,7 @@
                 </div>
             </div>
 
-            <div id="physical-fields" style="display: none;">
+            <div id="physical-fields" style="display: none; margin-top: 18px;">
                 <div class="px-form-group">
                     <label class="px-label">Physical Quantity *</label>
                     <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
@@ -156,6 +132,29 @@
                 </div>
             </div>
 
+            <div class="px-form-group">
+                <label class="px-label">Product Photos</label>
+                <div class="merch-photo-slots">
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
+                        <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
+                        <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
+                    </div>
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
+                        <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
+                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                    </div>
+                    <div class="merch-photo-slot">
+                        <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
+                        <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
+                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                    </div>
+                </div>
+                <p class="px-text-sm px-text-muted px-mt-sm">
+                    Upload photos one by one. Limit: 3 photos total.
+                </p>
+            </div>
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
                     ✅ Create Product
