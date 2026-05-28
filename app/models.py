@@ -788,6 +788,19 @@ class ProductFile(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
     file_filename = db.Column(db.String(255), nullable=False)  # Stored filename
     original_name = db.Column(db.String(255), nullable=True)  # Original filename for display
+    file_name = db.Column(db.String(255), nullable=True)
+    file_type = db.Column(db.String(120), nullable=True)
+    mime_type = db.Column(db.String(120), nullable=True)
+    file_size = db.Column(db.BigInteger, nullable=True)
+    storage_provider = db.Column(db.String(30), default='s3')
+    storage_key = db.Column(db.String(512), nullable=True, index=True)
+    storage_url = db.Column(db.String(1024), nullable=True)
+    folder_path = db.Column(db.String(255), nullable=True, index=True)
+    upload_status = db.Column(db.String(30), default='ready', index=True)
+    checksum = db.Column(db.String(128), nullable=True, index=True)
+    multipart_upload_id = db.Column(db.String(255), nullable=True)
+    part_count = db.Column(db.Integer, default=0)
+    upload_session_id = db.Column(db.Integer, db.ForeignKey('upload_sessions.id'), nullable=True, index=True)
     is_sold = db.Column(db.Boolean, default=False)
     order_id = db.Column(db.Integer, db.ForeignKey('merch_orders.id'), nullable=True)
     sold_at = db.Column(db.DateTime, nullable=True)
@@ -795,6 +808,54 @@ class ProductFile(db.Model):
     
     def __repr__(self):
         return f'<ProductFile product={self.product_id} sold={self.is_sold}>'
+
+
+class UploadSession(db.Model):
+    """Upload session used for direct-to-storage product uploads."""
+    __tablename__ = 'upload_sessions'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    total_files = db.Column(db.Integer, nullable=False, default=0)
+    uploaded_files = db.Column(db.Integer, nullable=False, default=0)
+    total_bytes = db.Column(db.BigInteger, nullable=False, default=0)
+    status = db.Column(db.String(30), default='initiated', index=True)
+    expires_at = db.Column(db.DateTime, nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    product = db.relationship('Product', backref=db.backref('upload_sessions', lazy='dynamic', cascade='all, delete-orphan'))
+    seller = db.relationship('User', backref=db.backref('upload_sessions', lazy='dynamic', cascade='all, delete-orphan'))
+    files = db.relationship('ProductFile', backref='upload_session', lazy='dynamic')
+    parts = db.relationship('UploadPart', backref='session', lazy='dynamic', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<UploadSession product={self.product_id} status={self.status}>'
+
+
+class UploadPart(db.Model):
+    """Tracks multipart upload parts for large files."""
+    __tablename__ = 'upload_parts'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('upload_sessions.id'), nullable=False, index=True)
+    file_id = db.Column(db.Integer, db.ForeignKey('product_files.id'), nullable=False, index=True)
+    part_number = db.Column(db.Integer, nullable=False)
+    etag = db.Column(db.String(255), nullable=True)
+    size_bytes = db.Column(db.BigInteger, nullable=True)
+    status = db.Column(db.String(30), default='pending', index=True)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
+
+    file = db.relationship('ProductFile', backref=db.backref('parts', lazy='dynamic', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('file_id', 'part_number', name='ux_upload_parts_file_part'),
+    )
+
+    def __repr__(self):
+        return f'<UploadPart file={self.file_id} part={self.part_number}>'
 
 
 class MerchOrder(db.Model):

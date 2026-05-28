@@ -299,7 +299,11 @@
     });
 
     sellerSearch?.addEventListener('input', function() {
-        handleSellerSearch(this.value.trim());
+        const normalized = this.value.replace(/^@+/, '').trim();
+        if (this.value !== normalized) {
+            this.value = normalized;
+        }
+        handleSellerSearch(normalized);
     });
 
     function updateSort() {

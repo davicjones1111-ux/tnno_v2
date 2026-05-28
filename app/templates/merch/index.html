@@ -63,6 +63,7 @@
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                 </svg>
+                <span class="seller-prefix" aria-hidden="true">@</span>
                 <input type="text" 
                        id="sellerSearch" 
                        class="search-input seller-input" 
@@ -325,6 +326,18 @@
 
 .seller-input {
     background: var(--px-bg-card);
+    padding-left: 48px;
+}
+
+.seller-prefix {
+    position: absolute;
+    left: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.62rem;
+    color: var(--px-cyan-dark);
+    pointer-events: none;
 }
 
 .search-clear {
@@ -680,6 +693,7 @@
 
     .search-section {
         flex-direction: column;
+        gap: 8px;
     }
 
     .sort-section {
@@ -689,6 +703,32 @@
 
     .sort-select {
         flex: 1;
+    }
+
+    .store-controls {
+        padding: 12px;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .search-input {
+        padding: 9px 34px 9px 34px;
+        font-size: 0.8rem;
+    }
+
+    .seller-input {
+        padding-left: 44px;
+    }
+
+    .search-icon {
+        left: 12px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .seller-prefix {
+        left: 34px;
+        font-size: 0.56rem;
     }
 
     .products-feed {
@@ -802,6 +842,23 @@
 @media (max-width: 420px) {
     .store-page {
         padding-inline: 2px;
+    }
+
+    .store-header {
+        padding: 14px;
+    }
+
+    .store-controls {
+        padding: 10px;
+    }
+
+    .search-section {
+        gap: 6px;
+    }
+
+    .sort-label,
+    .sort-select {
+        font-size: 0.78rem;
     }
 
     .products-feed {

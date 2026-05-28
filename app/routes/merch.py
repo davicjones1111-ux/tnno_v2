@@ -3,18 +3,23 @@ Merch Store Routes
 Digital product store with file delivery
 """
 import os
+import math
+import secrets
+import uuid
+from pathlib import Path
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app.extensions import db, cache
-from app.models import Product, ProductFile, ProductImage, ProductRating, ProductReaction, ProductReview, MerchOrder, User, SellerRating, SellerReport
+from app.models import Product, ProductFile, ProductImage, ProductRating, ProductReaction, ProductReview, MerchOrder, User, SellerRating, SellerReport, UploadSession, UploadPart
 from app.models import SellerChatConversation, SellerChatMessage, SellerNotification
 from app.datetime_utils import utc_now
 from app.services.seller_service import SELLER_PLANS
 from app.services.history_service import HistoryService
 from app.services.pagination_service import PaginationService
 from app.services.wallet_service import WalletService
+from app.services.object_storage_service import ObjectStorageService
 from app.route_modules.marketplace_chat import register_marketplace_chat_routes
 from app.route_modules.marketplace_orders import auto_cancel_overdue_physical_order, register_marketplace_order_routes
 from app.utils import resolve_upload_path, save_uploaded_file_any, save_uploaded_image_optimized
@@ -33,6 +38,10 @@ CANCEL_SELLER_RATE = 0.30
 DELETED_PRODUCT_MARKER = '__deleted__'
 MIN_PRODUCT_IMAGES = 1
 MAX_PRODUCT_IMAGES = 3
+MAX_PRODUCT_IMAGE_BYTES = 9 * 1024 * 1024
+PRODUCT_UPLOAD_SMALL_FILE_THRESHOLD = 64 * 1024 * 1024
+PRODUCT_UPLOAD_PART_SIZE = 16 * 1024 * 1024
+PRODUCT_UPLOAD_SESSION_TTL_MINUTES = 120
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -67,7 +76,11 @@ def _save_product_gallery_image(uploaded_image, subfolder='merch'):
     """Save one uploaded product image and return the stored filename."""
     if not uploaded_image or not uploaded_image.filename:
         return None
-    image_path = save_uploaded_image_optimized(uploaded_image, subfolder)
+    image_path = save_uploaded_image_optimized(
+        uploaded_image,
+        subfolder,
+        max_bytes=MAX_PRODUCT_IMAGE_BYTES,
+    )
     return image_path.split('/')[-1] if image_path else None
 
 
@@ -77,6 +90,92 @@ def _normalize_contact_link(value):
     if raw and '://' not in raw and '.' in raw and ' ' not in raw:
         return f'https://{raw}'
     return raw
+
+
+def _normalize_seller_search(value):
+    """Normalize seller search input like @username to username."""
+    return (value or '').strip().lstrip('@').strip()
+
+
+def _normalize_folder_path(value):
+    """Normalize logical folder paths for product files."""
+    raw = (value or '').replace('\\', '/').strip().strip('/')
+    if not raw:
+        return ''
+    parts = [part for part in raw.split('/') if part and part not in {'.', '..'}]
+    return '/'.join(parts[:10])
+
+
+def _product_upload_settings():
+    """Return upload thresholds from config with safe defaults."""
+    return {
+        'small_file_threshold': int(current_app.config.get('MERCH_UPLOAD_SMALL_FILE_THRESHOLD_BYTES') or PRODUCT_UPLOAD_SMALL_FILE_THRESHOLD),
+        'part_size': int(current_app.config.get('MERCH_UPLOAD_PART_SIZE_BYTES') or PRODUCT_UPLOAD_PART_SIZE),
+        'session_ttl_minutes': int(current_app.config.get('MERCH_UPLOAD_SESSION_TTL_MINUTES') or PRODUCT_UPLOAD_SESSION_TTL_MINUTES),
+        'signed_url_expires': int(current_app.config.get('OBJECT_STORAGE_SIGNED_URL_EXPIRES_SECONDS') or 600),
+        'batch_size': int(current_app.config.get('MERCH_UPLOAD_BATCH_SIZE') or 100),
+    }
+
+
+def _product_storage_key(product_id, file_id, original_name):
+    ext = ''
+    if original_name and '.' in original_name:
+        ext = original_name.rsplit('.', 1)[1].lower()
+    suffix = f'.{ext}' if ext else ''
+    return f'products/{product_id}/files/{file_id}/{uuid.uuid4().hex}{suffix}'
+
+
+def _multipart_part_count(file_size, part_size):
+    return max(1, math.ceil(max(int(file_size or 0), 1) / max(int(part_size or 1), 1)))
+
+
+def _file_upload_mode(file_size):
+    settings = _product_upload_settings()
+    return 'single' if int(file_size or 0) <= settings['small_file_threshold'] else 'multipart'
+
+
+def _product_file_payload(product_file):
+    return {
+        'id': product_file.id,
+        'product_id': product_file.product_id,
+        'file_name': product_file.file_name or product_file.original_name or product_file.file_filename,
+        'original_name': product_file.original_name,
+        'file_type': product_file.file_type,
+        'mime_type': product_file.mime_type,
+        'file_size': int(product_file.file_size or 0),
+        'storage_key': product_file.storage_key,
+        'storage_url': product_file.storage_url,
+        'folder_path': product_file.folder_path or '',
+        'upload_status': product_file.upload_status,
+        'checksum': product_file.checksum,
+        'multipart_upload_id': product_file.multipart_upload_id,
+        'part_count': int(product_file.part_count or 0),
+        'upload_mode': _file_upload_mode(product_file.file_size),
+    }
+
+
+def _json_response(payload, status_code=200):
+    response = jsonify(payload)
+    response.status_code = status_code
+    return response
+
+
+def _require_storage():
+    if not ObjectStorageService.enabled():
+        return False, _json_response({
+            'ok': False,
+            'message': 'Object storage is not configured. Set S3/R2 credentials before uploading digital products.',
+            'status': 'storage_not_configured'
+        }, 503)
+    return True, None
+
+
+def _can_manage_product(product):
+    if not product:
+        return False
+    if current_user.is_admin():
+        return True
+    return product.seller_id == current_user.id
 
 
 def _save_product_gallery_images(uploaded_images, subfolder='merch'):
@@ -308,7 +407,7 @@ def _attach_cancel_metadata(order: MerchOrder, now: datetime) -> None:
 def index():
     """Merch store home - display all products"""
     search = request.args.get('search', '').strip()
-    seller_search = request.args.get('seller', '').strip()
+    seller_search = _normalize_seller_search(request.args.get('seller', ''))
     product_type = (request.args.get('type') or '').strip().lower()
     sort = request.args.get('sort', 'latest').strip()
     page = request.args.get('page', 1, type=int)
@@ -374,7 +473,7 @@ def api_products():
     page = request.args.get('page', 1, type=int)
     limit = min(50, max(1, request.args.get('limit', 12, type=int)))
     search = request.args.get('search', '').strip()
-    seller_search = request.args.get('seller', '').strip()
+    seller_search = _normalize_seller_search(request.args.get('seller', ''))
     product_type = (request.args.get('type') or '').strip().lower()
     sort = request.args.get('sort', 'latest').strip()
     
@@ -815,10 +914,6 @@ def admin_create():
             except ValidationError as exc:
                 flash(str(exc), 'error')
                 return redirect(url_for('merch.admin_create'))
-        else:
-            if not files or len(files) == 0 or not files[0].filename:
-                flash('At least one product file is required', 'error')
-                return redirect(url_for('merch.admin_create'))
         
         try:
             if not image_slots[0] or not image_slots[0].filename:
@@ -845,46 +940,20 @@ def admin_create():
                 product_type=product_type,
                 contact_link=contact_link if product_type == 'physical' else None,
                 physical_quantity=physical_quantity if product_type == 'physical' else 0,
-                seller_id=current_user.id if not current_user.is_admin() else None
+                seller_id=current_user.id if not current_user.is_admin() else None,
+                is_active=False if product_type == 'digital' else True
             )
             db.session.add(product)
             db.session.flush()  # Get product ID
             _sync_product_gallery(product, image_filenames)
             
-            saved_files = 0
-            if product_type == 'digital':
-                # Save product files (1 file = 1 quantity)
-                for file in files:
-                    if file and file.filename:
-                        if allowed_file(file.filename):
-                            try:
-                                filename = save_merch_file(file, 'merch')
-                            except ValueError as exc:
-                                db.session.rollback()
-                                flash(str(exc), 'error')
-                                return redirect(url_for('merch.admin_create'))
-                            if filename:
-                                product_file = ProductFile(
-                                    product_id=product.id,
-                                    file_filename=filename,
-                                    original_name=secure_filename(file.filename)
-                                )
-                                db.session.add(product_file)
-                                saved_files += 1
-                        else:
-                            flash(f'File type not allowed: {file.filename}', 'warning')
-                
-                if saved_files == 0:
-                    db.session.rollback()
-                    flash('No valid files were uploaded', 'error')
-                    return redirect(url_for('merch.admin_create'))
-            
             db.session.commit()
             if product_type == 'physical':
                 flash('Physical product created successfully!', 'success')
+                return redirect(url_for('merch.admin_products'))
             else:
-                flash(f'Product created successfully with {saved_files} files!', 'success')
-            return redirect(url_for('merch.admin_products'))
+                flash('Digital product draft created. Add files next.', 'success')
+                return redirect(url_for('merch.manage_product_files', product_id=product.id))
             
         except Exception:
             db.session.rollback()
@@ -898,6 +967,447 @@ def admin_create():
         seller_expires_at=current_user.seller_expires_at,
         seller_plans=SELLER_PLANS
     )
+
+
+@merch_bp.route('/admin/products/<int:product_id>/files')
+@login_required
+def manage_product_files(product_id):
+    """Manage direct-to-storage files for a digital product."""
+    product = Product.query.get_or_404(product_id)
+    if not _can_manage_product(product):
+        flash('You do not have access to this product.', 'error')
+        return redirect(url_for('merch.index'))
+    if product.product_type != 'digital':
+        flash('File manager is only available for digital products.', 'error')
+        return redirect(url_for('merch.admin_edit', product_id=product.id))
+
+    uploads = UploadSession.query.filter_by(product_id=product.id)\
+        .order_by(UploadSession.created_at.desc())\
+        .all()
+    files = ProductFile.query.filter_by(product_id=product.id)\
+        .order_by(ProductFile.created_at.desc())\
+        .all()
+    settings = _product_upload_settings()
+    publish_state = _product_publish_state(product)
+    return render_template(
+        'merch/admin_product_files.html',
+        product=product,
+        files=files,
+        uploads=uploads,
+        upload_settings=settings,
+        publish_state=publish_state,
+    )
+
+
+@merch_bp.route('/api/admin/products/<int:product_id>/upload-sessions', methods=['POST'])
+@login_required
+def create_product_upload_session(product_id):
+    """Create a new upload session and file manifest for a product."""
+    allowed, response = _require_storage()
+    if not allowed:
+        return response
+
+    product = Product.query.get_or_404(product_id)
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+    if product.product_type != 'digital':
+        return _json_response({'ok': False, 'message': 'Upload sessions are only for digital products.'}, 400)
+
+    payload = request.get_json(silent=True) or {}
+    manifest = payload.get('files') or []
+    if not isinstance(manifest, list) or not manifest:
+        return _json_response({'ok': False, 'message': 'At least one file is required.'}, 400)
+
+    settings = _product_upload_settings()
+    now = utc_now()
+    expires_at = now + timedelta(minutes=settings['session_ttl_minutes'])
+    total_files = 0
+    total_bytes = 0
+    session = UploadSession(
+        product_id=product.id,
+        seller_id=product.seller_id or current_user.id,
+        total_files=len(manifest),
+        uploaded_files=0,
+        total_bytes=0,
+        status='active',
+        expires_at=expires_at,
+    )
+    db.session.add(session)
+    db.session.flush()
+
+    created_files = []
+    for item in manifest:
+        if not isinstance(item, dict):
+            continue
+        original_name = secure_filename(item.get('name') or item.get('original_name') or '') or f'file-{session.id}'
+        file_size = max(int(item.get('size') or 0), 0)
+        if file_size > int(current_app.config.get('MERCH_UPLOAD_MAX_FILE_SIZE_BYTES') or (5 * 1024 * 1024 * 1024)):
+            db.session.rollback()
+            return _json_response({'ok': False, 'message': f'{original_name} exceeds the maximum upload size.'}, 400)
+
+        folder_path = _normalize_folder_path(item.get('folder_path') or item.get('path') or '')
+        mime_type = (item.get('type') or item.get('mime_type') or '').strip() or None
+        file_ext = Path(original_name).suffix.lstrip('.').lower() or None
+        product_file = ProductFile(
+            product_id=product.id,
+            upload_session_id=session.id,
+            file_filename=original_name,
+            original_name=original_name,
+            file_name=original_name,
+            file_type=file_ext,
+            mime_type=mime_type,
+            file_size=file_size,
+            storage_provider=(current_app.config.get('OBJECT_STORAGE_PROVIDER') or 's3').lower(),
+            folder_path=folder_path,
+            upload_status='pending',
+        )
+        db.session.add(product_file)
+        db.session.flush()
+
+        product_file.storage_key = _product_storage_key(product.id, product_file.id, original_name)
+        product_file.storage_url = ObjectStorageService.public_url(product_file.storage_key)
+        total_files += 1
+        total_bytes += file_size
+        created_files.append(_product_file_payload(product_file))
+
+    session.total_files = total_files
+    session.total_bytes = total_bytes
+    db.session.commit()
+
+    return _json_response({
+        'ok': True,
+        'message': 'Upload session created.',
+        'status': 'ok',
+        'data': {
+            'session': {
+                'id': session.id,
+                'product_id': session.product_id,
+                'seller_id': session.seller_id,
+                'total_files': session.total_files,
+                'uploaded_files': session.uploaded_files,
+                'total_bytes': int(session.total_bytes or 0),
+                'status': session.status,
+                'expires_at': session.expires_at.isoformat() if session.expires_at else None,
+            },
+            'files': created_files,
+            'upload_settings': settings,
+        }
+    }, 201)
+
+
+@merch_bp.route('/api/admin/product-files/<int:file_id>/presign', methods=['POST'])
+@login_required
+def presign_product_file(file_id):
+    """Return a presigned URL or multipart part URL for a product file."""
+    allowed, response = _require_storage()
+    if not allowed:
+        return response
+
+    product_file = ProductFile.query.get_or_404(file_id)
+    product = product_file.product
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+    if product.product_type != 'digital':
+        return _json_response({'ok': False, 'message': 'Digital files only.'}, 400)
+
+    settings = _product_upload_settings()
+    content_type = product_file.mime_type or 'application/octet-stream'
+    upload_mode = _file_upload_mode(product_file.file_size)
+
+    if upload_mode == 'single':
+        product_file.upload_status = 'uploading'
+        db.session.commit()
+        return _json_response({
+            'ok': True,
+            'message': 'Presigned URL ready.',
+            'status': 'ok',
+            'data': {
+                'file_id': product_file.id,
+                'upload_mode': 'single',
+                'storage_key': product_file.storage_key,
+                'url': ObjectStorageService.generate_put_url(
+                    key=product_file.storage_key,
+                    content_type=content_type,
+                    expires_in=settings['signed_url_expires'],
+                ),
+                'expires_in': settings['signed_url_expires'],
+            }
+        })
+
+    if not product_file.multipart_upload_id:
+        product_file.multipart_upload_id = ObjectStorageService.create_multipart_upload(
+            key=product_file.storage_key,
+            content_type=content_type,
+        )
+        product_file.part_count = _multipart_part_count(product_file.file_size, settings['part_size'])
+        product_file.upload_status = 'multipart_uploading'
+        db.session.commit()
+
+    part_number = request.json.get('part_number') if request.is_json else request.form.get('part_number', type=int)
+    if part_number is None:
+        return _json_response({
+            'ok': True,
+            'message': 'Multipart session initialized.',
+            'status': 'ok',
+            'data': {
+                'file_id': product_file.id,
+                'upload_mode': 'multipart',
+                'upload_id': product_file.multipart_upload_id,
+                'storage_key': product_file.storage_key,
+                'part_size': settings['part_size'],
+                'part_count': int(product_file.part_count or 0),
+            }
+        })
+
+    return _json_response({
+        'ok': True,
+        'message': 'Multipart part URL ready.',
+        'status': 'ok',
+        'data': {
+            'file_id': product_file.id,
+            'upload_mode': 'multipart',
+            'upload_id': product_file.multipart_upload_id,
+            'part_number': int(part_number),
+            'url': ObjectStorageService.generate_part_url(
+                key=product_file.storage_key,
+                upload_id=product_file.multipart_upload_id,
+                part_number=int(part_number),
+                expires_in=settings['signed_url_expires'],
+            ),
+            'expires_in': settings['signed_url_expires'],
+        }
+    })
+
+
+def _finalize_ready_product(product):
+    if not product or product.product_type != 'digital':
+        return
+    pending = ProductFile.query.filter(
+        ProductFile.product_id == product.id,
+        ProductFile.upload_status.notin_({'ready', 'completed'})
+    ).count()
+    return pending == 0
+
+
+def _product_publish_state(product):
+    ready_files = ProductFile.query.filter_by(product_id=product.id, upload_status='ready').count()
+    pending_files = ProductFile.query.filter(
+        ProductFile.product_id == product.id,
+        ProductFile.upload_status.notin_({'ready', 'completed'})
+    ).count()
+    return {
+        'ready_files': int(ready_files or 0),
+        'pending_files': int(pending_files or 0),
+        'can_publish': bool(product.product_type == 'digital' and ready_files > 0 and pending_files == 0),
+    }
+
+
+@merch_bp.route('/api/admin/product-files/<int:file_id>/complete', methods=['POST'])
+@login_required
+def complete_product_file_upload(file_id):
+    """Finalize one uploaded file after the storage upload finishes."""
+    allowed, response = _require_storage()
+    if not allowed:
+        return response
+
+    product_file = ProductFile.query.get_or_404(file_id)
+    product = product_file.product
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+    if product.product_type != 'digital':
+        return _json_response({'ok': False, 'message': 'Digital files only.'}, 400)
+
+    payload = request.get_json(silent=True) or {}
+    uploaded_parts = payload.get('parts') or []
+    checksum = (payload.get('checksum') or '').strip() or None
+    storage_url = ObjectStorageService.public_url(product_file.storage_key)
+
+    if product_file.multipart_upload_id:
+        completed_parts = []
+        for part in uploaded_parts:
+            if not isinstance(part, dict):
+                continue
+            part_number = int(part.get('partNumber') or part.get('part_number') or 0)
+            etag = (part.get('etag') or '').strip()
+            if not part_number or not etag:
+                continue
+            completed_parts.append({'PartNumber': part_number, 'ETag': etag})
+            upload_part = UploadPart.query.filter_by(file_id=product_file.id, part_number=part_number).first()
+            if not upload_part:
+                upload_part = UploadPart(session_id=product_file.upload_session_id, file_id=product_file.id, part_number=part_number)
+                db.session.add(upload_part)
+            upload_part.etag = etag
+            upload_part.status = 'uploaded'
+        if not completed_parts:
+            return _json_response({'ok': False, 'message': 'At least one uploaded part is required.'}, 400)
+        try:
+            ObjectStorageService.complete_multipart_upload(
+                key=product_file.storage_key,
+                upload_id=product_file.multipart_upload_id,
+                parts=completed_parts,
+            )
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception('Multipart completion failed')
+            return _json_response({'ok': False, 'message': f'Unable to finalize multipart upload: {exc}'}, 400)
+    else:
+        try:
+            ObjectStorageService.head_object(key=product_file.storage_key)
+        except Exception as exc:
+            current_app.logger.warning('Head object check failed for %s: %s', product_file.storage_key, exc)
+
+    product_file.upload_status = 'ready'
+    product_file.storage_url = storage_url
+    product_file.checksum = checksum
+    product_file.part_count = product_file.part_count or len(uploaded_parts)
+    db.session.commit()
+
+    session = product_file.upload_session
+    if session:
+        session.uploaded_files = ProductFile.query.filter_by(upload_session_id=session.id, upload_status='ready').count()
+        session.status = 'completed' if session.uploaded_files >= session.total_files else 'active'
+        db.session.commit()
+
+    _finalize_ready_product(product)
+    db.session.commit()
+
+    return _json_response({
+        'ok': True,
+        'message': 'File upload completed.',
+        'status': 'ok',
+        'data': {
+            'file': _product_file_payload(product_file),
+            'product_active': bool(product.is_active),
+        }
+    })
+
+
+@merch_bp.route('/api/admin/upload-sessions/<int:session_id>/complete', methods=['POST'])
+@login_required
+def complete_upload_session(session_id):
+    """Finalize an upload session after every file finishes."""
+    session = UploadSession.query.get_or_404(session_id)
+    product = session.product
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+
+    ready_files = ProductFile.query.filter_by(upload_session_id=session.id, upload_status='ready').count()
+    session.uploaded_files = ready_files
+    session.status = 'completed' if ready_files >= session.total_files else 'active'
+    _finalize_ready_product(product)
+    db.session.commit()
+
+    return _json_response({
+        'ok': True,
+        'message': 'Upload session updated.',
+        'status': 'ok',
+        'data': {
+            'session_id': session.id,
+            'uploaded_files': session.uploaded_files,
+            'total_files': session.total_files,
+            'status': session.status,
+            'product_active': bool(product.is_active),
+        }
+    })
+
+
+@merch_bp.route('/api/admin/upload-sessions/<int:session_id>/status')
+@login_required
+def upload_session_status(session_id):
+    """Return upload session and file progress."""
+    session = UploadSession.query.get_or_404(session_id)
+    product = session.product
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+
+    files = ProductFile.query.filter_by(upload_session_id=session.id)\
+        .order_by(ProductFile.created_at.asc())\
+        .all()
+    return _json_response({
+        'ok': True,
+        'message': 'Upload session loaded.',
+        'status': 'ok',
+        'data': {
+            'session': {
+                'id': session.id,
+                'product_id': session.product_id,
+                'seller_id': session.seller_id,
+                'total_files': session.total_files,
+                'uploaded_files': session.uploaded_files,
+                'total_bytes': int(session.total_bytes or 0),
+                'status': session.status,
+                'expires_at': session.expires_at.isoformat() if session.expires_at else None,
+            },
+            'files': [_product_file_payload(product_file) for product_file in files],
+        }
+    })
+
+
+@merch_bp.route('/api/admin/upload-sessions/<int:session_id>/abort', methods=['POST'])
+@login_required
+def abort_upload_session(session_id):
+    """Abort a pending upload session and any multipart uploads."""
+    allowed, response = _require_storage()
+    if not allowed:
+        return response
+
+    session = UploadSession.query.get_or_404(session_id)
+    product = session.product
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+
+    for product_file in ProductFile.query.filter_by(upload_session_id=session.id).all():
+        if product_file.multipart_upload_id:
+            try:
+                ObjectStorageService.abort_multipart_upload(
+                    key=product_file.storage_key,
+                    upload_id=product_file.multipart_upload_id,
+                )
+            except Exception as exc:
+                current_app.logger.warning('Multipart abort failed for file %s: %s', product_file.id, exc)
+        product_file.upload_status = 'aborted'
+
+    session.status = 'aborted'
+    db.session.commit()
+    return _json_response({
+        'ok': True,
+        'message': 'Upload session aborted.',
+        'status': 'ok',
+        'data': {'session_id': session.id, 'status': session.status}
+    })
+
+
+@merch_bp.route('/api/admin/products/<int:product_id>/publish', methods=['POST'])
+@login_required
+def publish_product(product_id):
+    """Publish a digital draft after every required file is ready."""
+    product = Product.query.get_or_404(product_id)
+    if not _can_manage_product(product):
+        return _json_response({'ok': False, 'message': 'Forbidden'}, 403)
+    if product.product_type != 'digital':
+        return _json_response({'ok': False, 'message': 'Only digital products use the file publish gate.'}, 400)
+
+    publish_state = _product_publish_state(product)
+    if not publish_state['can_publish']:
+        return _json_response({
+            'ok': False,
+            'message': 'All product files must be uploaded and ready before publishing.',
+            'data': publish_state,
+        }, 400)
+
+    product.is_active = True
+    db.session.commit()
+
+    return _json_response({
+        'ok': True,
+        'message': 'Product published successfully.',
+        'status': 'ok',
+        'data': {
+            'product_id': product.id,
+            'is_active': bool(product.is_active),
+            **publish_state,
+        }
+    })
 
 
 @merch_bp.route('/admin/edit/<int:product_id>', methods=['GET', 'POST'])

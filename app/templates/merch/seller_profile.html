@@ -130,8 +130,11 @@
                         {% else %}
                         <div class="seller-product-image seller-product-image-fallback">🎁</div>
                         {% endif %}
-                        <div class="seller-product-type">{{ (product.product_type or 'digital')|title }}</div>
-                    </div>
+                    <div class="seller-product-type">{{ (product.product_type or 'digital')|title }}</div>
+                    {% if not product.is_active and product.product_type == 'digital' %}
+                    <div class="seller-product-type" style="top: 40px; background: #fff5d6; color: #7a5a1a; border-color: #d8c07d;">Draft</div>
+                    {% endif %}
+                </div>
 
                     <div class="seller-product-body">
                         <h3>{{ product.name }}</h3>
@@ -153,6 +156,9 @@
                             <div class="seller-product-actions">
                                 <a href="{{ url_for('merch.product_detail', product_id=product.id) }}" class="px-btn px-btn-primary px-btn-sm">View</a>
                                 {% if seller.id == current_user.id %}
+                                {% if product.product_type == 'digital' %}
+                                <a href="{{ url_for('merch.manage_product_files', product_id=product.id) }}" class="px-btn px-btn-secondary px-btn-sm">Files</a>
+                                {% endif %}
                                 <a href="{{ url_for('merch.admin_edit', product_id=product.id) }}" class="px-btn px-btn-secondary px-btn-sm">Edit Product</a>
                                 <form method="POST" action="{{ url_for('merch.admin_hide', product_id=product.id) }}" class="seller-product-action-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -70,8 +70,8 @@
                     <option value="digital" selected>Digital</option>
                     <option value="physical">Physical</option>
                 </select>
-                <p class="px-text-sm px-text-muted px-mt-sm">
-                    Digital products require files. Physical products require stock and a contact link.
+                        <p class="px-text-sm px-text-muted px-mt-sm">
+                    Digital products are created as drafts first, then files are added in the file manager. Physical products require stock and a contact link.
                 </p>
             </div>
 
@@ -81,7 +81,7 @@
                     <div class="merch-photo-slot">
                         <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
                         <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
-                        <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
+                        <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first. JPG, PNG, WEBP, AVIF, and GIF work best.</p>
                     </div>
                     <div class="merch-photo-slot">
                         <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
@@ -95,7 +95,7 @@
                     </div>
                 </div>
                 <p class="px-text-sm px-text-muted px-mt-sm">
-                    Upload photos one by one. Limit: 3 photos total.
+                    Upload photos one by one. Limit: 3 photos total. Large phone photos are compressed automatically.
                 </p>
             </div>
                 </div>
@@ -108,18 +108,12 @@
                 </div>
             </div>
             
-                        <div id="digital-fields">
-                <div class="px-form-group">
-                    <label class="px-label">Product Files * (Upload one file per quantity)</label>
-                    <input type="file" name="files" id="digital-files" class="px-input" multiple accept=".zip,.rar,.pdf,.txt,.doc,.docx,.mp3,.mp4" title="Product Files">
-                    <p class="px-text-sm px-text-muted px-mt-sm">
-                        ⚠️ <strong>Important:</strong> Select ALL files at once. 
-                        If you want to sell 5 items, select 5 files at once.<br>
-                        Each file = 1 quantity. Example: Selling 10 items = upload 10 files.
+            <div id="digital-fields" class="px-panel" style="margin-top: 18px; border-style: dashed;">
+                <div class="px-form-group" style="margin: 0;">
+                    <label class="px-label">Digital Files</label>
+                    <p class="px-text-sm px-text-muted">
+                        After you create the draft product, you’ll land in the file manager where you can drag in folders or 1000+ files and upload directly to cloud storage.
                     </p>
-                    <div id="file-count" class="px-text-sm px-text-muted" style="margin-top: 8px;">
-                        No files selected
-                    </div>
                 </div>
             </div>
 
@@ -141,7 +135,7 @@
             
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
-                    ✅ Create Product
+                    ✅ Create Draft
                 </button>
                 <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">
                     Cancel
@@ -211,32 +205,13 @@
 const typeSelect = document.getElementById('product_type');
 const digitalFields = document.getElementById('digital-fields');
 const physicalFields = document.getElementById('physical-fields');
-const fileInput = document.getElementById('digital-files');
-const fileCount = document.getElementById('file-count');
 const physicalQuantity = document.getElementById('physical-quantity');
 const contactLink = document.getElementById('contact-link');
-
-if (fileInput && fileCount) {
-    fileInput.addEventListener('change', function() {
-        const count = this.files.length;
-        if (count > 0) {
-            fileCount.innerHTML = `📦 ${count} file(s) selected (${count} quantity)`;
-            fileCount.style.color = 'var(--px-green)';
-        } else {
-            fileCount.innerHTML = 'No files selected';
-            fileCount.style.color = 'var(--px-text-muted)';
-        }
-    });
-}
 
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
-    if (fileInput) {
-        fileInput.required = !isPhysical;
-        fileInput.disabled = isPhysical;
-    }
     if (physicalQuantity) {
         physicalQuantity.required = isPhysical;
         physicalQuantity.disabled = !isPhysical;

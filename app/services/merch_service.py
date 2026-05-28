@@ -55,6 +55,71 @@ class MerchService:
             if 'refunded_at' not in order_cols:
                 alter_statements.append('ALTER TABLE merch_orders ADD COLUMN refunded_at TIMESTAMP')
 
+        if 'product_files' in table_names:
+            file_cols = {col['name'] for col in inspector.get_columns('product_files')}
+            if 'file_name' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN file_name VARCHAR(255)')
+            if 'file_type' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN file_type VARCHAR(120)')
+            if 'mime_type' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN mime_type VARCHAR(120)')
+            if 'file_size' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN file_size BIGINT')
+            if 'storage_provider' not in file_cols:
+                alter_statements.append("ALTER TABLE product_files ADD COLUMN storage_provider VARCHAR(30) DEFAULT 's3'")
+            if 'storage_key' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN storage_key VARCHAR(512)')
+            if 'storage_url' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN storage_url VARCHAR(1024)')
+            if 'folder_path' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN folder_path VARCHAR(255)')
+            if 'upload_status' not in file_cols:
+                alter_statements.append("ALTER TABLE product_files ADD COLUMN upload_status VARCHAR(30) DEFAULT 'ready'")
+            if 'checksum' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN checksum VARCHAR(128)')
+            if 'multipart_upload_id' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN multipart_upload_id VARCHAR(255)')
+            if 'part_count' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN part_count INTEGER DEFAULT 0')
+            if 'upload_session_id' not in file_cols:
+                alter_statements.append('ALTER TABLE product_files ADD COLUMN upload_session_id INTEGER')
+
+        if 'upload_sessions' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE upload_sessions ('
+                f'id {id_column}, '
+                'product_id INTEGER NOT NULL, '
+                'seller_id INTEGER NOT NULL, '
+                'total_files INTEGER NOT NULL DEFAULT 0, '
+                'uploaded_files INTEGER NOT NULL DEFAULT 0, '
+                'total_bytes BIGINT NOT NULL DEFAULT 0, '
+                "status VARCHAR(30) DEFAULT 'initiated', "
+                'expires_at TIMESTAMP, '
+                'created_at TIMESTAMP, '
+                'updated_at TIMESTAMP, '
+                'FOREIGN KEY(product_id) REFERENCES products (id), '
+                'FOREIGN KEY(seller_id) REFERENCES users (id)'
+                ')'
+            )
+
+        if 'upload_parts' not in table_names:
+            alter_statements.append(
+                'CREATE TABLE upload_parts ('
+                f'id {id_column}, '
+                'session_id INTEGER NOT NULL, '
+                'file_id INTEGER NOT NULL, '
+                'part_number INTEGER NOT NULL, '
+                'etag VARCHAR(255), '
+                'size_bytes BIGINT, '
+                "status VARCHAR(30) DEFAULT 'pending', "
+                'created_at TIMESTAMP, '
+                'updated_at TIMESTAMP, '
+                'FOREIGN KEY(session_id) REFERENCES upload_sessions (id), '
+                'FOREIGN KEY(file_id) REFERENCES product_files (id), '
+                'CONSTRAINT ux_upload_parts_file_part UNIQUE (file_id, part_number)'
+                ')'
+            )
+
         if 'product_images' not in table_names:
             alter_statements.append(
                 'CREATE TABLE product_images ('
@@ -66,6 +131,10 @@ class MerchService:
                 'FOREIGN KEY(product_id) REFERENCES products (id)'
                 ')'
             )
+
+        if 'upload_sessions' in table_names and 'upload_parts' in table_names and 'product_files' in table_names:
+            # Best-effort FK column backfill for SQLite/MySQL-like environments.
+            pass
 
         if 'product_ratings' not in table_names:
             alter_statements.append(

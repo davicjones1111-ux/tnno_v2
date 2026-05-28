@@ -89,12 +89,20 @@
                 <td data-label="Status">
                     {% if product.is_active %}
                     <span class="px-status px-status-success">Active</span>
+                    {% elif product.product_type == 'digital' %}
+                    <span class="px-status px-status-default">Draft</span>
                     {% else %}
                     <span class="px-status px-status-default">Hidden</span>
                     {% endif %}
                 </td>
                 <td data-label="Actions">
                     <div class="merch-product-actions">
+                        {% if product.product_type == 'digital' %}
+                        <a href="{{ url_for('merch.manage_product_files', product_id=product.id) }}" 
+                           class="px-btn px-btn-sm px-btn-primary">
+                            Files
+                        </a>
+                        {% endif %}
                         <a href="{{ url_for('merch.admin_edit', product_id=product.id) }}" 
                            class="px-btn px-btn-sm px-btn-secondary">
                             Edit
