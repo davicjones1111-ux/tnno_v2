@@ -80,7 +80,15 @@
             
                         <div class="px-form-group">
                             <label class="px-label">Product Type *</label>
-                            <select name="product_type" id="product_type" class="px-input" required>
+                            <div class="merch-type-toggle" role="tablist" aria-label="Product type">
+                                <button type="button" class="merch-type-option is-active" data-product-type="digital" aria-pressed="true">
+                                    Digital
+                                </button>
+                                <button type="button" class="merch-type-option" data-product-type="physical" aria-pressed="false">
+                                    Physical
+                                </button>
+                            </div>
+                            <select name="product_type" id="product_type" class="px-input merch-type-select" required>
                                 <option value="digital" selected>Digital</option>
                                 <option value="physical">Physical</option>
                             </select>
@@ -301,6 +309,48 @@
     color: var(--px-text);
 }
 
+.merch-type-toggle {
+    display: inline-grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    background: rgba(93,132,214,0.08);
+    border: 1px solid rgba(93,132,214,0.14);
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.merch-type-option {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--px-text-muted);
+    font-weight: 700;
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.merch-type-option:hover {
+    transform: translateY(-1px);
+}
+
+.merch-type-option.is-active {
+    background: rgba(255,255,255,0.98);
+    color: var(--px-text);
+    box-shadow: 0 4px 12px rgba(63, 88, 138, 0.08);
+}
+
+.merch-type-select {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .merch-photo-slots {
     display: grid;
     gap: 12px;
@@ -498,6 +548,15 @@
         padding: 12px;
     }
 
+    .merch-type-toggle {
+        width: 100%;
+    }
+
+    .merch-type-option {
+        padding: 9px 10px;
+        font-size: 0.88rem;
+    }
+
     .digital-item {
         padding: 12px;
     }
@@ -526,6 +585,7 @@
 
 <script>
 const typeSelect = document.getElementById('product_type');
+const typeOptions = document.querySelectorAll('[data-product-type]');
 const digitalFields = document.getElementById('digital-fields');
 const digitalItems = document.getElementById('digitalItems');
 const addDigitalRowBtn = document.getElementById('addDigitalRowBtn');
@@ -630,6 +690,41 @@ function createDigitalRow() {
     digitalItems?.appendChild(row);
 }
 
+function setSectionEnabled(section, enabled) {
+    if (!section) return;
+    section.querySelectorAll('input, textarea, select').forEach((field) => {
+        if (field.id === 'product_type') return;
+        field.disabled = !enabled;
+        if (!enabled) {
+            field.required = false;
+        }
+    });
+}
+
+function setDigitalRowsEnabled(enabled) {
+    if (!digitalItems) return;
+    digitalItems.querySelectorAll('.digital-item').forEach((row) => {
+        row.querySelectorAll('input, textarea').forEach((field) => {
+            field.disabled = !enabled;
+            if (field.name?.startsWith('digital_name_') || field.name?.startsWith('digital_price_') || field.name?.startsWith('digital_files_')) {
+                field.required = enabled;
+            } else if (!enabled) {
+                field.required = false;
+            }
+        });
+    });
+}
+
+function syncTypeToggleUI() {
+    if (!typeSelect || !typeOptions?.length) return;
+    const currentType = typeSelect.value;
+    typeOptions.forEach((button) => {
+        const isActive = button.dataset.productType === currentType;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+    });
+}
+
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
@@ -638,6 +733,10 @@ function updateTypeFields() {
     if (!isPhysical && digitalItems && digitalItems.children.length === 0) {
         createDigitalRow();
     }
+    setSectionEnabled(singleProductFields, isPhysical);
+    setSectionEnabled(physicalFields, isPhysical);
+    setSectionEnabled(digitalFields, !isPhysical);
+    setDigitalRowsEnabled(!isPhysical);
     if (productNameInput) {
         productNameInput.required = isPhysical;
         productNameInput.disabled = !isPhysical;
@@ -666,12 +765,21 @@ function updateTypeFields() {
         contactLink.required = isPhysical;
         contactLink.disabled = !isPhysical;
     }
+    syncTypeToggleUI();
 }
 
 if (typeSelect) {
     typeSelect.addEventListener('change', updateTypeFields);
     updateTypeFields();
 }
+
+typeOptions.forEach((button) => {
+    button.addEventListener('click', () => {
+        if (!typeSelect) return;
+        typeSelect.value = button.dataset.productType || 'digital';
+        typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+});
 
 digitalItems?.querySelectorAll('.digital-item').forEach((row) => bindDigitalRow(row));
 addDigitalRowBtn?.addEventListener('click', () => createDigitalRow());
