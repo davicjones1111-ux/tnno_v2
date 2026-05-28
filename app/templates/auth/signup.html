@@ -32,6 +32,9 @@
         <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
             We will send a verification code to your email before the account is ready.
         </p>
+        <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
+            In Resend testing mode, the inbox must match the email on your Resend account.
+        </p>
 
         <form method="POST" action="{{ url_for('auth.signup') }}" data-turbo="false" id="signup-form" data-check-username-url="{{ url_for('auth.check_username') }}" data-min-password-length="8">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

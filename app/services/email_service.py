@@ -11,6 +11,33 @@ from flask import current_app
 
 class EmailService:
     RESEND_TESTING_FROM = 'onboarding@resend.dev'
+    RESEND_TESTING_ALLOWED_RECIPIENTS = {
+        'delivered@resend.dev',
+        'bounced@resend.dev',
+        'complained@resend.dev',
+        'suppressed@resend.dev',
+    }
+
+    @staticmethod
+    def _format_resend_testing_error(to_email: str) -> str:
+        configured_test_recipient = (current_app.config.get('RESEND_TEST_RECIPIENT_EMAIL') or '').strip().lower()
+        if configured_test_recipient and to_email.lower() == configured_test_recipient:
+            return (
+                'Resend testing mode only allows sending to the email address on your Resend account. '
+                'If this is your account email, make sure it is the email associated with your Resend profile.'
+            )
+
+        if to_email.lower() in EmailService.RESEND_TESTING_ALLOWED_RECIPIENTS:
+            return (
+                'Resend test addresses are allowed only for simulated delivery events. '
+                'If you want to send the code to a real inbox, verify a domain in Resend first.'
+            )
+
+        return (
+            'Resend testing mode only allows sending to the email address associated with your Resend account. '
+            'To send verification codes to a Gmail inbox, verify a domain in Resend first, '
+            'or change your Resend account email to that Gmail address if that is your testing inbox.'
+        )
 
     @staticmethod
     def is_configured() -> bool:
@@ -64,6 +91,8 @@ class EmailService:
                 resend_error = error_json.get('message') or error_json.get('error') or response_preview
         except Exception:
             pass
+        if response.status_code == 403 and 'resend.dev' in response_preview.lower():
+            resend_error = EmailService._format_resend_testing_error(to_email)
         current_app.logger.warning(
             'Resend rejected email send status=%s to=%s from=%s error=%r',
             response.status_code,

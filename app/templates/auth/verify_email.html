@@ -31,6 +31,9 @@
         <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
             This verification is required before you can sign in.
         </p>
+        <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
+            If you are using Resend testing mode, this code only goes to the email on your Resend account.
+        </p>
 
         <form method="POST" action="{{ url_for('auth.verify_email') }}" data-turbo="false">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

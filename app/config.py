@@ -231,6 +231,7 @@ class Config:
     ADMIN_PASS = os.environ.get('ADMIN_PASS') or ''
     RESEND_API_KEY = _env('RESEND_API_KEY')
     RESEND_FROM_EMAIL = 'onboarding@resend.dev'
+    RESEND_TEST_RECIPIENT_EMAIL = _env('RESEND_TEST_RECIPIENT_EMAIL')
     RESEND_REPLY_TO = _env('RESEND_REPLY_TO')
     RESEND_API_BASE_URL = _env('RESEND_API_BASE_URL') or 'https://api.resend.com/emails'
 
