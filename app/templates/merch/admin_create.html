@@ -62,7 +62,7 @@
 
                 <div class="px-form-group">
                     <label class="px-label">Product Type *</label>
-                    <select name="product_type" id="product_type" class="px-input" required>
+                    <select name="product_type" id="product_type" class="px-input" required onchange="updateTypeFields()">
                         <option value="digital" selected>Digital</option>
                         <option value="physical">Physical</option>
                     </select>
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none; margin-top: 18px;">
+            <div id="digital-fields" class="px-panel merch-digital-panel" style="margin-top: 18px;">
                 <div class="px-form-group" style="margin: 0;">
                     <label class="px-label">Digital File *</label>
                     <input type="file" name="digital_file" id="digital-file" class="px-input" accept="image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov">
@@ -96,7 +96,7 @@
                 </div>
             </div>
 
-            <div class="px-form-group">
+            <div class="px-form-group" id="photo-fields">
                 <label class="px-label">Product Photos</label>
                 <div class="merch-photo-slots">
                     <div class="merch-photo-slot">
@@ -187,14 +187,18 @@
 const typeSelect = document.getElementById('product_type');
 const digitalFields = document.getElementById('digital-fields');
 const physicalFields = document.getElementById('physical-fields');
+const photoFields = document.getElementById('photo-fields');
 const digitalFileInput = document.getElementById('digital-file');
 const physicalQuantity = document.getElementById('physical-quantity');
 const contactLink = document.getElementById('contact-link');
+const coverPhotoInput = document.getElementById('image_1');
+const extraPhotoInputs = [document.getElementById('image_2'), document.getElementById('image_3')];
 
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
+    if (photoFields) photoFields.style.display = isPhysical ? 'block' : 'none';
     if (digitalFileInput) {
         digitalFileInput.required = !isPhysical;
         digitalFileInput.disabled = isPhysical;
@@ -207,10 +211,20 @@ function updateTypeFields() {
         contactLink.required = isPhysical;
         contactLink.disabled = !isPhysical;
     }
+    if (coverPhotoInput) {
+        coverPhotoInput.required = isPhysical;
+        coverPhotoInput.disabled = !isPhysical;
+    }
+    extraPhotoInputs.forEach((input) => {
+        if (input) {
+            input.disabled = !isPhysical;
+        }
+    });
 }
 
 if (typeSelect) {
     typeSelect.addEventListener('change', updateTypeFields);
+    typeSelect.addEventListener('input', updateTypeFields);
     updateTypeFields();
 }
 </script>
