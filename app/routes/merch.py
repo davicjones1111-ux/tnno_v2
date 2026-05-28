@@ -880,28 +880,27 @@ def admin_create():
         if not current_user.is_admin() and not current_user.can_sell:
             flash('Seller plan expired. Please renew to add products.', 'error')
             return redirect(url_for('merch.admin_create'))
-        name = request.form.get('name', '').strip()
-        description = request.form.get('description', '').strip()
-        price = request.form.get('price', type=int, default=0)
         product_type = (request.form.get('product_type') or 'digital').strip().lower()
-        contact_link = (request.form.get('contact_link') or '').strip()
-        physical_quantity = request.form.get('physical_quantity', type=int, default=0)
-        files = request.files.getlist('files')
-        image_slots = _product_image_slot_uploads()
-        
-        if not name:
-            flash('Product name is required', 'error')
-            return redirect(url_for('merch.admin_create'))
-        
-        if price < 1:
-            flash('Price must be at least 1 TNNO', 'error')
-            return redirect(url_for('merch.admin_create'))
 
         if product_type not in {'digital', 'physical'}:
             flash('Invalid product type', 'error')
             return redirect(url_for('merch.admin_create'))
 
         if product_type == 'physical':
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            price = request.form.get('price', type=int, default=0)
+            contact_link = (request.form.get('contact_link') or '').strip()
+            physical_quantity = request.form.get('physical_quantity', type=int, default=0)
+
+            if not name:
+                flash('Product name is required', 'error')
+                return redirect(url_for('merch.admin_create'))
+
+            if price < 1:
+                flash('Price must be at least 1 TNNO', 'error')
+                return redirect(url_for('merch.admin_create'))
+
             if physical_quantity < 1:
                 flash('Physical quantity must be at least 1', 'error')
                 return redirect(url_for('merch.admin_create'))
@@ -916,45 +915,75 @@ def admin_create():
                 return redirect(url_for('merch.admin_create'))
         
         try:
-            if not image_slots[0] or not image_slots[0].filename:
-                flash('Photo 1 is required. It becomes the main store cover.', 'error')
-                return redirect(url_for('merch.admin_create'))
-
-            # Save product gallery if provided
-            image_filenames = []
-            try:
-                image_filenames = _save_product_gallery_images(image_slots, 'merch')
-            except ValueError as exc:
-                flash(str(exc), 'error')
-                return redirect(url_for('merch.admin_create'))
-
-            if len(image_filenames) < MIN_PRODUCT_IMAGES:
-                flash('At least one valid product photo is required.', 'error')
-                return redirect(url_for('merch.admin_create'))
-            
-            # Create product
-            product = Product(
-                name=name,
-                description=description,
-                price=price,
-                product_type=product_type,
-                contact_link=contact_link if product_type == 'physical' else None,
-                physical_quantity=physical_quantity if product_type == 'physical' else 0,
-                seller_id=current_user.id if not current_user.is_admin() else None,
-                is_active=False if product_type == 'digital' else True
-            )
-            db.session.add(product)
-            db.session.flush()  # Get product ID
-            _sync_product_gallery(product, image_filenames)
-            
-            db.session.commit()
             if product_type == 'physical':
+                image_slots = _product_image_slot_uploads()
+                if not image_slots[0] or not image_slots[0].filename:
+                    flash('Photo 1 is required. It becomes the main store cover.', 'error')
+                    return redirect(url_for('merch.admin_create'))
+
+                image_filenames = []
+                try:
+                    image_filenames = _save_product_gallery_images(image_slots, 'merch')
+                except ValueError as exc:
+                    flash(str(exc), 'error')
+                    return redirect(url_for('merch.admin_create'))
+
+                if len(image_filenames) < MIN_PRODUCT_IMAGES:
+                    flash('At least one valid product photo is required.', 'error')
+                    return redirect(url_for('merch.admin_create'))
+
+                product = Product(
+                    name=name,
+                    description=description,
+                    price=price,
+                    product_type=product_type,
+                    contact_link=contact_link if product_type == 'physical' else None,
+                    physical_quantity=physical_quantity if product_type == 'physical' else 0,
+                    seller_id=current_user.id if not current_user.is_admin() else None,
+                    is_active=True,
+                )
+                db.session.add(product)
+                db.session.flush()
+                _sync_product_gallery(product, image_filenames)
+                db.session.commit()
                 flash('Physical product created successfully!', 'success')
                 return redirect(url_for('merch.admin_products'))
-            else:
-                flash('Digital product draft created. Add files next.', 'success')
-                return redirect(url_for('merch.manage_product_files', product_id=product.id))
-            
+
+            row_indices = [value for value in request.form.getlist('digital_row_index') if value != '']
+            if not row_indices:
+                flash('Add at least one digital upload row.', 'error')
+                return redirect(url_for('merch.admin_create'))
+
+            created_products = 0
+            for row_index in row_indices:
+                row_name = (request.form.get(f'digital_name_{row_index}') or '').strip()
+                row_description = (request.form.get(f'digital_description_{row_index}') or '').strip()
+                row_price = request.form.get(f'digital_price_{row_index}', type=int, default=0)
+                row_files = request.files.getlist(f'digital_files_{row_index}')
+                if not row_name and row_files:
+                    first_file = next((file for file in row_files if file and file.filename), None)
+                    if first_file and first_file.filename:
+                        base_name = first_file.filename.rsplit('/', 1)[-1]
+                        row_name = base_name.rsplit('.', 1)[0] if '.' in base_name else base_name
+                if not row_name:
+                    raise ValueError('Each digital product needs a name.')
+                if row_price < 1:
+                    raise ValueError(f'Price must be at least 1 TNNO for "{row_name}".')
+                if not row_files or not any(file and file.filename for file in row_files):
+                    raise ValueError(f'Upload at least one file for "{row_name}".')
+
+                product, _ = _create_digital_product_bundle(
+                    name=row_name,
+                    description=row_description,
+                    price=row_price,
+                    uploaded_files=row_files,
+                    seller_id=current_user.id if not current_user.is_admin() else None,
+                )
+                created_products += 1
+
+            db.session.commit()
+            flash(f'{created_products} digital product(s) created successfully!', 'success')
+            return redirect(url_for('merch.admin_products'))
         except Exception:
             db.session.rollback()
             current_app.logger.exception('Product creation failed')
@@ -1200,6 +1229,70 @@ def _product_publish_state(product):
         'pending_files': int(pending_files or 0),
         'can_publish': bool(product.product_type == 'digital' and ready_files > 0 and pending_files == 0),
     }
+
+
+def _create_digital_product_bundle(*, name, description, price, uploaded_files, seller_id):
+    """Create one digital product from one file or folder upload."""
+    product = Product(
+        name=name,
+        description=description,
+        price=price,
+        product_type='digital',
+        seller_id=seller_id,
+        is_active=True,
+    )
+    db.session.add(product)
+    db.session.flush()
+
+    cover_image_filename = None
+    saved_files = []
+    saved_images = []
+    try:
+        for uploaded_file in uploaded_files:
+            if not uploaded_file or not uploaded_file.filename:
+                continue
+            if not allowed_file(uploaded_file.filename):
+                raise ValueError(f'File type not allowed: {uploaded_file.filename}')
+
+            safe_name = secure_filename(uploaded_file.filename)
+            stored_filename = save_merch_file(uploaded_file, 'merch')
+            if not stored_filename:
+                raise ValueError(f'Unable to save file: {uploaded_file.filename}')
+
+            saved_files.append(stored_filename)
+            product_file = ProductFile(
+                product_id=product.id,
+                file_filename=stored_filename,
+                original_name=safe_name,
+                file_name=safe_name,
+                file_type=(safe_name.rsplit('.', 1)[-1].lower() if '.' in safe_name else None),
+                upload_status='ready',
+            )
+            db.session.add(product_file)
+
+            ext = (uploaded_file.filename.rsplit('.', 1)[-1] or '').lower() if '.' in uploaded_file.filename else ''
+            if ext in {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'avif', 'jfif', 'tiff', 'tif'}:
+                if not cover_image_filename:
+                    cover_image_filename = stored_filename
+                    product.image_filename = cover_image_filename
+                else:
+                    saved_images.append(stored_filename)
+
+        if not saved_files:
+            raise ValueError('At least one valid file is required.')
+
+        for index, image_filename in enumerate(saved_images, start=1):
+            db.session.add(ProductImage(
+                product_id=product.id,
+                image_filename=image_filename,
+                sort_order=index
+            ))
+
+        return product, saved_files
+    except Exception:
+        for filename in saved_files + saved_images:
+            delete_merch_file(filename, 'merch')
+        raise
 
 
 @merch_bp.route('/api/admin/product-files/<int:file_id>/complete', methods=['POST'])

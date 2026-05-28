@@ -43,6 +43,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="merch-create-grid">
                 <div>
+            <div id="single-product-fields">
             <div class="px-form-group">
                 <label class="px-label">Product Name *</label>
                 <input type="text" name="name" class="px-input" required 
@@ -71,7 +72,7 @@
                     <option value="physical">Physical</option>
                 </select>
                         <p class="px-text-sm px-text-muted px-mt-sm">
-                    Digital products are created as drafts first, then files are added in the file manager. Physical products require stock and a contact link.
+                    Digital products are built row by row. Each row becomes one product from one file or one folder. Physical products still require stock and a contact link.
                 </p>
             </div>
 
@@ -98,22 +99,27 @@
                     Upload photos one by one. Limit: 3 photos total. Large phone photos are compressed automatically.
                 </p>
             </div>
+            </div>
                 </div>
                 <div class="merch-create-sidecard">
                     <h3 class="merch-create-sidecard-title">Seller Setup</h3>
-                    <p class="px-text-sm px-text-muted">Use bright images, a short title, and one clear description so the product looks polished on both phone and PC.</p>
+                    <p class="px-text-sm px-text-muted">Use a short title, a fair price, and one clean file or folder per row. Add another upload row whenever you want to list another product.</p>
                     <div class="merch-create-hint">
-                        <strong>Best result:</strong> upload 1 clean cover photo first, then 1 or 2 extra detail photos.
+                        <strong>Best result:</strong> keep each row focused on one product so buyers can understand it fast.
                     </div>
                 </div>
             </div>
             
-            <div id="digital-fields" class="px-panel" style="margin-top: 18px; border-style: dashed;">
+            <div id="digital-fields" class="px-panel" style="margin-top: 18px; border-style: dashed; display:none;">
                 <div class="px-form-group" style="margin: 0;">
-                    <label class="px-label">Digital Files</label>
+                    <label class="px-label">Digital Uploads</label>
                     <p class="px-text-sm px-text-muted">
-                        After you create the draft product, you’ll land in the file manager where you can drag in folders or 1000+ files and upload directly to cloud storage.
+                        Each row below becomes one product. Upload one file, or choose a folder for a folder-style product. Use the X button to remove a row, and press “Add Another Upload” to add more.
                     </p>
+                </div>
+                <div id="digitalItems" class="digital-items"></div>
+                <div class="px-mt-md" style="display:flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="px-btn px-btn-secondary" id="addDigitalRowBtn">+ Add Another Upload</button>
                 </div>
             </div>
 
@@ -135,7 +141,7 @@
             
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
-                    ✅ Create Draft
+                    ✅ Create Products
                 </button>
                 <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">
                     Cancel
@@ -194,6 +200,52 @@
     display: block;
 }
 
+.digital-items {
+    display: grid;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.digital-item {
+    background: rgba(255,255,255,0.88);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+    padding: 14px;
+}
+
+.digital-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.digital-item-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.58rem;
+    color: var(--px-cyan-dark);
+}
+
+.digital-item-grid {
+    display: grid;
+    grid-template-columns: 1fr 140px;
+    gap: 12px;
+}
+
+.digital-item .px-form-group {
+    margin-bottom: 10px;
+}
+
+.digital-item .px-input[type="file"] {
+    padding: 10px;
+}
+
+@media (max-width: 720px) {
+    .digital-item-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 900px) {
     .merch-create-grid {
         grid-template-columns: 1fr;
@@ -204,14 +256,104 @@
 <script>
 const typeSelect = document.getElementById('product_type');
 const digitalFields = document.getElementById('digital-fields');
+const digitalItems = document.getElementById('digitalItems');
+const addDigitalRowBtn = document.getElementById('addDigitalRowBtn');
+const singleProductFields = document.getElementById('single-product-fields');
 const physicalFields = document.getElementById('physical-fields');
 const physicalQuantity = document.getElementById('physical-quantity');
 const contactLink = document.getElementById('contact-link');
+const productNameInput = document.querySelector('input[name="name"]');
+const productDescriptionInput = document.querySelector('textarea[name="description"]');
+const productPriceInput = document.querySelector('input[name="price"]');
+const coverPhotoInput = document.getElementById('image_1');
+const extraPhotoInputs = [document.getElementById('image_2'), document.getElementById('image_3')];
+const fileTypesHint = 'image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov';
+let digitalRowCounter = 0;
+
+function createDigitalRow() {
+    const rowIndex = digitalRowCounter += 1;
+    const row = document.createElement('div');
+    row.className = 'digital-item';
+    row.dataset.rowIndex = String(rowIndex);
+    row.innerHTML = `
+        <div class="digital-item-head">
+            <div class="digital-item-title">Upload #${rowIndex}</div>
+            <button type="button" class="px-btn px-btn-sm px-btn-danger" data-remove-row>×</button>
+        </div>
+        <input type="hidden" name="digital_row_index" value="${rowIndex}">
+        <div class="digital-item-grid">
+            <div>
+                <div class="px-form-group">
+                    <label class="px-label">Product Name</label>
+                    <input type="text" name="digital_name_${rowIndex}" class="px-input" placeholder="Product name" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-label">Description</label>
+                    <textarea name="digital_description_${rowIndex}" class="px-input" rows="3" placeholder="Describe this product"></textarea>
+                </div>
+            </div>
+            <div>
+                <div class="px-form-group">
+                    <label class="px-label">Price *</label>
+                    <input type="number" name="digital_price_${rowIndex}" class="px-input" min="1" value="100" required>
+                </div>
+                <div class="px-form-group">
+                    <label class="px-label">File or Folder *</label>
+                    <input type="file" name="digital_files_${rowIndex}" class="px-input" multiple webkitdirectory directory accept="${fileTypesHint}" required>
+                </div>
+                <p class="px-text-sm px-text-muted">One file or one folder = one product. Use the X button to remove this row.</p>
+            </div>
+        </div>
+    `;
+    row.querySelector('[data-remove-row]')?.addEventListener('click', () => {
+        row.remove();
+        if (digitalItems && digitalItems.children.length === 0) {
+            createDigitalRow();
+        }
+    });
+    row.querySelector(`input[name="digital_files_${rowIndex}"]`)?.addEventListener('change', (event) => {
+        const input = event.currentTarget;
+        const files = Array.from(input.files || []);
+        const titleField = row.querySelector(`input[name="digital_name_${rowIndex}"]`);
+        if (titleField && !titleField.value && files.length > 0) {
+            const first = files[0];
+            const relative = first.webkitRelativePath || first.name;
+            const folder = relative.includes('/') ? relative.split('/')[0] : '';
+            const base = folder || first.name.replace(/\.[^.]+$/, '');
+            titleField.value = base.replace(/[-_]+/g, ' ').trim();
+        }
+    });
+    digitalItems?.appendChild(row);
+}
 
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
+    if (singleProductFields) singleProductFields.style.display = isPhysical ? 'block' : 'none';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
+    if (!isPhysical && digitalItems && digitalItems.children.length === 0) {
+        createDigitalRow();
+    }
+    if (productNameInput) {
+        productNameInput.required = isPhysical;
+        productNameInput.disabled = !isPhysical;
+    }
+    if (productDescriptionInput) {
+        productDescriptionInput.disabled = !isPhysical;
+    }
+    if (productPriceInput) {
+        productPriceInput.required = isPhysical;
+        productPriceInput.disabled = !isPhysical;
+    }
+    if (coverPhotoInput) {
+        coverPhotoInput.required = isPhysical;
+        coverPhotoInput.disabled = !isPhysical;
+    }
+    extraPhotoInputs.forEach((input) => {
+        if (input) {
+            input.disabled = !isPhysical;
+        }
+    });
     if (physicalQuantity) {
         physicalQuantity.required = isPhysical;
         physicalQuantity.disabled = !isPhysical;
@@ -226,5 +368,7 @@ if (typeSelect) {
     typeSelect.addEventListener('change', updateTypeFields);
     updateTypeFields();
 }
+
+addDigitalRowBtn?.addEventListener('click', () => createDigitalRow());
 </script>
 {% endblock %}
