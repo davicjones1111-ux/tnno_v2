@@ -96,29 +96,6 @@
                 </div>
             </div>
 
-            <div class="px-form-group" id="photo-fields">
-                <label class="px-label">Product Photos</label>
-                <div class="merch-photo-slots">
-                    <div class="merch-photo-slot">
-                        <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
-                        <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
-                        <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
-                    </div>
-                    <div class="merch-photo-slot">
-                        <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
-                        <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
-                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                    </div>
-                    <div class="merch-photo-slot">
-                        <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
-                        <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
-                        <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                    </div>
-                </div>
-                <p class="px-text-sm px-text-muted px-mt-sm">
-                    Upload photos one by one. Limit: 3 photos total.
-                </p>
-            </div>
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
                     ✅ Create Product
@@ -151,18 +128,6 @@
     margin-bottom: 18px;
 }
 
-.merch-photo-slots {
-    display: block;
-}
-
-.merch-photo-slot {
-    margin-bottom: 12px;
-}
-
-.merch-photo-slot-label {
-    display: block;
-    margin-bottom: 6px;
-}
 @media (max-width: 900px) {
     .merch-create-shell {
         padding: 14px;
@@ -187,18 +152,14 @@
 const typeSelect = document.getElementById('product_type');
 const digitalFields = document.getElementById('digital-fields');
 const physicalFields = document.getElementById('physical-fields');
-const photoFields = document.getElementById('photo-fields');
 const digitalFileInput = document.getElementById('digital-file');
 const physicalQuantity = document.getElementById('physical-quantity');
 const contactLink = document.getElementById('contact-link');
-const coverPhotoInput = document.getElementById('image_1');
-const extraPhotoInputs = [document.getElementById('image_2'), document.getElementById('image_3')];
 
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
     if (physicalFields) physicalFields.style.display = isPhysical ? 'block' : 'none';
-    if (photoFields) photoFields.style.display = isPhysical ? 'block' : 'none';
     if (digitalFileInput) {
         digitalFileInput.required = !isPhysical;
         digitalFileInput.disabled = isPhysical;
@@ -211,15 +172,6 @@ function updateTypeFields() {
         contactLink.required = isPhysical;
         contactLink.disabled = !isPhysical;
     }
-    if (coverPhotoInput) {
-        coverPhotoInput.required = isPhysical;
-        coverPhotoInput.disabled = !isPhysical;
-    }
-    extraPhotoInputs.forEach((input) => {
-        if (input) {
-            input.disabled = !isPhysical;
-        }
-    });
 }
 
 if (typeSelect) {

@@ -916,22 +916,6 @@ def admin_create():
         
         try:
             if product_type == 'physical':
-                image_slots = _product_image_slot_uploads()
-                if not image_slots[0] or not image_slots[0].filename:
-                    flash('Photo 1 is required. It becomes the main store cover.', 'error')
-                    return redirect(url_for('merch.admin_create'))
-
-                image_filenames = []
-                try:
-                    image_filenames = _save_product_gallery_images(image_slots, 'merch')
-                except ValueError as exc:
-                    flash(str(exc), 'error')
-                    return redirect(url_for('merch.admin_create'))
-
-                if len(image_filenames) < MIN_PRODUCT_IMAGES:
-                    flash('At least one valid product photo is required.', 'error')
-                    return redirect(url_for('merch.admin_create'))
-
                 product = Product(
                     name=name,
                     description=description,
@@ -943,8 +927,6 @@ def admin_create():
                     is_active=True,
                 )
                 db.session.add(product)
-                db.session.flush()
-                _sync_product_gallery(product, image_filenames)
                 db.session.commit()
                 flash('Physical product created successfully!', 'success')
                 return redirect(url_for('merch.admin_products'))
