@@ -95,6 +95,11 @@
                            class="px-btn px-btn-sm px-btn-secondary">
                             Edit
                         </a>
+                        {% if product.product_type == 'digital' %}
+                        <a href="{{ url_for('merch.manage_product_files', product_id=product.id) }}" class="px-btn px-btn-sm px-btn-primary">
+                            Files
+                        </a>
+                        {% endif %}
                         <form method="POST" action="{{ url_for('merch.admin_hide', product_id=product.id) }}" class="merch-product-action-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="px-btn px-btn-sm {{ 'px-btn-secondary' if product.is_active else 'px-btn-success' }}">
