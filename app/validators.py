@@ -9,7 +9,12 @@ from urllib.parse import urlsplit
 from flask import current_app, has_app_context
 
 
-USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.]{3,24}$")
+USERNAME_PATTERN = re.compile(r"^[a-z][a-z0-9._]{1,13}[a-z0-9]$|^[a-z0-9]{3,15}$")
+USERNAME_RESERVED = {
+    'admin', 'administrator', 'root', 'system', 'support', 'help', 'security',
+    'moderator', 'mod', 'staff', 'official', 'api', 'www', 'mail', 'login',
+    'signup', 'register', 'settings', 'account', 'profile', 'tnno',
+}
 COMMON_WEAK_PASSWORDS = {
     '123456', '12345678', '123456789', '11111111', '123123123',
     'qwerty', 'qwerty123', 'password', 'password1', 'admin123',
@@ -28,17 +33,23 @@ class PaginationParams:
 
 
 def normalize_username(value: str) -> str:
-    return (value or "").strip()
+    return (value or "").strip().lower()
 
 
 def validate_username(value: str) -> str:
     username = normalize_username(value)
     if not username:
         raise ValidationError("Username is required")
+    if len(username) < 3 or len(username) > 15:
+        raise ValidationError("Username must be 3-15 characters long")
+    if username in USERNAME_RESERVED or username.startswith('admin') or username.startswith('tnno'):
+        raise ValidationError("This username is reserved")
     if not USERNAME_PATTERN.fullmatch(username):
         raise ValidationError(
-            "Username must be 3-24 characters and use only letters, numbers, dots, or underscores"
+            "Username must start with a letter, use only lowercase letters, numbers, dots, or underscores, and end with a letter or number"
         )
+    if '..' in username or '__' in username or '._' in username or '_.' in username:
+        raise ValidationError("Username cannot contain repeated separators")
     return username
 
 

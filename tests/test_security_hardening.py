@@ -10,6 +10,61 @@ from tests.test_support import AppTestCase
 
 
 class SecurityHardeningTests(AppTestCase):
+    def test_username_is_normalized_and_lowercased(self):
+        response = self.client.post(
+            '/signup',
+            data={
+                'username': 'New.Handle',
+                'password': 'secret12',
+                'confirm_password': 'secret12',
+                'email': 'handle@example.com',
+            },
+            follow_redirects=False,
+        )
+
+        self.assertIn(response.status_code, (302, 201))
+        user = User.query.filter_by(email='handle@example.com').first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.username, 'new.handle')
+
+        login_response = self.client.post(
+            '/login',
+            data={'username': 'NEW.HANDLE', 'password': 'secret12'},
+            follow_redirects=False,
+        )
+        self.assertIn(login_response.status_code, (302, 200))
+
+    def test_reserved_username_is_rejected(self):
+        response = self.client.post(
+            '/signup',
+            data={
+                'username': 'Admin',
+                'password': 'secret12',
+                'confirm_password': 'secret12',
+                'email': 'adminish@example.com',
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'This username is reserved', response.data)
+        self.assertIsNone(User.query.filter_by(email='adminish@example.com').first())
+
+    def test_username_rejects_repeated_separators(self):
+        response = self.client.post(
+            '/signup',
+            data={
+                'username': 'bad__name',
+                'password': 'secret12',
+                'confirm_password': 'secret12',
+                'email': 'badname@example.com',
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Username cannot contain repeated separators', response.data)
+
     def test_login_blocks_external_redirect_targets(self):
         self.create_user(username='safe_user', password='secret12')
 

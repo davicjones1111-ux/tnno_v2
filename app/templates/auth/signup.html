@@ -39,7 +39,7 @@
         <form method="POST" action="{{ url_for('auth.signup') }}" data-turbo="false" id="signup-form" data-check-username-url="{{ url_for('auth.check_username') }}" data-min-password-length="8">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" id="username" name="username" class="pixel-input"
-                   placeholder="Choose a username" required minlength="3" style="text-transform: none;">
+                   placeholder="Choose a lowercase username" required minlength="3" style="text-transform: none;">
             <p id="username-message" class="pixel-text pixel-text-sm" style="margin-top: 5px;"></p>
 
             <input type="email" id="email" name="email" class="pixel-input"

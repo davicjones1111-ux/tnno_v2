@@ -69,11 +69,15 @@ class AuthFlowTests(AppTestCase):
             )
 
         self.assertEqual(signup_response.status_code, 201)
-        self.assertTrue(signup_response.get_json()['requires_email_verification'])
+        signup_payload = signup_response.get_json()
+        self.assertEqual(signup_payload['status'], 201)
+        self.assertTrue(signup_payload['data']['requires_email_verification'])
 
         verify_response = self.client.post('/verify-email', json={'otp_code': '121212'})
         self.assertEqual(verify_response.status_code, 200)
-        self.assertTrue(verify_response.get_json()['verified'])
+        verify_payload = verify_response.get_json()
+        self.assertEqual(verify_payload['status'], 200)
+        self.assertTrue(verify_payload['data']['verified'])
 
     def test_login_with_invalid_password_is_rejected(self):
         self.create_user(username='login_user', password='abcdef')
@@ -154,3 +158,20 @@ class AuthFlowTests(AppTestCase):
         db.session.expire_all()
         refreshed_user = db.session.get(User, user.id)
         self.assertTrue(refreshed_user.check_password('Newpass1!'))
+
+    def test_login_json_contract_includes_status_and_data(self):
+        user = self.create_user(username='contract_user', password='abcdef', email='contract_user@example.com')
+        user.email_verified_at = utc_now()
+        db.session.commit()
+
+        with patch.object(OTPService, 'generate_code', return_value='333444'):
+            response = self.client.post(
+                '/login',
+                json={'identifier': user.email, 'password': 'abcdef'},
+            )
+
+        payload = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload['status'], 200)
+        self.assertTrue(payload['data']['requires_otp'])
+        self.assertIn('next_url', payload['data'])

@@ -46,8 +46,10 @@ def _wants_json_response() -> bool:
     return request.is_json or request.accept_mimetypes.best == 'application/json'
 
 
-def _json_response(ok: bool, message: str, *, status_code: int = 200, **extra):
-    payload = {'ok': ok, 'message': message}
+def _json_response(ok: bool, message: str, *, status_code: int = 200, data: dict | None = None, **extra):
+    payload = {'ok': ok, 'message': message, 'status': status_code}
+    if data:
+        payload['data'] = data
     payload.update(extra)
     return jsonify(payload), status_code
 
@@ -147,7 +149,13 @@ def login():
                     _set_pending_email_verification_state(user, source='login', next_page=login_retry_url)
                     message = str(exc)
                     if _wants_json_response():
-                        return _json_response(True, 'Please verify your email address to continue.', status_code=202, requires_email_verification=True, verify_url=url_for('auth.verify_email'), warning=message)
+                        return _json_response(
+                            True,
+                            'Please verify your email address to continue.',
+                            status_code=202,
+                            data={'requires_email_verification': True, 'verify_url': url_for('auth.verify_email')},
+                            warning=message,
+                        )
                     flash('Please verify your email address to continue.', 'info')
                     flash(message, 'warning')
                     return redirect(url_for('auth.verify_email'))
@@ -156,7 +164,12 @@ def login():
                 db.session.commit()
                 message = 'Please verify your email address to continue.'
                 if _wants_json_response():
-                    return _json_response(True, message, status_code=200, requires_email_verification=True, verify_url=url_for('auth.verify_email'))
+                    return _json_response(
+                        True,
+                        message,
+                        status_code=200,
+                        data={'requires_email_verification': True, 'verify_url': url_for('auth.verify_email')},
+                    )
                 flash(message, 'info')
                 return redirect(url_for('auth.verify_email'))
             if user.email:
@@ -174,12 +187,17 @@ def login():
                 db.session.commit()
                 message = 'Enter the security code sent to your email.'
                 if _wants_json_response():
-                    return _json_response(True, message, status_code=200, requires_otp=True, next_url=url_for('auth.login_otp'))
+                    return _json_response(
+                        True,
+                        message,
+                        status_code=200,
+                        data={'requires_otp': True, 'next_url': url_for('auth.login_otp')},
+                    )
                 flash(message, 'info')
                 return redirect(url_for('auth.login_otp'))
             if _wants_json_response():
                 _finalize_login(user, remember=remember, next_page=next_page)
-                return _json_response(True, 'Login successful.', status_code=200, redirect_url=next_page)
+                return _json_response(True, 'Login successful.', status_code=200, data={'redirect_url': next_page})
             return _complete_login(user, remember=remember, next_page=next_page)
         else:
             register_auth_failure(identifier)
@@ -245,8 +263,7 @@ def signup():
                         True,
                         'Account created. Check your email for a verification code.',
                         status_code=202,
-                        requires_email_verification=True,
-                        verify_url=url_for('auth.verify_email'),
+                        data={'requires_email_verification': True, 'verify_url': url_for('auth.verify_email')},
                         warning=str(exc),
                     )
                 _set_pending_email_verification_state(user, source='signup', next_page=url_for('auth.login'))
@@ -258,8 +275,7 @@ def signup():
                     True,
                     'Account created. Check your email for a verification code.',
                     status_code=201,
-                    requires_email_verification=True,
-                    verify_url=url_for('auth.verify_email'),
+                    data={'requires_email_verification': True, 'verify_url': url_for('auth.verify_email')},
                 )
             flash('Account created. Check your email for a verification code.', 'success')
             return redirect(url_for('auth.verify_email'))
@@ -372,7 +388,7 @@ def verify_email():
         SessionService.record_auth_event('email_verified', user=user, status='success', details=source)
         db.session.commit()
         if _wants_json_response():
-            return _json_response(True, 'Email verified successfully.', status_code=200, verified=True)
+            return _json_response(True, 'Email verified successfully.', status_code=200, data={'verified': True})
         flash('Email verified successfully. You can now sign in.', 'success')
         if source == 'login':
             flash('Now complete the login step with your password.', 'info')
@@ -457,7 +473,7 @@ def login_otp():
         db.session.commit()
         if _wants_json_response():
             _finalize_login(user, remember=remember, next_page=next_page)
-            return _json_response(True, 'Login successful.', status_code=200, redirect_url=next_page)
+            return _json_response(True, 'Login successful.', status_code=200, data={'redirect_url': next_page})
         return _complete_login(user, remember=remember, next_page=next_page)
 
     return render_template('auth/login_otp.html', pending_user=user)
@@ -599,7 +615,8 @@ def reset_password():
 @auth_bp.route('/check_username', methods=['POST'])
 def check_username():
     """Check if username is available"""
-    username = request.form.get('username', '').strip()
+    data = _auth_request_data()
+    username = (data.get('username') or '').strip()
     allowed, retry_after = consume_action_quota(
         'check_username',
         limit=30,
@@ -607,18 +624,23 @@ def check_username():
         subject=username,
     )
     if not allowed:
-        return jsonify({'available': False, 'message': f'Please wait about {retry_after} seconds before checking again.'}), 429
+        return _json_response(
+            False,
+            f'Please wait about {retry_after} seconds before checking again.',
+            status_code=429,
+            data={'available': False},
+        )
     try:
         username = validate_username(username)
     except ValidationError as exc:
-        return jsonify({'available': False, 'message': str(exc)})
+        return _json_response(False, str(exc), status_code=400, data={'available': False})
 
     admin_username = current_app.config.get('ADMIN_USER', 'admin')
     if username.lower() in {admin_username.lower(), 'admin'}:
-        return jsonify({'available': False, 'message': 'This username is reserved'})
+        return _json_response(False, 'This username is reserved', status_code=400, data={'available': False})
     
     existing = UserService.get_user_by_username(username)
     if existing:
-        return jsonify({'available': False, 'message': 'Your username is already taken'})
+        return _json_response(False, 'Your username is already taken', status_code=200, data={'available': False})
     else:
-        return jsonify({'available': True, 'message': 'Username is available'})
+        return _json_response(True, 'Username is available', status_code=200, data={'available': True})

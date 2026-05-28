@@ -34,8 +34,10 @@ def _wants_json_response() -> bool:
     return request.is_json or request.accept_mimetypes.best == 'application/json'
 
 
-def _json_response(ok: bool, message: str, *, status_code: int = 200, **extra):
-    payload = {'ok': ok, 'message': message}
+def _json_response(ok: bool, message: str, *, status_code: int = 200, data: dict | None = None, **extra):
+    payload = {'ok': ok, 'message': message, 'status': status_code}
+    if data:
+        payload['data'] = data
     payload.update(extra)
     return jsonify(payload), status_code
 
