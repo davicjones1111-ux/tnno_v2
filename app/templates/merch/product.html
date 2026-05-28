@@ -24,7 +24,7 @@
                 <img
                     id="product-main-image"
                     src="{{ url_for('static', filename='uploads/merch/' + gallery[0]) }}"
-                    alt="{{ product.name }} photo 1"
+                    alt="Product photo"
                     class="merch-hero-image-img"
                 />
             </div>
@@ -37,10 +37,10 @@
                         type="button"
                         class="merch-gallery-thumb {% if loop.first %}is-active{% endif %}"
                         data-image-src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
-                        data-image-alt="{{ product.name }} photo {{ loop.index }}"
-                        aria-label="View {{ product.name }} photo {{ loop.index }}"
+                        data-image-alt="Product photo"
+                        aria-label="View product photo {{ loop.index }}"
                     >
-                        <img src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}" alt="{{ product.name }} photo {{ loop.index }}" />
+                        <img src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}" alt="Product photo" />
                     </button>
                     {% endfor %}
                 </div>

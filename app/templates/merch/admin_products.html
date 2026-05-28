@@ -55,7 +55,7 @@
                 <td data-label="Image">
                     {% if product.image_filename %}
                     <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}" 
-                         alt="{{ product.name }}" 
+                         alt="Product image" 
                          style="width: 60px; height: 60px; object-fit: cover; border: 2px solid var(--px-border);">
                     {% else %}
                     <div style="width: 60px; height: 60px; background: var(--px-bg-dark); display: flex; align-items: center; justify-content: center; border: 2px solid var(--px-border);">

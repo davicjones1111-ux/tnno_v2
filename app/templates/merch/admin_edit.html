@@ -64,7 +64,7 @@
                             <div class="merch-photo-slot-preview">
                                 <img
                                     src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
-                                    alt="{{ product.name }} photo {{ slot_index }}"
+                                    alt="Product photo"
                                     class="merch-photo-slot-preview-img"
                                 >
                             </div>
@@ -168,7 +168,7 @@
                         {% endif %}
                         <img
                             src="{{ url_for('static', filename='uploads/merch/' + image_filename) }}"
-                            alt="{{ product.name }}"
+                            alt="Product image"
                             class="merch-edit-gallery-image"
                         >
                     </div>

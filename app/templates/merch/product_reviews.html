@@ -10,7 +10,7 @@
         <section class="px-panel review-product-card">
             <div class="review-product-media">
                 {% if product.image_filename %}
-                <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}" alt="{{ product.name }}">
+                <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}" alt="Product image">
                 {% else %}
                 <div class="review-product-placeholder">🎁</div>
                 {% endif %}

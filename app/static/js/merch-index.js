@@ -112,11 +112,11 @@
         const productType = product.product_type || 'digital';
         const imageContainer = app.createElement('div', { className: 'product-image-container' });
         if (product.image_filename) {
-            imageContainer.appendChild(app.createElement('img', {
+                imageContainer.appendChild(app.createElement('img', {
                 className: 'product-image',
                 attrs: {
                     src: app.mediaUrl(`uploads/merch/${product.image_filename}`),
-                    alt: app.toText(product.name),
+                    alt: 'Product image',
                     loading: 'lazy'
                 }
             }));
