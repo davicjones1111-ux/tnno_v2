@@ -65,6 +65,31 @@ class SecurityHardeningTests(AppTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Username cannot contain repeated separators', response.data)
 
+    def test_too_similar_username_is_rejected(self):
+        self.create_user(username='jone', password='secret12')
+
+        availability = self.client.post(
+            '/check_username',
+            json={'username': 'Jones'},
+        )
+        payload = availability.get_json()
+        self.assertEqual(availability.status_code, 200)
+        self.assertFalse(payload['data']['available'])
+        self.assertIn(b'too similar', availability.data.lower())
+
+        signup_response = self.client.post(
+            '/signup',
+            data={
+                'username': 'Jones',
+                'password': 'secret12',
+                'confirm_password': 'secret12',
+                'email': 'jones@example.com',
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(signup_response.status_code, 200)
+        self.assertIn(b'too similar', signup_response.data.lower())
+
     def test_login_blocks_external_redirect_targets(self):
         self.create_user(username='safe_user', password='secret12')
 

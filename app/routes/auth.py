@@ -642,5 +642,13 @@ def check_username():
     existing = UserService.get_user_by_username(username)
     if existing:
         return _json_response(False, 'Your username is already taken', status_code=200, data={'available': False})
+    too_similar, similar_to = UserService.is_username_too_similar(username)
+    if too_similar:
+        return _json_response(
+            False,
+            f"Your username is too similar to '{similar_to}'",
+            status_code=200,
+            data={'available': False},
+        )
     else:
         return _json_response(True, 'Username is available', status_code=200, data={'available': True})

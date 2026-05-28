@@ -2,6 +2,10 @@
 User Service
 Business logic for user management
 """
+from __future__ import annotations
+
+import re
+
 from flask import current_app
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -12,8 +16,67 @@ from app.utils import generate_unique_6digit_id
 from app.validators import ValidationError, validate_email, validate_password, validate_username
 
 
+def _username_similarity_key(value: str) -> str:
+    return re.sub(r'[._]+', '', (value or '').strip().lower())
+
+
+def _levenshtein_distance_at_most_one(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    if abs(len(left) - len(right)) > 1:
+        return False
+
+    shorter, longer = (left, right) if len(left) <= len(right) else (right, left)
+    index_short = 0
+    index_long = 0
+    edits = 0
+
+    while index_short < len(shorter) and index_long < len(longer):
+        if shorter[index_short] == longer[index_long]:
+            index_short += 1
+            index_long += 1
+            continue
+
+        edits += 1
+        if edits > 1:
+            return False
+
+        if len(shorter) == len(longer):
+            index_short += 1
+            index_long += 1
+        else:
+            index_long += 1
+
+    edits += (len(shorter) - index_short) + (len(longer) - index_long)
+    return edits <= 1
+
+
 class UserService:
     """Service for managing users"""
+
+    @staticmethod
+    def is_username_too_similar(candidate_username: str, exclude_user_id: int | None = None):
+        """Return True if a candidate is dangerously close to an existing username."""
+        candidate = (candidate_username or '').strip().lower()
+        if not candidate:
+            return False, None
+
+        candidate_key = _username_similarity_key(candidate)
+        query = User.query.with_entities(User.id, User.username)
+        if exclude_user_id is not None:
+            query = query.filter(User.id != exclude_user_id)
+
+        for existing_id, existing_username in query.yield_per(200):
+            existing_value = (existing_username or '').strip().lower()
+            if not existing_value:
+                continue
+            if candidate == existing_value:
+                return True, existing_value
+            existing_key = _username_similarity_key(existing_value)
+            if candidate_key and existing_key and _levenshtein_distance_at_most_one(candidate_key, existing_key):
+                return True, existing_value
+
+        return False, None
     
     @staticmethod
     def create_user(username, password, email=None):
@@ -32,6 +95,10 @@ class UserService:
         existing = User.query.filter(func.lower(User.username) == username.lower()).first()
         if existing:
             return None, "Your username is already taken"
+
+        too_similar, similar_to = UserService.is_username_too_similar(username)
+        if too_similar:
+            return None, f"Your username is too similar to '{similar_to}'"
 
         if email:
             existing = User.query.filter(func.lower(User.email) == email.lower()).first()

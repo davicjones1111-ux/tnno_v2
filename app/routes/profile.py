@@ -351,6 +351,10 @@ def settings():
             if existing and existing.id != current_user.id:
                 flash('Username already taken', 'error')
                 return _render_settings()
+            too_similar, similar_to = UserService.is_username_too_similar(username, exclude_user_id=current_user.id)
+            if too_similar:
+                flash(f"Username is too similar to '{similar_to}'", 'error')
+                return _render_settings()
 
         if email and email.lower() != (current_user.email or '').lower():
             current_user.email = email
