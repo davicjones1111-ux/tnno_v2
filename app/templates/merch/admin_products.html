@@ -3,19 +3,17 @@
 {% block title %}Manage Products - Admin{% endblock %}
 
 {% block content %}
-<div class="px-mb-lg">
+<div class="px-mb-lg merch-products-page">
     <div class="merch-products-topbar">
         <h1>🛒 {% if current_user.is_admin() %}Merch Products{% else %}My Store{% endif %}</h1>
         <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary">
             + Add Product
         </a>
     </div>
-    
-    <!-- Search Bar -->
-    <div class="px-panel px-mb-lg" style="padding: 20px;">
-        <form method="GET" style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" name="search" value="{{ search }}" placeholder="Search products by name..." 
-                   class="px-input" style="flex: 1; margin: 0;">
+
+    <div class="px-panel merch-products-search-panel px-mb-lg">
+        <form method="GET" class="merch-products-search-form">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search products by name..." class="px-input merch-products-search-input">
             <button type="submit" class="px-btn px-btn-primary">Search</button>
             {% if search %}
             <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-secondary">Clear</a>
@@ -54,24 +52,20 @@
             <tr>
                 <td data-label="Image">
                     {% if product.image_filename %}
-                    <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}" 
-                         alt="Product image" 
-                         style="width: 60px; height: 60px; object-fit: cover; border: 2px solid var(--px-border);">
+                    <img src="{{ url_for('static', filename='uploads/merch/' + product.image_filename) }}"
+                         alt="Product image"
+                         style="width: 56px; height: 56px; object-fit: cover; border: 2px solid var(--px-border);">
                     {% else %}
-                    <div style="width: 60px; height: 60px; background: var(--px-bg-dark); display: flex; align-items: center; justify-content: center; border: 2px solid var(--px-border);">
+                    <div style="width: 56px; height: 56px; background: var(--px-bg-dark); display: flex; align-items: center; justify-content: center; border: 2px solid var(--px-border);">
                         🎁
                     </div>
                     {% endif %}
                 </td>
                 <td data-label="Name">
-                    <div style="font-family: 'Press Start 2P', cursive; font-size: 0.5rem;">
-                        {{ product.name }}
-                    </div>
+                    {{ product.name }}
                 </td>
                 <td data-label="Price">
-                    <span style="font-family: 'Press Start 2P', cursive; color: var(--px-gold);">
-                        🪙 {{ product.price }}
-                    </span>
+                    🪙 {{ product.price }}
                 </td>
                 <td data-label="Type">
                     <span class="px-text-muted">{{ (product.product_type or 'digital')|title }}</span>
@@ -122,11 +116,11 @@
     </table>
     </div>
     {% else %}
-    <div class="px-panel" style="text-align: center; padding: 60px 20px;">
-        <div style="font-size: 4rem; margin-bottom: 20px;">📦</div>
-        <h2 style="font-family: 'Press Start 2P', cursive; font-size: 1rem; margin-bottom: 10px;">No Products</h2>
+    <div class="px-panel merch-empty-state">
+        <div class="merch-empty-icon">📦</div>
+        <h2 class="merch-empty-title">No Products</h2>
         <p class="px-text-muted">Create your first product to start selling!</p>
-        <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary" style="margin-top: 20px;">
+        <a href="{{ url_for('merch.admin_create') }}" class="px-btn px-btn-primary merch-empty-btn">
             + Add Product
         </a>
     </div>
@@ -134,12 +128,32 @@
 </div>
 
 <style>
+.merch-products-page {
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
 .merch-products-topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 14px;
     margin-bottom: 20px;
+}
+
+.merch-products-search-panel {
+    padding: 16px;
+}
+
+.merch-products-search-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.merch-products-search-input {
+    flex: 1;
+    margin: 0;
 }
 
 .merch-product-actions {
@@ -171,6 +185,24 @@
     overflow-x: auto;
 }
 
+.merch-empty-state {
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.merch-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.merch-empty-title {
+    margin-bottom: 10px;
+}
+
+.merch-empty-btn {
+    margin-top: 18px;
+}
+
 @media (max-width: 768px) {
     .merch-products-topbar {
         flex-direction: column;
@@ -186,7 +218,7 @@
         font-size: 0.52rem;
     }
 
-    .px-panel form[method="GET"] {
+    .merch-products-search-form {
         flex-direction: column;
         align-items: stretch !important;
     }

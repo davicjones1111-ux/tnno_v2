@@ -8,46 +8,18 @@
         ← Back to Products
     </a>
 
-    <div class="px-panel merch-edit-hero">
-        <div class="merch-edit-hero-copy">
-            <div class="merch-edit-kicker">Product Editor</div>
-            <h1 class="merch-edit-title">Edit Product</h1>
-            <p class="px-text-muted">Clean, quick edits for title, price, photos, and stock without clutter.</p>
-        </div>
-        <div class="merch-edit-hero-meta">
-            <div class="merch-edit-hero-badges">
-                <span class="merch-edit-pill">{{ (product.product_type or 'digital')|title }}</span>
-                <span class="merch-edit-pill {% if product.is_active %}is-on{% else %}is-off{% endif %}">
-                    {{ 'Active' if product.is_active else 'Hidden' }}
-                </span>
-            </div>
-            <div class="merch-edit-hero-stats">
-                <div class="merch-edit-stat">
-                    <span class="merch-edit-stat-label">Files</span>
-                    <strong class="merch-edit-stat-value">{{ product.total_files }}</strong>
-                </div>
-                {% if product.product_type == 'physical' %}
-                <div class="merch-edit-stat">
-                    <span class="merch-edit-stat-label">Quantity</span>
-                    <strong class="merch-edit-stat-value">{{ product.quantity or 0 }}</strong>
-                </div>
-                {% else %}
-                <div class="merch-edit-stat">
-                    <span class="merch-edit-stat-label">Available</span>
-                    <strong class="merch-edit-stat-value">{{ product.quantity or 0 }}</strong>
-                </div>
-                <div class="merch-edit-stat">
-                    <span class="merch-edit-stat-label">Sold</span>
-                    <strong class="merch-edit-stat-value">{{ product.total_files - (product.quantity or 0) }}</strong>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    <h1 class="px-mb-lg merch-edit-title">Edit Product</h1>
+    <p class="px-text-muted px-mb-lg">Update product details, photos, files, and stock.</p>
 
     <div class="px-grid merch-edit-layout">
         <!-- Edit Form -->
         <div class="px-panel merch-edit-panel">
+            <div class="px-panel-header merch-edit-basic-header">
+                <h2 class="px-panel-title">{{ product.name }}</h2>
+                <span class="px-status {% if product.is_active %}px-status-success{% else %}px-status-default{% endif %}">
+                    {{ 'Active' if product.is_active else 'Hidden' }}
+                </span>
+            </div>
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="merch-edit-form-grid">
@@ -132,7 +104,7 @@
                 {% if product.product_type != 'physical' %}
                 <div class="px-form-group">
                     <label class="px-label">Add More Files (Increase Quantity)</label>
-                    <input type="file" name="new_files" class="px-input" multiple accept=".zip,.rar,.pdf,.txt,.doc,.docx,.mp3,.mp4" title="Upload additional product files">
+                    <input type="file" name="new_files" class="px-input" multiple accept=".zip,.rar,.pdf,.txt,.doc,.docx,.mp3,.mp4,.png,.jpg,.jpeg,.webp" title="Upload additional product files">
                     <p class="px-text-sm px-text-muted px-mt-sm">
                         Add more files to increase available quantity
                     </p>
@@ -158,14 +130,14 @@
 
                 <div class="merch-edit-danger">
                     <h3 class="merch-edit-danger-title">Danger Zone</h3>
-                    <p class="px-text-sm px-text-muted">Delete removes the product from your store. If buyers already exist, the system may hide it safely instead of hard deleting it.</p>
+                    <p class="px-text-sm px-text-muted">Delete removes the product from your store.</p>
                     <form method="POST" action="{{ url_for('merch.admin_delete', product_id=product.id) }}" class="merch-delete-form" onsubmit="return confirm('Delete this product?');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="px-btn px-btn-danger">
                             Delete Product
                         </button>
                     </form>
-            </div>
+                </div>
         </div>
 
         <!-- Product Info -->
@@ -263,95 +235,8 @@
     display: inline-flex;
 }
 
-.merch-edit-hero {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: flex-start;
-    margin-bottom: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
-}
-
-.merch-edit-hero-copy {
-    min-width: 0;
-}
-
-.merch-edit-kicker {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.56rem;
-    color: var(--px-cyan-dark);
-    margin-bottom: 8px;
-}
-
 .merch-edit-title {
-    margin-bottom: 8px;
-    line-height: 1.2;
-}
-
-.merch-edit-hero-meta {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    align-items: stretch;
-}
-
-.merch-edit-hero-badges {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.merch-edit-hero-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(88px, 1fr));
-    gap: 8px;
-    min-width: min(100%, 290px);
-}
-
-.merch-edit-stat {
-    display: grid;
-    gap: 4px;
-    padding: 10px 12px;
-    border: 1px solid rgba(63, 88, 138, 0.12);
-    background: rgba(255,255,255,0.86);
-    min-width: 0;
-}
-
-.merch-edit-stat-label {
-    font-size: 0.66rem;
-    color: var(--px-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.merch-edit-stat-value {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.66rem;
-    line-height: 1.4;
-    color: var(--px-text);
-}
-
-.merch-edit-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    background: rgba(255,255,255,0.9);
-    color: var(--px-text);
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.merch-edit-pill.is-on {
-    color: var(--px-green);
-    background: rgba(79, 198, 113, 0.08);
-}
-
-.merch-edit-pill.is-off {
-    color: var(--px-red);
-    background: rgba(255, 98, 98, 0.08);
+    margin-bottom: 4px;
 }
 
 .merch-edit-layout {
@@ -361,7 +246,7 @@
 }
 
 .merch-edit-panel {
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239,244,252,0.96));
+    background: rgba(255,255,255,0.96);
 }
 
 .merch-edit-form-grid {
@@ -394,11 +279,9 @@
 
 .merch-photo-slot {
     padding: 14px;
-    background: rgba(255,255,255,0.84);
+    background: rgba(255,255,255,0.88);
     border: 1px solid rgba(63, 88, 138, 0.14);
-    border-radius: 12px;
-    display: grid;
-    gap: 10px;
+    border-radius: 8px;
 }
 
 .merch-photo-slot-label {
@@ -406,21 +289,13 @@
     display: block;
 }
 
-.merch-photo-slot-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
 .merch-photo-slot-preview {
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
     border: 2px solid var(--px-border);
     background: var(--px-bg-dark);
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: 6px;
 }
 
 .merch-photo-slot-preview--empty {
@@ -472,8 +347,6 @@
 .merch-edit-side {
     display: grid;
     gap: 18px;
-    position: sticky;
-    top: 16px;
 }
 
 .merch-edit-info-panel,
@@ -523,7 +396,7 @@
     padding: 10px;
     aspect-ratio: 1 / 1;
     position: relative;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
 }
 
@@ -580,14 +453,6 @@
 }
 
 @media (max-width: 920px) {
-    .merch-edit-hero {
-        flex-direction: column;
-    }
-
-    .merch-edit-hero-meta {
-        justify-content: flex-start;
-    }
-
     .merch-edit-layout {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -595,11 +460,6 @@
 
     .merch-edit-side {
         position: static;
-    }
-
-    .merch-edit-hero-stats {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        width: 100%;
     }
 }
 
@@ -609,14 +469,8 @@
         justify-content: center;
     }
 
-    .merch-edit-hero {
-        padding: 14px;
-        gap: 12px;
-    }
-
     .merch-edit-title {
-        font-size: 1.1rem;
-        margin-bottom: 10px;
+        font-size: 1.2rem;
     }
 
     .merch-edit-form-grid {
@@ -654,24 +508,8 @@
         min-height: 42px;
     }
 
-    .merch-edit-hero-stats {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .merch-edit-stat {
-        padding: 9px 10px;
-    }
-
-    .merch-edit-stat-value {
-        font-size: 0.58rem;
-    }
-
     .merch-photo-slots {
         grid-template-columns: 1fr;
-    }
-
-    .merch-photo-slot {
-        padding: 12px;
     }
 
     .merch-section-head {

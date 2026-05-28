@@ -7,21 +7,8 @@
     <a href="{{ url_for('merch.admin_products') }}" class="px-btn px-btn-sm merch-create-backlink">
         ← Back to Products
     </a>
-    
-    <div class="px-panel merch-create-hero">
-        <div class="merch-create-hero-copy">
-            <div class="merch-create-kicker">Product Builder</div>
-            <h1 class="merch-create-title">Add New Product</h1>
-            <p class="px-text-muted">
-                Create a clean listing with photos, a single digital upload row, or a physical product setup.
-            </p>
-        </div>
-        <div class="merch-create-hero-meta">
-            <span class="merch-create-pill">Pro editor</span>
-            <span class="merch-create-pill">Mobile friendly</span>
-            <span class="merch-create-pill">Fast listing</span>
-        </div>
-    </div>
+
+    <h1 class="px-mb-lg merch-create-title">➕ Add New Product</h1>
 
     {% if not current_user.is_admin() %}
     <div class="px-panel merch-create-status-card">
@@ -54,101 +41,67 @@
     <div class="px-panel merch-create-shell">
         <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="merch-create-grid">
-                <div>
-                    <div id="single-product-fields">
-                        <div class="px-form-group">
-                            <label class="px-label">Product Name *</label>
-                            <input type="text" name="name" class="px-input" required 
-                                   placeholder="e.g., Premium Wallpaper Pack">
-                        </div>
-            
-                        <div class="px-form-group">
-                            <label class="px-label">Description</label>
-                            <textarea name="description" class="px-input" rows="4" 
-                                      placeholder="Describe your product..."></textarea>
-                        </div>
-            
-                        <div class="px-form-group">
-                            <label class="px-label">Price (in TNNO) *</label>
-                            <input type="number" name="price" class="px-input" required min="1" 
-                                   placeholder="100" value="100">
-                            <p class="px-text-sm px-text-muted px-mt-sm">
-                                How many TNNO users need to pay for 1 item
-                            </p>
-                        </div>
-            
-                        <div class="px-form-group">
-                            <label class="px-label">Product Type *</label>
-                            <div class="merch-type-toggle" role="tablist" aria-label="Product type">
-                                <button type="button" class="merch-type-option is-active" data-product-type="digital" aria-pressed="true">
-                                    Digital
-                                </button>
-                                <button type="button" class="merch-type-option" data-product-type="physical" aria-pressed="false">
-                                    Physical
-                                </button>
-                            </div>
-                            <select name="product_type" id="product_type" class="px-input merch-type-select" required>
-                                <option value="digital" selected>Digital</option>
-                                <option value="physical">Physical</option>
-                            </select>
-                        <p class="px-text-sm px-text-muted px-mt-sm">
-                                Digital products are built row by row. Each row becomes one product from one file or one folder. Physical products still require stock and a contact link.
-                            </p>
-                        </div>
-
-                        <div class="px-form-group">
-                            <label class="px-label">Product Photos</label>
-                            <div class="merch-photo-slots">
-                                <div class="merch-photo-slot">
-                                    <div class="merch-photo-slot-top">
-                                        <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
-                                        <span class="merch-photo-chip">Required</span>
-                                    </div>
-                                    <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
-                                    <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first. JPG, PNG, WEBP, AVIF, and GIF work best.</p>
-                                </div>
-                                <div class="merch-photo-slot">
-                                    <div class="merch-photo-slot-top">
-                                        <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
-                                        <span class="merch-photo-chip merch-photo-chip--soft">Optional</span>
-                                    </div>
-                                    <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
-                                    <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                                </div>
-                                <div class="merch-photo-slot">
-                                    <div class="merch-photo-slot-top">
-                                        <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
-                                        <span class="merch-photo-chip merch-photo-chip--soft">Optional</span>
-                                    </div>
-                                    <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
-                                    <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
-                                </div>
-                            </div>
-                            <p class="px-text-sm px-text-muted px-mt-sm">
-                                Upload photos one by one. Limit: 3 photos total. Large phone photos are compressed automatically.
-                            </p>
-                        </div>
-                    </div>
+            <div id="single-product-fields">
+                <div class="px-form-group">
+                    <label class="px-label">Product Name *</label>
+                    <input type="text" name="name" class="px-input" required placeholder="e.g., Premium Wallpaper Pack">
                 </div>
-                <div class="merch-create-sidecard">
-                    <h3 class="merch-create-sidecard-title">Seller Setup</h3>
-                    <p class="px-text-sm px-text-muted">Use a short title, a fair price, and one clean file or folder per row. Add another upload row whenever you want to list another product.</p>
-                    <div class="merch-create-hint">
-                        <strong>Best result:</strong> keep each row focused on one product so buyers can understand it fast.
+
+                <div class="px-form-group">
+                    <label class="px-label">Description</label>
+                    <textarea name="description" class="px-input" rows="4" placeholder="Describe your product..."></textarea>
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label">Price (in TNNO) *</label>
+                    <input type="number" name="price" class="px-input" required min="1" placeholder="100" value="100">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        How many TNNO users need to pay for 1 item
+                    </p>
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label">Product Type *</label>
+                    <select name="product_type" id="product_type" class="px-input" required>
+                        <option value="digital" selected>Digital</option>
+                        <option value="physical">Physical</option>
+                    </select>
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Choose digital for uploads or physical for stock and contact link.
+                    </p>
+                </div>
+
+                <div class="px-form-group">
+                    <label class="px-label">Product Photos</label>
+                    <div class="merch-photo-slots">
+                        <div class="merch-photo-slot">
+                            <label class="px-label merch-photo-slot-label" for="image_1">Photo 1 (Cover) *</label>
+                            <input type="file" id="image_1" name="image_1" class="px-input" accept="image/*" required title="Product Cover Photo">
+                            <p class="px-text-sm px-text-muted px-mt-sm">This photo is required and will show on the store card first.</p>
+                        </div>
+                        <div class="merch-photo-slot">
+                            <label class="px-label merch-photo-slot-label" for="image_2">Photo 2</label>
+                            <input type="file" id="image_2" name="image_2" class="px-input" accept="image/*" title="Product Detail Photo 2">
+                            <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                        </div>
+                        <div class="merch-photo-slot">
+                            <label class="px-label merch-photo-slot-label" for="image_3">Photo 3</label>
+                            <input type="file" id="image_3" name="image_3" class="px-input" accept="image/*" title="Product Detail Photo 3">
+                            <p class="px-text-sm px-text-muted px-mt-sm">Optional extra detail photo.</p>
+                        </div>
                     </div>
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Upload photos one by one. Limit: 3 photos total.
+                    </p>
                 </div>
             </div>
             
             <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none;">
-                <div class="merch-digital-head">
-                    <div>
-                        <label class="px-label">Digital Uploads</label>
-                        <p class="px-text-sm px-text-muted">
-                            Each row below becomes one product. Upload one file, or choose a folder for a folder-style product. Use the X button to remove a row, and press “Add Another Upload” to add more.
-                        </p>
-                    </div>
-                    <div class="merch-digital-badge">One row = one product</div>
+                <div class="px-form-group" style="margin: 0;">
+                    <label class="px-label">Digital Uploads</label>
+                    <p class="px-text-sm px-text-muted">
+                        Each row below becomes one product. Upload one file or choose a folder, then add another row if needed.
+                    </p>
                 </div>
                 <div id="digitalItems" class="digital-items">
                     <div class="digital-item" data-row-index="1">
@@ -189,22 +142,20 @@
                 </div>
             </div>
 
-                <div id="physical-fields" style="display: none;">
-                    <div class="px-form-group">
-                        <label class="px-label">Physical Quantity *</label>
-                        <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
-                    </div>
-                    <div class="px-form-group">
-                        <label class="px-label">Contact Link *</label>
-                        <input type="text" name="contact_link" id="contact-link" class="px-input" placeholder="https://t.me/yourname or facebook.com/yourpage">
-                        <p class="px-text-sm px-text-muted px-mt-sm">
-                        Buyers will see this link for questions about delivery. Physical products do not need uploaded product files.
-                        </p>
-                    </div>
+            <div id="physical-fields" style="display: none;">
+                <div class="px-form-group">
+                    <label class="px-label">Physical Quantity *</label>
+                    <input type="number" name="physical_quantity" id="physical-quantity" class="px-input" min="1" value="1">
                 </div>
+                <div class="px-form-group">
+                    <label class="px-label">Contact Link *</label>
+                    <input type="text" name="contact_link" id="contact-link" class="px-input" placeholder="https://t.me/yourname or facebook.com/yourpage">
+                    <p class="px-text-sm px-text-muted px-mt-sm">
+                        Buyers will see this link for questions about delivery. Physical products do not need uploaded product files.
+                    </p>
+                </div>
+            </div>
 
-
-            
             <div style="display: flex; gap: 12px; margin-top: 24px;">
                 <button type="submit" class="px-btn px-btn-primary" {% if not current_user.is_admin() and not seller_active %}disabled style="opacity: 0.6; cursor: not-allowed;"{% endif %}>
                     ✅ Create Products
@@ -228,127 +179,17 @@
     display: inline-flex;
 }
 
-.merch-create-hero {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: flex-start;
-    margin-bottom: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
-}
-
-.merch-create-hero-copy {
-    min-width: 0;
-}
-
-.merch-create-kicker {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 0.56rem;
-    color: var(--px-cyan-dark);
-    margin-bottom: 8px;
-}
-
 .merch-create-title {
     margin-bottom: 8px;
     line-height: 1.2;
 }
 
-.merch-create-hero-meta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
-.merch-create-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    background: rgba(255,255,255,0.9);
-    color: var(--px-text);
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
 .merch-create-status-card {
     margin-bottom: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239,244,252,0.96));
 }
 
 .merch-create-shell {
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(236,241,252,0.95));
-    box-shadow: 0 5px 0 rgba(63, 88, 138, 0.12);
-}
-
-.merch-create-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.9fr);
-    gap: 18px;
-    align-items: start;
-}
-
-.merch-create-sidecard {
-    background: rgba(93, 132, 214, 0.06);
-    border: 2px solid rgba(93, 132, 214, 0.18);
-    padding: 16px;
-    border-radius: 12px;
-}
-
-.merch-create-sidecard-title {
-    margin: 0 0 10px;
-    color: var(--px-blue);
-    font-size: 0.88rem;
-}
-
-.merch-create-hint {
-    margin-top: 12px;
-    padding: 12px;
-    background: rgba(255,255,255,0.88);
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    color: var(--px-text);
-}
-
-.merch-type-toggle {
-    display: inline-grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    padding: 6px;
-    background: rgba(93,132,214,0.08);
-    border: 1px solid rgba(93,132,214,0.14);
-    border-radius: 12px;
-    margin-bottom: 10px;
-}
-
-.merch-type-option {
-    appearance: none;
-    border: 0;
-    cursor: pointer;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--px-text-muted);
-    font-weight: 700;
-    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.merch-type-option:hover {
-    transform: translateY(-1px);
-}
-
-.merch-type-option.is-active {
     background: rgba(255,255,255,0.98);
-    color: var(--px-text);
-    box-shadow: 0 4px 12px rgba(63, 88, 138, 0.08);
-}
-
-.merch-type-select {
-    position: absolute;
-    left: -9999px;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
 }
 
 .merch-photo-slots {
@@ -359,40 +200,13 @@
 
 .merch-photo-slot {
     padding: 14px;
-    background: rgba(255,255,255,0.82);
-    border: 1px solid rgba(63, 88, 138, 0.14);
-    border-radius: 12px;
-    display: grid;
-    gap: 10px;
-}
-
-.merch-photo-slot-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(63, 88, 138, 0.12);
 }
 
 .merch-photo-slot-label {
-    margin-bottom: 0;
-}
-
-.merch-photo-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 8px;
-    background: rgba(79, 198, 113, 0.1);
-    border: 1px solid rgba(79, 198, 113, 0.18);
-    color: var(--px-green);
-    font-size: 0.68rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.merch-photo-chip--soft {
-    background: rgba(93,132,214,0.08);
-    border-color: rgba(93,132,214,0.14);
-    color: var(--px-cyan-dark);
+    margin-bottom: 8px;
+    display: block;
 }
 
 .digital-items {
@@ -402,12 +216,10 @@
 }
 
 .digital-item {
-    background: rgba(255,255,255,0.88);
+    background: transparent;
     border: 1px solid rgba(63, 88, 138, 0.14);
-    border-left: 4px solid var(--px-cyan);
     padding: 14px;
-    box-shadow: 0 8px 20px rgba(63, 88, 138, 0.06);
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 .digital-item-head {
@@ -429,34 +241,17 @@
     align-items: center;
     gap: 6px;
     padding: 4px 8px;
-    background: rgba(93,132,214,0.10);
-    border: 1px solid rgba(93,132,214,0.14);
-    color: var(--px-cyan-dark);
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+    color: var(--px-text-muted);
     font-size: 0.72rem;
     font-weight: 600;
 }
 
 .merch-digital-panel {
     margin-top: 18px;
-    border-style: dashed;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(239,244,252,0.96));
-}
-
-.merch-digital-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    align-items: flex-start;
-}
-
-.merch-digital-badge {
-    padding: 8px 10px;
-    border: 1px solid rgba(93,132,214,0.14);
-    background: rgba(93,132,214,0.08);
-    color: var(--px-cyan-dark);
-    font-size: 0.72rem;
-    font-weight: 700;
-    white-space: nowrap;
+    border-style: solid;
+    background: rgba(255,255,255,0.98);
 }
 
 .digital-item-grid {
@@ -476,8 +271,8 @@
 .digital-file-summary {
     margin-top: 8px;
     padding: 10px 12px;
-    border: 1px dashed rgba(93,132,214,0.2);
-    background: rgba(248,250,255,0.95);
+    border: 1px solid rgba(63, 88, 138, 0.14);
+    background: rgba(255,255,255,0.92);
     color: var(--px-text);
     font-size: 0.78rem;
     line-height: 1.45;
@@ -489,26 +284,6 @@
 }
 
 @media (max-width: 720px) {
-    .merch-create-hero {
-        flex-direction: column;
-    }
-
-    .merch-create-hero-meta {
-        justify-content: flex-start;
-    }
-
-    .merch-create-hero {
-        padding: 14px;
-    }
-
-    .merch-digital-head {
-        flex-direction: column;
-    }
-
-    .merch-photo-slots {
-        grid-template-columns: 1fr;
-    }
-
     .digital-item-grid {
         grid-template-columns: 1fr;
     }
@@ -520,10 +295,6 @@
 }
 
 @media (max-width: 900px) {
-    .merch-create-grid {
-        grid-template-columns: 1fr;
-    }
-
     .merch-create-shell {
         padding: 14px;
     }
@@ -546,15 +317,6 @@
 
     .merch-photo-slot {
         padding: 12px;
-    }
-
-    .merch-type-toggle {
-        width: 100%;
-    }
-
-    .merch-type-option {
-        padding: 9px 10px;
-        font-size: 0.88rem;
     }
 
     .digital-item {
@@ -585,7 +347,6 @@
 
 <script>
 const typeSelect = document.getElementById('product_type');
-const typeOptions = document.querySelectorAll('[data-product-type]');
 const digitalFields = document.getElementById('digital-fields');
 const digitalItems = document.getElementById('digitalItems');
 const addDigitalRowBtn = document.getElementById('addDigitalRowBtn');
@@ -715,16 +476,6 @@ function setDigitalRowsEnabled(enabled) {
     });
 }
 
-function syncTypeToggleUI() {
-    if (!typeSelect || !typeOptions?.length) return;
-    const currentType = typeSelect.value;
-    typeOptions.forEach((button) => {
-        const isActive = button.dataset.productType === currentType;
-        button.classList.toggle('is-active', isActive);
-        button.setAttribute('aria-pressed', String(isActive));
-    });
-}
-
 function updateTypeFields() {
     const isPhysical = typeSelect && typeSelect.value === 'physical';
     if (digitalFields) digitalFields.style.display = isPhysical ? 'none' : 'block';
@@ -765,21 +516,12 @@ function updateTypeFields() {
         contactLink.required = isPhysical;
         contactLink.disabled = !isPhysical;
     }
-    syncTypeToggleUI();
 }
 
 if (typeSelect) {
     typeSelect.addEventListener('change', updateTypeFields);
     updateTypeFields();
 }
-
-typeOptions.forEach((button) => {
-    button.addEventListener('click', () => {
-        if (!typeSelect) return;
-        typeSelect.value = button.dataset.productType || 'digital';
-        typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-});
 
 digitalItems?.querySelectorAll('.digital-item').forEach((row) => bindDigitalRow(row));
 addDigitalRowBtn?.addEventListener('click', () => createDigitalRow());
