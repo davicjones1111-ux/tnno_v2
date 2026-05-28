@@ -31,11 +31,14 @@
         <h1 class="pixel-title">
             WELCOME BACK<span>!</span>
         </h1>
+        <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
+            After your password is accepted, we will send a one-time login code to your email.
+        </p>
 
         <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" data-turbo="false">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" id="username" name="username" class="pixel-input"
-                   placeholder="Enter your username" required autofocus style="text-transform: none;">
+                   placeholder="Enter your username or email" required autofocus style="text-transform: none;">
 
             <input type="password" id="password" name="password" class="pixel-input"
                    placeholder="Enter your password" required style="text-transform: none;">

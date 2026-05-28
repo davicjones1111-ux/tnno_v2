@@ -3,7 +3,7 @@ Profile Routes
 User profile management
 """
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func
 from app.extensions import db, cache
@@ -20,6 +20,24 @@ from app.utils import save_uploaded_image_optimized
 from app.validators import ValidationError, validate_email, validate_password, validate_username
 
 profile_bp = Blueprint('profile', __name__)
+
+
+def _profile_request_data():
+    if request.is_json:
+        payload = request.get_json(silent=True)
+        if isinstance(payload, dict):
+            return payload
+    return request.form
+
+
+def _wants_json_response() -> bool:
+    return request.is_json or request.accept_mimetypes.best == 'application/json'
+
+
+def _json_response(ok: bool, message: str, *, status_code: int = 200, **extra):
+    payload = {'ok': ok, 'message': message}
+    payload.update(extra)
+    return jsonify(payload), status_code
 
 
 def _latest_seller_request_for_current_user():
@@ -404,10 +422,16 @@ def update_security_preferences():
 def send_email_verification():
     """Send a verification code to the current account email."""
     if not current_user.email:
-        flash('Add an email address first.', 'error')
+        message = 'Add an email address first.'
+        if _wants_json_response():
+            return _json_response(False, message, status_code=400)
+        flash(message, 'error')
         return redirect(url_for('profile.settings'))
     if current_user.email_verified_at:
-        flash('Your email is already verified.', 'info')
+        message = 'Your email is already verified.'
+        if _wants_json_response():
+            return _json_response(True, message, status_code=200)
+        flash(message, 'info')
         return redirect(url_for('profile.settings'))
 
     allowed, retry_after = consume_action_quota(
@@ -417,15 +441,23 @@ def send_email_verification():
         subject=current_user.email,
     )
     if not allowed:
-        flash(f'Please wait about {retry_after} seconds before requesting another verification code.', 'error')
+        message = f'Please wait about {retry_after} seconds before requesting another verification code.'
+        if _wants_json_response():
+            return _json_response(False, message, status_code=429)
+        flash(message, 'error')
         return redirect(url_for('profile.settings') + '#email-verification')
 
     try:
         OTPService.create_otp(user=current_user, purpose=OTPService.PURPOSE_EMAIL_VERIFY)
         SessionService.record_auth_event('email_verification_sent', user=current_user, status='info')
         db.session.commit()
-        flash('Verification code sent to your email.', 'success')
+        message = 'Verification code sent to your email.'
+        if _wants_json_response():
+            return _json_response(True, message, status_code=200)
+        flash(message, 'success')
     except ValueError as exc:
+        if _wants_json_response():
+            return _json_response(False, str(exc), status_code=429)
         flash(str(exc), 'error')
     return redirect(url_for('profile.settings') + '#email-verification')
 
@@ -435,7 +467,10 @@ def send_email_verification():
 def verify_email_otp():
     """Verify the current user's email with an OTP code."""
     if not current_user.email:
-        flash('Add an email address first.', 'error')
+        message = 'Add an email address first.'
+        if _wants_json_response():
+            return _json_response(False, message, status_code=400)
+        flash(message, 'error')
         return redirect(url_for('profile.settings'))
 
     allowed, retry_after = consume_action_quota(
@@ -445,10 +480,14 @@ def verify_email_otp():
         subject=current_user.email,
     )
     if not allowed:
-        flash(f'Too many verification attempts. Please wait about {retry_after} seconds and try again.', 'error')
+        message = f'Too many verification attempts. Please wait about {retry_after} seconds and try again.'
+        if _wants_json_response():
+            return _json_response(False, message, status_code=429)
+        flash(message, 'error')
         return redirect(url_for('profile.settings') + '#email-verification')
 
-    otp_code = (request.form.get('otp_code') or '').strip()
+    data = _profile_request_data()
+    otp_code = (data.get('otp_code') or '').strip()
     verified, message = OTPService.verify_otp(
         user=current_user,
         purpose=OTPService.PURPOSE_EMAIL_VERIFY,
@@ -457,12 +496,16 @@ def verify_email_otp():
     if not verified:
         SessionService.record_auth_event('otp_failure', user=current_user, status='warning', details='email_verify')
         db.session.commit()
+        if _wants_json_response():
+            return _json_response(False, message, status_code=400)
         flash(message, 'error')
         return redirect(url_for('profile.settings') + '#email-verification')
 
     current_user.email_verified_at = utc_now()
     SessionService.record_auth_event('email_verified', user=current_user, status='success')
     db.session.commit()
+    if _wants_json_response():
+        return _json_response(True, 'Email verified successfully.', status_code=200)
     flash('Email verified successfully.', 'success')
     return redirect(url_for('profile.settings') + '#email-verification')
 

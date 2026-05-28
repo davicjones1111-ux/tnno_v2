@@ -59,10 +59,12 @@ class UserService:
     
     @staticmethod
     def authenticate_user(username, password):
-        """Authenticate user with username and password"""
-        username = (username or '').strip()
-        user = User.query.filter(func.lower(User.username) == username.lower()).first()
-        
+        """Authenticate user with username/email and password."""
+        identifier = (username or '').strip()
+        if not identifier:
+            return None, "Invalid username or email or password"
+
+        user = UserService.get_user_by_identifier(identifier)
         if not user:
             return None, "Invalid username or password"
         
@@ -70,6 +72,19 @@ class UserService:
             return None, "Invalid username or password"
         
         return user, "Authentication successful"
+
+    @staticmethod
+    def get_user_by_identifier(identifier):
+        """Get a user by username or email."""
+        identifier = (identifier or '').strip()
+        if not identifier:
+            return None
+        lowered = identifier.lower()
+        if '@' in lowered:
+            user = User.query.filter(func.lower(User.email) == lowered).first()
+            if user:
+                return user
+        return User.query.filter(func.lower(User.username) == lowered).first()
     
     @staticmethod
     def get_user_by_id(user_id):

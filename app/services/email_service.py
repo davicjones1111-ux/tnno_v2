@@ -10,6 +10,8 @@ from flask import current_app
 
 
 class EmailService:
+    RESEND_TESTING_FROM = 'onboarding@resend.dev'
+
     @staticmethod
     def is_configured() -> bool:
         return bool(current_app.config.get('RESEND_API_KEY'))
@@ -26,7 +28,7 @@ class EmailService:
             return False
 
         payload = {
-            'from': current_app.config.get('RESEND_FROM_EMAIL'),
+            'from': EmailService.RESEND_TESTING_FROM,
             'to': [to_email],
             'subject': subject,
             'html': html,
@@ -55,12 +57,19 @@ class EmailService:
             return True
 
         response_preview = (response.text or '')[:500]
+        resend_error = response_preview
+        try:
+            error_json = response.json()
+            if isinstance(error_json, dict):
+                resend_error = error_json.get('message') or error_json.get('error') or response_preview
+        except Exception:
+            pass
         current_app.logger.warning(
-            'Resend rejected email send status=%s to=%s from=%s body=%r',
+            'Resend rejected email send status=%s to=%s from=%s error=%r',
             response.status_code,
             to_email,
             payload.get('from'),
-            response_preview,
+            resend_error,
         )
         return False
 

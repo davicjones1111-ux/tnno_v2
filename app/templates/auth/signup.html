@@ -29,6 +29,9 @@
         <h1 class="pixel-title">
             CREATE ACCOUNT<span>.</span>
         </h1>
+        <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
+            We will send a verification code to your email before the account is ready.
+        </p>
 
         <form method="POST" action="{{ url_for('auth.signup') }}" data-turbo="false" id="signup-form" data-check-username-url="{{ url_for('auth.check_username') }}" data-min-password-length="8">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -37,7 +40,7 @@
             <p id="username-message" class="pixel-text pixel-text-sm" style="margin-top: 5px;"></p>
 
             <input type="email" id="email" name="email" class="pixel-input"
-                   placeholder="your@email.com" style="text-transform: none;">
+                   placeholder="your@email.com" required style="text-transform: none;">
 
             <input type="password" id="password" name="password" class="pixel-input"
                    placeholder="Create a password (min 8 characters)" required minlength="8" style="text-transform: none;">

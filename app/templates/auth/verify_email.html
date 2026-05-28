@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Login Security Check - RetroQuest{% endblock %}
+{% block title %}Verify Email - RetroQuest{% endblock %}
 
 {% block content %}
 <div class="pixel-auth-container">
@@ -24,15 +24,15 @@
             <span class="logo-text">TNNO</span>
         </div>
 
-        <h1 class="pixel-title">SECURITY CODE<span>.</span></h1>
+        <h1 class="pixel-title">VERIFY EMAIL<span>.</span></h1>
         <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
             Enter the 6-digit code sent to {{ pending_user.email or 'your email' }}.
         </p>
         <p class="pixel-text pixel-text-muted" style="margin-bottom: 14px;">
-            The code expires in 10 minutes.
+            This verification is required before you can sign in.
         </p>
 
-        <form method="POST" action="{{ url_for('auth.login_otp') }}" data-turbo="false">
+        <form method="POST" action="{{ url_for('auth.verify_email') }}" data-turbo="false">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input
                 type="text"
@@ -47,11 +47,11 @@
             >
 
             <button type="submit" class="pixel-btn pixel-btn-primary">
-                VERIFY &amp; CONTINUE
+                VERIFY CODE
             </button>
         </form>
 
-        <form method="POST" action="{{ url_for('auth.login_otp') }}" data-turbo="false" class="pixel-mt-md">
+        <form method="POST" action="{{ url_for('auth.verify_email') }}" data-turbo="false" class="pixel-mt-md">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="action" value="resend">
             <button type="submit" class="pixel-btn pixel-btn-secondary">
@@ -61,8 +61,8 @@
 
         <div class="pixel-text-center pixel-mt-md">
             <p class="pixel-text pixel-text-muted">
-                WRONG ACCOUNT?
-                <a href="{{ url_for('auth.login') }}" class="pixel-link">BACK TO LOGIN</a>
+                ALREADY VERIFIED?
+                <a href="{{ url_for('auth.login') }}" class="pixel-link">GO TO LOGIN</a>
             </p>
         </div>
     </div>

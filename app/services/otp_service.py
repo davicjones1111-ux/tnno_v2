@@ -98,8 +98,12 @@ class OTPService:
             purpose=purpose,
             consumed_at=None,
         ).order_by(EmailOTP.created_at.desc()).first()
-        if not row or row.expires_at < now:
-            return False, 'The code is invalid or expired.'
+        if not row:
+            return False, 'No security code was found. Please request a new one.'
+        if row.expires_at <= now:
+            row.consumed_at = now
+            db.session.commit()
+            return False, 'The security code has expired. Please request a new one.'
         if row.attempt_count >= row.max_attempts:
             row.consumed_at = now
             db.session.commit()
@@ -111,7 +115,10 @@ class OTPService:
             if row.attempt_count >= row.max_attempts:
                 row.consumed_at = now
             db.session.commit()
-            return False, 'The code is invalid or expired.'
+            remaining = max(row.max_attempts - row.attempt_count, 0)
+            if remaining <= 0:
+                return False, 'Too many incorrect attempts. Request a new code.'
+            return False, f'Invalid security code. You have {remaining} attempt{"s" if remaining != 1 else ""} left.'
 
         row.consumed_at = now
         db.session.commit()
