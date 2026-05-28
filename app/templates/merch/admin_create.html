@@ -67,7 +67,7 @@
                         <option value="physical">Physical</option>
                     </select>
                     <p class="px-text-sm px-text-muted px-mt-sm">
-                        Choose digital to create a product shell, then upload files on the next page.
+                        Digital shows file upload fields here. Physical shows stock and contact link fields here.
                     </p>
                 </div>
 
@@ -98,13 +98,47 @@
             
             <div id="digital-fields" class="px-panel merch-digital-panel" style="display:none;">
                 <div class="px-form-group" style="margin: 0;">
-                    <label class="px-label">Digital Product Files</label>
+                    <label class="px-label">Digital Uploads</label>
                     <p class="px-text-sm px-text-muted">
-                        Create the digital product first, then open the file manager to upload folders, videos, ZIPs, PDFs, or hundreds of files directly to cloud storage.
+                        Each row below becomes one product. Upload one file or choose a folder, then add another row if needed.
                     </p>
                 </div>
-                <div class="merch-digital-note">
-                    <strong>Next step:</strong> after saving, you’ll be taken to the file manager where you can add 1000+ files with presigned uploads and multipart support.
+                <div id="digitalItems" class="digital-items">
+                    <div class="digital-item" data-row-index="1">
+                        <div class="digital-item-head">
+                            <div class="digital-item-title">Upload #1</div>
+                            <span class="digital-item-badge">One product</span>
+                            <button type="button" class="px-btn px-btn-sm px-btn-danger" data-remove-row>×</button>
+                        </div>
+                        <input type="hidden" name="digital_row_index" value="1">
+                        <div class="digital-item-grid">
+                            <div>
+                                <div class="px-form-group">
+                                    <label class="px-label">Product Name</label>
+                                    <input type="text" name="digital_name_1" class="px-input" placeholder="Product name" required>
+                                </div>
+                                <div class="px-form-group">
+                                    <label class="px-label">Description</label>
+                                    <textarea name="digital_description_1" class="px-input" rows="3" placeholder="Describe this product"></textarea>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="px-form-group">
+                                    <label class="px-label">Price *</label>
+                                    <input type="number" name="digital_price_1" class="px-input" min="1" value="100" required>
+                                </div>
+                                <div class="px-form-group">
+                                    <label class="px-label">File or Folder *</label>
+                                    <input type="file" name="digital_files_1" class="px-input" multiple webkitdirectory directory accept="image/*,video/*,.pdf,.zip,.rar,.txt,.doc,.docx,.mp3,.mp4,.avi,.mov" required>
+                                    <div class="digital-file-summary is-empty" data-file-summary>No file selected yet.</div>
+                                </div>
+                                <p class="px-text-sm px-text-muted">One file or one folder = one product. Use the X button to remove this row.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-mt-md" style="display:flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="px-btn px-btn-secondary" id="addDigitalRowBtn">+ Add Another Upload</button>
                 </div>
             </div>
 
