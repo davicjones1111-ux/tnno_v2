@@ -107,6 +107,8 @@
                 <div class="low-stock-badge">Only {{ product.quantity }} left!</div>
                 {% elif product.quantity == 0 %}
                 <div class="sold-out-badge">Sold Out</div>
+                {% else %}
+                <div class="availability-badge">Available {{ product.quantity }}</div>
                 {% endif %}
             </div>
             
@@ -159,7 +161,7 @@
                     {% if product.quantity > 0 %}
                     <a href="{{ url_for('merch.product_detail', product_id=product.id) }}" 
                        class="px-btn px-btn-primary px-btn-sm" data-turbo-preload="true">
-                        Buy Now
+                        View Product
                     </a>
                     {% else %}
                     <button class="px-btn px-btn-secondary px-btn-sm" disabled>
@@ -207,7 +209,7 @@
     --store-surface-alt: #fbfcff;
     --store-text: var(--px-text);
     --store-muted: var(--px-text-muted);
-    max-width: 1180px;
+    max-width: 1540px;
     margin: 0 auto;
 }
 
@@ -375,8 +377,8 @@
 
 .products-feed {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
 }
 
 .product-card {
@@ -415,7 +417,7 @@
 
 .product-image-container {
     position: relative;
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 1 / 1;
     background: linear-gradient(160deg, #edf4ff 0%, #d8e4f6 52%, #fbfcff 100%);
     border-bottom: 2px solid var(--store-border);
     z-index: 1;
@@ -480,6 +482,18 @@
     font-weight: 600;
 }
 
+.availability-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: #e9fff0;
+    color: #1f6a40;
+    padding: 6px 12px;
+    border: 1px solid #8fd3ac;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .sold-out-badge {
     position: absolute;
     inset: 0;
@@ -493,21 +507,21 @@
 }
 
 .product-content {
-    padding: 16px;
+    padding: 14px 14px 16px;
     position: relative;
     z-index: 1;
 }
 
 .product-title {
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.65rem;
-    margin-bottom: 8px;
+    font-size: clamp(0.54rem, 0.45vw + 0.42rem, 0.72rem);
+    margin-bottom: 10px;
     line-height: 1.5;
     color: var(--store-text);
 }
 
 .product-description {
-    font-size: 0.85rem;
+    font-size: clamp(0.78rem, 0.2vw + 0.72rem, 0.92rem);
     color: var(--store-muted);
     margin-bottom: 12px;
     line-height: 1.5;
@@ -585,7 +599,7 @@
     align-items: center;
     gap: 6px;
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.8rem;
+    font-size: clamp(0.62rem, 0.2vw + 0.58rem, 0.8rem);
     color: var(--px-cyan-dark);
 }
 
@@ -637,7 +651,13 @@
 
 @media (max-width: 1100px) {
     .products-feed {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1600px) {
+    .products-feed {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 }
 
@@ -690,13 +710,13 @@
     }
 
     .product-title {
-        font-size: 0.46rem;
+        font-size: 0.58rem;
         min-height: 2.8em;
         margin-bottom: 6px;
     }
 
     .product-description {
-        font-size: 0.66rem;
+        font-size: 0.74rem;
         margin-bottom: 8px;
         line-height: 1.35;
     }
@@ -713,7 +733,7 @@
     }
 
     .feedback-chip {
-        font-size: 0.54rem;
+        font-size: 0.62rem;
         padding: 3px 5px;
     }
 
@@ -724,11 +744,11 @@
     }
 
     .seller-rating {
-        font-size: 0.58rem;
+        font-size: 0.66rem;
     }
 
     .product-price {
-        font-size: 0.54rem;
+        font-size: 0.6rem;
     }
 
     .product-footer {
@@ -741,9 +761,9 @@
     .product-footer .px-btn {
         width: 100%;
         justify-content: center;
-        font-size: 0.5rem;
-        min-height: 34px;
-        padding: 8px 6px;
+        font-size: 0.64rem;
+        min-height: 36px;
+        padding: 8px 8px;
     }
 
     .product-type-badge {
@@ -757,7 +777,14 @@
         bottom: 8px;
         left: 8px;
         padding: 3px 7px;
-        font-size: 0.54rem;
+        font-size: 0.6rem;
+    }
+
+    .availability-badge {
+        bottom: 8px;
+        left: 8px;
+        padding: 3px 7px;
+        font-size: 0.6rem;
     }
 
     .sold-out-badge {
@@ -767,7 +794,7 @@
     }
 
     .product-image-container {
-        aspect-ratio: 4 / 5;
+        aspect-ratio: 1 / 1;
         padding: 8px;
     }
 }
@@ -787,16 +814,16 @@
     }
 
     .product-title {
-        font-size: 0.43rem;
+        font-size: 0.54rem;
     }
 
     .product-description {
-        font-size: 0.62rem;
+        font-size: 0.72rem;
     }
 
     .product-seller,
     .seller-rating {
-        font-size: 0.56rem;
+        font-size: 0.62rem;
     }
 }
 </style>
