@@ -18,14 +18,25 @@
             submitBtn.disabled = !enabled;
         }
 
+        function getResponseData(data) {
+            return data && typeof data === 'object' ? (data.data || data) : {};
+        }
+
+        function setMessage(text, isAvailable) {
+            messageEl.textContent = text || '';
+            messageEl.style.color = isAvailable ? '#1f7a3a' : '#b42318';
+        }
+
         usernameInput.addEventListener('input', function() {
             const username = this.value.trim();
             if (username.length < 3) {
                 messageEl.textContent = '';
-                setSubmitEnabled(false);
+                messageEl.style.color = '';
+                setSubmitEnabled(true);
                 return;
             }
 
+            setSubmitEnabled(true);
             csrfFetch(checkUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -36,19 +47,14 @@
                     return response.json();
                 })
                 .then((data) => {
-                    messageEl.textContent = data.message || '';
-                    if (data.available) {
-                        messageEl.style.color = 'green';
-                        setSubmitEnabled(true);
-                    } else {
-                        messageEl.style.color = 'red';
-                        setSubmitEnabled(false);
-                    }
+                    const payload = getResponseData(data);
+                    const available = Boolean(payload.available);
+                    setMessage(payload.message || '', available);
+                    setSubmitEnabled(true);
                 })
                 .catch(() => {
-                    messageEl.textContent = 'Error checking availability';
-                    messageEl.style.color = 'red';
-                    setSubmitEnabled(false);
+                    setMessage('Availability check unavailable. You can still submit the form.', false);
+                    setSubmitEnabled(true);
                 });
         });
 
@@ -67,12 +73,9 @@
                 alert('Passwords do not match.');
                 return;
             }
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'CREATING ACCOUNT...';
         });
 
-        setSubmitEnabled(false);
+        setSubmitEnabled(true);
     }
 
     document.addEventListener('DOMContentLoaded', initSignupForm);
